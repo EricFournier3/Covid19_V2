@@ -1,0 +1,10 @@
+(base) [foueri01@inspq.qc.ca@slbio00d config]$ pwd
+/data/Applications/GitScript/Covid19/NextStrainFiles/config/original/config
+
+(base) [foueri01@inspq.qc.ca@slbio00d config]$ awk 'BEGIN{FS="\t"}/country/{print $2"\t"$3"\t"$4}' lat_longs.tsv  > /data/Applications/GitScript/Covid19/NextStrainFiles/config/country_lat_long.tsv
+
+(base) [foueri01@inspq.qc.ca@slbio00d config]$ awk 'BEGIN{FS="\t"}/division/{print $2"\t"$3"\t"$4}' lat_longs.tsv  > /data/Applications/GitScript/Covid19/NextStrainFiles/config/division_lat_long.tsv
+
+
+/data/Applications/GitScript/Covid19/NextStrainFiles/config/original/config
+(base) [foueri01@inspq.qc.ca@slbio00d config]$ wget https://raw.githubusercontent.com/nextstrain/ncov/master/config/lat_longs.tsv

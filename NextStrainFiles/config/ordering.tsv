@@ -1,0 +1,2939 @@
+rta	G0A
+rta	G0B
+rta	G0C
+rta	G0E
+rta	G0G
+rta	G0H
+rta	G0J
+rta	G0K
+rta	G0L
+rta	G0M
+rta	G0N
+rta	G0P
+rta	G0R
+rta	G0S
+rta	G0T
+rta	G0V
+rta	G0W
+rta	G0X
+rta	G0Y
+rta	G0Z
+rta	G1A
+rta	G1B
+rta	G1C
+rta	G1E
+rta	G1G
+rta	G1H
+rta	G1J
+rta	G1K
+rta	G1L
+rta	G1M
+rta	G1N
+rta	G1P
+rta	G1R
+rta	G1S
+rta	G1T
+rta	G1V
+rta	G1W
+rta	G1X
+rta	G1Y
+rta	G2A
+rta	G2B
+rta	G2C
+rta	G2E
+rta	G2G
+rta	G2J
+rta	G2K
+rta	G2L
+rta	G2M
+rta	G2N
+rta	G3A
+rta	G3E
+rta	G3G
+rta	G3H
+rta	G3J
+rta	G3K
+rta	G3L
+rta	G3M
+rta	G3Z
+rta	G4A
+rta	G4R
+rta	G4S
+rta	G4T
+rta	G4V
+rta	G4W
+rta	G4X
+rta	G4Z
+rta	G5A
+rta	G5B
+rta	G5C
+rta	G5H
+rta	G5J
+rta	G5L
+rta	G5M
+rta	G5N
+rta	G5R
+rta	G5T
+rta	G5V
+rta	G5X
+rta	G5Y
+rta	G5Z
+rta	G6A
+rta	G6B
+rta	G6C
+rta	G6E
+rta	G6G
+rta	G6H
+rta	G6J
+rta	G6K
+rta	G6L
+rta	G6P
+rta	G6R
+rta	G6S
+rta	G6T
+rta	G6V
+rta	G6W
+rta	G6X
+rta	G6Z
+rta	G7A
+rta	G7B
+rta	G7G
+rta	G7H
+rta	G7J
+rta	G7K
+rta	G7N
+rta	G7P
+rta	G7S
+rta	G7T
+rta	G7X
+rta	G7Y
+rta	G7Z
+rta	G8A
+rta	G8B
+rta	G8C
+rta	G8E
+rta	G8G
+rta	G8H
+rta	G8J
+rta	G8K
+rta	G8L
+rta	G8M
+rta	G8N
+rta	G8P
+rta	G8T
+rta	G8V
+rta	G8W
+rta	G8Y
+rta	G8Z
+rta	G9A
+rta	G9B
+rta	G9C
+rta	G9H
+rta	G9N
+rta	G9P
+rta	G9R
+rta	G9T
+rta	G9X
+rta	H0H
+rta	H0M
+rta	H1A
+rta	H1B
+rta	H1C
+rta	H1E
+rta	H1G
+rta	H1H
+rta	H1J
+rta	H1K
+rta	H1L
+rta	H1M
+rta	H1N
+rta	H1P
+rta	H1R
+rta	H1S
+rta	H1T
+rta	H1V
+rta	H1W
+rta	H1X
+rta	H1Y
+rta	H1Z
+rta	H2A
+rta	H2B
+rta	H2C
+rta	H2E
+rta	H2G
+rta	H2H
+rta	H2J
+rta	H2K
+rta	H2L
+rta	H2M
+rta	H2N
+rta	H2P
+rta	H2R
+rta	H2S
+rta	H2T
+rta	H2V
+rta	H2W
+rta	H2X
+rta	H2Y
+rta	H2Z
+rta	H3A
+rta	H3B
+rta	H3C
+rta	H3E
+rta	H3G
+rta	H3H
+rta	H3J
+rta	H3K
+rta	H3L
+rta	H3M
+rta	H3N
+rta	H3P
+rta	H3R
+rta	H3S
+rta	H3T
+rta	H3V
+rta	H3W
+rta	H3X
+rta	H3Y
+rta	H3Z
+rta	H4A
+rta	H4B
+rta	H4C
+rta	H4E
+rta	H4G
+rta	H4H
+rta	H4J
+rta	H4K
+rta	H4L
+rta	H4M
+rta	H4N
+rta	H4P
+rta	H4R
+rta	H4S
+rta	H4T
+rta	H4V
+rta	H4W
+rta	H4X
+rta	H4Y
+rta	H4Z
+rta	H5A
+rta	H5B
+rta	H7A
+rta	H7B
+rta	H7C
+rta	H7E
+rta	H7G
+rta	H7H
+rta	H7J
+rta	H7K
+rta	H7L
+rta	H7M
+rta	H7N
+rta	H7P
+rta	H7R
+rta	H7S
+rta	H7T
+rta	H7V
+rta	H7W
+rta	H7X
+rta	H7Y
+rta	H8N
+rta	H8P
+rta	H8R
+rta	H8S
+rta	H8T
+rta	H8Y
+rta	H8Z
+rta	H9A
+rta	H9B
+rta	H9C
+rta	H9E
+rta	H9G
+rta	H9H
+rta	H9J
+rta	H9K
+rta	H9P
+rta	H9R
+rta	H9S
+rta	H9W
+rta	H9X
+rta	J0A
+rta	J0B
+rta	J0C
+rta	J0E
+rta	J0G
+rta	J0H
+rta	J0J
+rta	J0K
+rta	J0L
+rta	J0M
+rta	J0N
+rta	J0P
+rta	J0R
+rta	J0S
+rta	J0T
+rta	J0V
+rta	J0W
+rta	J0X
+rta	J0Y
+rta	J0Z
+rta	J1A
+rta	J1E
+rta	J1G
+rta	J1H
+rta	J1J
+rta	J1K
+rta	J1L
+rta	J1M
+rta	J1N
+rta	J1S
+rta	J1T
+rta	J1X
+rta	J1Z
+rta	J2A
+rta	J2B
+rta	J2C
+rta	J2E
+rta	J2G
+rta	J2H
+rta	J2J
+rta	J2K
+rta	J2L
+rta	J2N
+rta	J2R
+rta	J2S
+rta	J2T
+rta	J2W
+rta	J2X
+rta	J2Y
+rta	J3A
+rta	J3B
+rta	J3E
+rta	J3G
+rta	J3H
+rta	J3L
+rta	J3M
+rta	J3N
+rta	J3P
+rta	J3R
+rta	J3T
+rta	J3V
+rta	J3X
+rta	J3Y
+rta	J3Z
+rta	J4B
+rta	J4G
+rta	J4H
+rta	J4J
+rta	J4K
+rta	J4L
+rta	J4M
+rta	J4N
+rta	J4P
+rta	J4R
+rta	J4S
+rta	J4T
+rta	J4V
+rta	J4W
+rta	J4X
+rta	J4Y
+rta	J4Z
+rta	J5A
+rta	J5B
+rta	J5J
+rta	J5K
+rta	J5L
+rta	J5M
+rta	J5R
+rta	J5T
+rta	J5V
+rta	J5W
+rta	J5X
+rta	J5Y
+rta	J5Z
+rta	J6A
+rta	J6E
+rta	J6J
+rta	J6K
+rta	J6N
+rta	J6R
+rta	J6S
+rta	J6T
+rta	J6V
+rta	J6W
+rta	J6X
+rta	J6Y
+rta	J6Z
+rta	J7A
+rta	J7B
+rta	J7C
+rta	J7E
+rta	J7G
+rta	J7H
+rta	J7J
+rta	J7K
+rta	J7L
+rta	J7M
+rta	J7N
+rta	J7P
+rta	J7R
+rta	J7T
+rta	J7V
+rta	J7X
+rta	J7Y
+rta	J7Z
+rta	J8A
+rta	J8B
+rta	J8C
+rta	J8E
+rta	J8G
+rta	J8H
+rta	J8L
+rta	J8M
+rta	J8N
+rta	J8P
+rta	J8R
+rta	J8T
+rta	J8V
+rta	J8X
+rta	J8Y
+rta	J8Z
+rta	J9A
+rta	J9B
+rta	J9E
+rta	J9H
+rta	J9J
+rta	J9L
+rta	J9P
+rta	J9T
+rta	J9V
+rta	J9X
+rta	J9Y
+rta	J9Z
+rta	Argentina
+rta	Asia
+rta	Austria
+rta	Croatia
+rta	Denmark
+rta	Democratic Republic of the Congo
+rta	Ecuador
+rta	Egypt
+rta	England
+rta	Georgia
+rta	Ghana
+rta	Iceland
+rta	Iran
+rta	Israel
+rta	Luxembourg
+rta	Norway
+rta	Panama
+rta	Peru
+rta	Philippines
+rta	Sri Lanka
+rta	Turkey
+rta	Africa
+rta	Europe
+rta	North America
+rta	Oceania
+rta	South America
+rta	inde
+rta	états-unis
+rta	dominique
+rta	rép. dominicaine
+rta	suisse
+rta	royaume-uni
+rta	cuba
+rta	australie
+rta	puerto rico
+rta	émirat arabes unis
+rta	martinique
+rta	guadeloupe
+rta	mexique
+rta	costa rica
+rta	colombie
+rta	jamaìque
+rta	cameroun
+rta	thailande
+rta	afrique du sud
+rta	haiti
+rta	iles vierges (é-u)
+rta	guatemala
+rta	nouvelle-zélande
+rta	indonésie
+rta	aruba
+rta	pologne
+rta	republique tchèque
+rta	iles turques-caiques
+rta	zimbabwe
+rta	jordanie
+rta	argentine
+rta	sénégal
+rta	iraq
+rta	algerie
+rta	maroc
+rta	cambodge
+rta	Canada
+rta	Aargau
+rta	Aatalunya
+rta	Abruzzo
+rta	Afyon
+rta	Aichi
+rta	Aksaray
+rta	Alagoas
+rta	Alken
+rta	Amazonas State
+rta	Andalusia
+rta	Andel
+rta	Andenne
+rta	Anderlecht
+rta	Anhui
+rta	Ankara
+rta	Antioquia
+rta	Antwerp
+rta	Arizona
+rta	Asse
+rta	Ath
+rta	Athens
+rta	Auckland
+rta	Austria
+rta	Auvergne Rhone Alpes
+rta	Auvergne-Rhône-Alpes
+rta	Baden-Wuerttemberg
+rta	Bahia
+rta	Balikesir
+rta	Bangkok
+rta	Baranya
+rta	Barcelona
+rta	Basel
+rta	Basel-Stadt
+rta	Basque Country
+rta	Bavaria
+rta	Beersel
+rta	Beijing
+rta	Belgium
+rta	Beringen
+rta	Berloz
+rta	Bern
+rta	Bierbeek
+rta	Blegny
+rta	Blida
+rta	Bogota
+rta	Bonheiden
+rta	Boufarik
+rta	Bourgogne-France-Comté
+rta	Boussu
+rta	Boutersem
+rta	Braine-l alleud
+rta	Bratislava
+rta	Bree
+rta	Bretagne
+rta	British Columbia
+rta	Brussels
+rta	Budapest
+rta	Buryat Republic
+rta	California
+rta	Canakkale
+rta	Canary Islands
+rta	Castel di Sangro
+rta	Castilla La Mancha
+rta	Castilla Y León
+rta	Castilla y Leon
+rta	Catalunya
+rta	Central Hungary
+rta	Centre-Val de Loire
+rta	Chaineux
+rta	Charleroi
+rta	Chechen Republic
+rta	Chelyabinsk Region
+rta	Chiba
+rta	Chihuahua
+rta	China
+rta	Chongqing
+rta	Chungcheongnam
+rta	Comunitat Valenciana
+rta	Colfontaine
+rta	Connecticut
+rta	Copenhagen
+rta	Cork
+rta	Courcelles
+rta	Couthuin
+rta	Couvin
+rta	Croatia
+rta	Dakar
+rta	Dalhem
+rta	Deinze
+rta	Dendermonde
+rta	Denmark
+rta	Diamond Princess
+rta	Dilbeek
+rta	District of Columbia
+rta	Distrito Federal
+rta	Doha
+rta	Doornik
+rta	Drenthe
+rta	Dublin
+rta	Duesseldorf
+rta	Ellezelles
+rta	Elsene
+rta	England
+rta	Estado de Mexico
+rta	Eupen
+rta	Eskisehir
+rta	Espirito Santo
+rta	Estinnes
+rta	Etterbeek
+rta	Europe
+rta	Finland
+rta	Flanders
+rta	Flevoland
+rta	Florida
+rta	Fontaine-l Eveque
+rta	Frameries
+rta	France
+rta	Friesland
+rta	Friuli Venezia Giulia
+rta	Fujian
+rta	Galicia
+rta	Ganshoren
+rta	Gavleborgs lan
+rta	Gelderland
+rta	Genappe
+rta	Geneva
+rta	Gent
+rta	Georgia
+rta	Geraardsbergen
+rta	Germany
+rta	Ghent
+rta	Gierle
+rta	Gilgit Baltistan
+rta	Goiais
+rta	Grand Est
+rta	Grand Canary Islands
+rta	Grand Princess
+rta	Graubünden
+rta	Greater Accra
+rta	Grimbergen
+rta	Guangdong
+rta	Guayas
+rta	Gujarat
+rta	Gyeonggi
+rta	Halland
+rta	Hangzhou
+rta	Hasselt
+rta	Hauts de France
+rta	Havelange
+rta	Hawaii
+rta	Hawali
+rta	Helden
+rta	Helsinki
+rta	Hemiksem
+rta	Henan
+rta	Henri-chapelle
+rta	Herent
+rta	Herselt
+rta	Herstal
+rta	Herve
+rta	Holsbeek
+rta	Ho Chi Minh City
+rta	Hoegaarden
+rta	Hong Kong
+rta	Honnelles
+rta	Houthalen-Helchteren
+rta	Hubei
+rta	Huldenberg
+rta	Idaho
+rta	Ile De France
+rta	Illinois
+rta	Indiana
+rta	Iowa
+rta	Iran
+rta	Ireland
+rta	Ishikawa
+rta	Istanbul
+rta	Italy
+rta	Japan
+rta	Jiangsu
+rta	Jiangxi
+rta	Kalmthout
+rta	Kanagawa
+rta	Kansai
+rta	Kansas
+rta	Kanto
+rta	Karaman
+rta	Karnataka
+rta	Kastamonu
+rta	Kasterlee
+rta	Kathmandu
+rta	Kaulile
+rta	Kayseri
+rta	Keelung
+rta	Kerala
+rta	Kessel-Lo
+rta	Khabarovsk Region
+rta	Khyber Pakhtunkhwa
+rta	Kinshasa
+rta	Kochi
+rta	Knokke-Heist
+rta	Kocaeli
+rta	Komen
+rta	Konya
+rta	Kosice
+rta	Kostoliste
+rta	Kraainem
+rta	Krasnodar Region
+rta	Krasnoyarsk Region
+rta	Kuala Lumpur
+rta	Kuwait
+rta	KwaZulu-Natal
+rta	Kyoto
+rta	La Louviere
+rta	La Rioja
+rta	Lagos
+rta	Lanaken
+rta	Lapland
+rta	Lasne
+rta	Lazio
+rta	Leuven
+rta	Liège
+rta	Lima
+rta	Limburg
+rta	Limerick
+rta	Linter
+rta	Lipetsk Region
+rta	Lisbon
+rta	Lombardy
+rta	Louisiana
+rta	Louth
+rta	Lubbeek
+rta	Lucerne
+rta	Lummen
+rta	Luxembourg
+rta	Madrid
+rta	Malopolskie
+rta	Manitoba
+rta	Marche
+rta	Martin
+rta	Maryland
+rta	Massachusetts
+rta	Mbour
+rta	Medellin
+rta	Melbourne
+rta	Merelbeke
+rta	Mexico City
+rta	Michigan
+rta	Minas Gerais
+rta	Minnesota
+rta	Missouri
+rta	Mons
+rta	Montevideo
+rta	Montigny-le-Tilleul
+rta	Moscow
+rta	Moscow Region
+rta	Mouscron
+rta	Munich
+rta	Namur
+rta	NanChang
+rta	Nara
+rta	Nebraska
+rta	Netherlands
+rta	Nevada
+rta	Nevele
+rta	Nevsehir
+rta	New Brunswick
+rta	New Jersey
+rta	New Hampshire
+rta	New South Wales
+rta	New Taipei City
+rta	Newfoundland and Labrador
+rta	Nieuwerkerken
+rta	Nonthaburi
+rta	Normandie
+rta	Normandie
+rta	Norrbotten
+rta	North Brabant
+rta	North Carolina
+rta	North Holland
+rta	North Rhine Westphalia
+rta	Northern Territory
+rta	Northern Ireland
+rta	Nottinghamshire
+rta	Nova Scotia
+rta	Novosibirsk Region
+rta	Oevel
+rta	Ohio
+rta	Omsk Region
+rta	Ontario
+rta	Oostrozebeke
+rta	Orebro lan
+rta	Oregon
+rta	Orenburg Region
+rta	Osaka
+rta	Oslo
+rta	Ostergotland
+rta	Otago
+rta	Oudergem
+rta	Overijssel
+rta	Panama City
+rta	Pays de la Loire
+rta	Pelt
+rta	Pennsylvania
+rta	Perm Region
+rta	Pichincha
+rta	Pomorskie
+rta	Portugal
+rta	Primorskiy Region
+rta	Pskov Region
+rta	Puebla
+rta	Prague
+rta	Prince Edward Island
+rta	Quangning
+rta	Quaregnon
+rta	Queretaro
+rta	Queensland
+rta	Quevy
+rta	Quito
+rta	Ramat Gan
+rta	Ravels
+rta	Red River Delta
+rta	Republic of Buryatia
+rta	Republic of Crymea
+rta	Republic of Kabardino-Balkaria
+rta	Republic of Sakha
+rta	Republic of Tatarstan
+rta	Reykjavik
+rta	Rhode Island
+rta	Riemst
+rta	Rio de Janeiro
+rta	Rio Grande do Sul
+rta	Rixensart
+rta	Riyadh
+rta	Rome
+rta	Ronse
+rta	Saint-Ghislain
+rta	Saint-Petersburg
+rta	Saint-Saulve
+rta	Saitama
+rta	Sakarya
+rta	Sakhalin Region
+rta	Samara Region
+rta	Santa Catarina
+rta	Santiago
+rta	Sao Paulo
+rta	Saskatchewan
+rta	Schwyz
+rta	Scotland
+rta	Selangor
+rta	Seoul
+rta	Seraing
+rta	Schoten
+rta	Shandong
+rta	Shanghai
+rta	Sichuan
+rta	Sihanoukville
+rta	Siirt
+rta	Silly
+rta	Singapore
+rta	Sint-Agatha-Berchem
+rta	Sint-Genesius-Rode
+rta	Sint-Gillis-Waas
+rta	Sint-Niklaas
+rta	Sint-Pieters-Woluwe
+rta	Sint-Truiden
+rta	Småland
+rta	Soignies
+rta	Sormland
+rta	Soumagne
+rta	South Carolina
+rta	South Holland
+rta	South Korea
+rta	South Yorkshire
+rta	Spain
+rta	St-Louis
+rta	Stekene
+rta	Stockholm
+rta	Sud Kivu
+rta	Sverdlovsk Region
+rta	Switzerland
+rta	Taipei
+rta	Taiwan
+rta	Talca
+rta	Taoyuan
+rta	Tatarstan
+rta	Tbilisi
+rta	Teramo
+rta	Tervuren
+rta	Texas
+rta	Thanh Hoa
+rta	Theux
+rta	Thies
+rta	Ticino
+rta	Tielt-Winge
+rta	Tienen
+rta	Tilburg
+rta	Tipperary
+rta	Tokyo
+rta	Touba
+rta	Tournai
+rta	Tubize
+rta	Tver Region
+rta	UK
+rta	Ukkel
+rta	United Kingdom
+rta	USA
+rta	Usti nad Labem
+rta	Utah
+rta	Utrecht
+rta	Vasterbotten
+rta	Varmland
+rta	Vaud
+rta	Veneto
+rta	Victoria
+rta	Vienna
+rta	Vilvoorde
+rta	Vinhphuc
+rta	Virginia
+rta	Vorst
+rta	Waasmunster
+rta	Wales
+rta	Walloon Brabant
+rta	Wanze
+rta	Waterloo
+rta	Watermaal-Bosvoorde
+rta	Washington
+rta	Wellington
+rta	Wervik
+rta	West Coast Region
+rta	Western Australia
+rta	Wevelgem
+rta	Wicklow
+rta	Wisconsin
+rta	Wyoming
+rta	Yunnan
+rta	Zhejiang
+rta	Zielonogorskie
+rta	Zinnik
+rta	Zolder
+rta	Zonhoven
+rta	Zoutleeuw
+rta	Zurich
+rta	Africa
+rta	Asia
+rta	Europe
+rta	North America
+rta	Oceania
+rta	South America
+rss	01-Bas-Saint-Laurent
+rss	02-Saguenay - Lac-Saint-Jean
+rss	03-Capitale-Nationale
+rss	04-Mauricie et Centre-du-Québec
+rss	05-Estrie
+rss	06-Montréal
+rss	07-Outaouais
+rss	08-Abitibi-Témiscamingue
+rss	09-Côte-Nord
+rss	10-Nord-du-Québec
+rss	11-Gaspésie - Îles-de-la-Madeleine
+rss	12-Chaudière-Appalaches
+rss	13-Laval
+rss	14-Lanaudière
+rss	15-Laurentides
+rss	16-Montérégie
+rss	17-Nunavik
+rss	18-Terres-Cries-de-la-Baie-James
+rss	Argentina
+rss	Asia
+rss	Austria
+rss	Croatia
+rss	Denmark
+rss	Democratic Republic of the Congo
+rss	Ecuador
+rss	Egypt
+rss	England
+rss	Georgia
+rss	Ghana
+rss	Iceland
+rss	Iran
+rss	Israel
+rss	Luxembourg
+rss	Norway
+rss	Panama
+rss	Peru
+rss	Philippines
+rss	Sri Lanka
+rss	Turkey
+rss	Africa
+rss	Europe
+rss	North America
+rss	Oceania
+rss	South America
+rss	inde
+rss	états-unis
+rss	dominique
+rss	rép. dominicaine
+rss	suisse
+rss	royaume-uni
+rss	cuba
+rss	australie
+rss	puerto rico
+rss	émirat arabes unis
+rss	martinique
+rss	guadeloupe
+rss	mexique
+rss	costa rica
+rss	colombie
+rss	jamaìque
+rss	cameroun
+rss	thailande
+rss	afrique du sud
+rss	haiti
+rss	iles vierges (é-u)
+rss	guatemala
+rss	nouvelle-zélande
+rss	indonésie
+rss	aruba
+rss	pologne
+rss	republique tchèque
+rss	iles turques-caiques
+rss	zimbabwe
+rss	jordanie
+rss	argentine
+rss	sénégal
+rss	iraq
+rss	algerie
+rss	maroc
+rss	cambodge
+rss	Canada
+rss	Aargau
+rss	Aatalunya
+rss	Abruzzo
+rss	Afyon
+rss	Aichi
+rss	Aksaray
+rss	Alagoas
+rss	Alken
+rss	Amazonas State
+rss	Andalusia
+rss	Andel
+rss	Andenne
+rss	Anderlecht
+rss	Anhui
+rss	Ankara
+rss	Antioquia
+rss	Antwerp
+rss	Arizona
+rss	Asse
+rss	Ath
+rss	Athens
+rss	Auckland
+rss	Austria
+rss	Auvergne Rhone Alpes
+rss	Auvergne-Rhône-Alpes
+rss	Baden-Wuerttemberg
+rss	Bahia
+rss	Balikesir
+rss	Bangkok
+rss	Baranya
+rss	Barcelona
+rss	Basel
+rss	Basel-Stadt
+rss	Basque Country
+rss	Bavaria
+rss	Beersel
+rss	Beijing
+rss	Belgium
+rss	Beringen
+rss	Berloz
+rss	Bern
+rss	Bierbeek
+rss	Blegny
+rss	Blida
+rss	Bogota
+rss	Bonheiden
+rss	Boufarik
+rss	Bourgogne-France-Comté
+rss	Boussu
+rss	Boutersem
+rss	Braine-l alleud
+rss	Bratislava
+rss	Bree
+rss	Bretagne
+rss	British Columbia
+rss	Brussels
+rss	Budapest
+rss	Buryat Republic
+rss	California
+rss	Canakkale
+rss	Canary Islands
+rss	Castel di Sangro
+rss	Castilla La Mancha
+rss	Castilla Y León
+rss	Castilla y Leon
+rss	Catalunya
+rss	Central Hungary
+rss	Centre-Val de Loire
+rss	Chaineux
+rss	Charleroi
+rss	Chechen Republic
+rss	Chelyabinsk Region
+rss	Chiba
+rss	Chihuahua
+rss	China
+rss	Chongqing
+rss	Chungcheongnam
+rss	Comunitat Valenciana
+rss	Colfontaine
+rss	Connecticut
+rss	Copenhagen
+rss	Cork
+rss	Courcelles
+rss	Couthuin
+rss	Couvin
+rss	Croatia
+rss	Dakar
+rss	Dalhem
+rss	Deinze
+rss	Dendermonde
+rss	Denmark
+rss	Diamond Princess
+rss	Dilbeek
+rss	District of Columbia
+rss	Distrito Federal
+rss	Doha
+rss	Doornik
+rss	Drenthe
+rss	Dublin
+rss	Duesseldorf
+rss	Ellezelles
+rss	Elsene
+rss	England
+rss	Estado de Mexico
+rss	Eupen
+rss	Eskisehir
+rss	Espirito Santo
+rss	Estinnes
+rss	Etterbeek
+rss	Europe
+rss	Finland
+rss	Flanders
+rss	Flevoland
+rss	Florida
+rss	Fontaine-l Eveque
+rss	Frameries
+rss	France
+rss	Friesland
+rss	Friuli Venezia Giulia
+rss	Fujian
+rss	Galicia
+rss	Ganshoren
+rss	Gavleborgs lan
+rss	Gelderland
+rss	Genappe
+rss	Geneva
+rss	Gent
+rss	Georgia
+rss	Geraardsbergen
+rss	Germany
+rss	Ghent
+rss	Gierle
+rss	Gilgit Baltistan
+rss	Goiais
+rss	Grand Est
+rss	Grand Canary Islands
+rss	Grand Princess
+rss	Graubünden
+rss	Greater Accra
+rss	Grimbergen
+rss	Guangdong
+rss	Guayas
+rss	Gujarat
+rss	Gyeonggi
+rss	Halland
+rss	Hangzhou
+rss	Hasselt
+rss	Hauts de France
+rss	Havelange
+rss	Hawaii
+rss	Hawali
+rss	Helden
+rss	Helsinki
+rss	Hemiksem
+rss	Henan
+rss	Henri-chapelle
+rss	Herent
+rss	Herselt
+rss	Herstal
+rss	Herve
+rss	Holsbeek
+rss	Ho Chi Minh City
+rss	Hoegaarden
+rss	Hong Kong
+rss	Honnelles
+rss	Houthalen-Helchteren
+rss	Hubei
+rss	Huldenberg
+rss	Idaho
+rss	Ile De France
+rss	Illinois
+rss	Indiana
+rss	Iowa
+rss	Iran
+rss	Ireland
+rss	Ishikawa
+rss	Istanbul
+rss	Italy
+rss	Japan
+rss	Jiangsu
+rss	Jiangxi
+rss	Kalmthout
+rss	Kanagawa
+rss	Kansai
+rss	Kansas
+rss	Kanto
+rss	Karaman
+rss	Karnataka
+rss	Kastamonu
+rss	Kasterlee
+rss	Kathmandu
+rss	Kaulile
+rss	Kayseri
+rss	Keelung
+rss	Kerala
+rss	Kessel-Lo
+rss	Khabarovsk Region
+rss	Khyber Pakhtunkhwa
+rss	Kinshasa
+rss	Kochi
+rss	Knokke-Heist
+rss	Kocaeli
+rss	Komen
+rss	Konya
+rss	Kosice
+rss	Kostoliste
+rss	Kraainem
+rss	Krasnodar Region
+rss	Krasnoyarsk Region
+rss	Kuala Lumpur
+rss	Kuwait
+rss	KwaZulu-Natal
+rss	Kyoto
+rss	La Louviere
+rss	La Rioja
+rss	Lagos
+rss	Lanaken
+rss	Lapland
+rss	Lasne
+rss	Lazio
+rss	Leuven
+rss	Liège
+rss	Lima
+rss	Limburg
+rss	Limerick
+rss	Linter
+rss	Lipetsk Region
+rss	Lisbon
+rss	Lombardy
+rss	Louisiana
+rss	Louth
+rss	Lubbeek
+rss	Lucerne
+rss	Lummen
+rss	Luxembourg
+rss	Madrid
+rss	Malopolskie
+rss	Manitoba
+rss	Marche
+rss	Martin
+rss	Maryland
+rss	Massachusetts
+rss	Mbour
+rss	Medellin
+rss	Melbourne
+rss	Merelbeke
+rss	Mexico City
+rss	Michigan
+rss	Minas Gerais
+rss	Minnesota
+rss	Missouri
+rss	Mons
+rss	Montevideo
+rss	Montigny-le-Tilleul
+rss	Moscow
+rss	Moscow Region
+rss	Mouscron
+rss	Munich
+rss	Namur
+rss	NanChang
+rss	Nara
+rss	Nebraska
+rss	Netherlands
+rss	Nevada
+rss	Nevele
+rss	Nevsehir
+rss	New Brunswick
+rss	New Jersey
+rss	New Hampshire
+rss	New South Wales
+rss	New Taipei City
+rss	Newfoundland and Labrador
+rss	Nieuwerkerken
+rss	Nonthaburi
+rss	Normandie
+rss	Normandie
+rss	Norrbotten
+rss	North Brabant
+rss	North Carolina
+rss	North Holland
+rss	North Rhine Westphalia
+rss	Northern Territory
+rss	Northern Ireland
+rss	Nottinghamshire
+rss	Nova Scotia
+rss	Novosibirsk Region
+rss	Oevel
+rss	Ohio
+rss	Omsk Region
+rss	Ontario
+rss	Oostrozebeke
+rss	Orebro lan
+rss	Oregon
+rss	Orenburg Region
+rss	Osaka
+rss	Oslo
+rss	Ostergotland
+rss	Otago
+rss	Oudergem
+rss	Overijssel
+rss	Panama City
+rss	Pays de la Loire
+rss	Pelt
+rss	Pennsylvania
+rss	Perm Region
+rss	Pichincha
+rss	Pomorskie
+rss	Portugal
+rss	Primorskiy Region
+rss	Pskov Region
+rss	Puebla
+rss	Prague
+rss	Prince Edward Island
+rss	Quangning
+rss	Quaregnon
+rss	Queretaro
+rss	Queensland
+rss	Quevy
+rss	Quito
+rss	Ramat Gan
+rss	Ravels
+rss	Red River Delta
+rss	Republic of Buryatia
+rss	Republic of Crymea
+rss	Republic of Kabardino-Balkaria
+rss	Republic of Sakha
+rss	Republic of Tatarstan
+rss	Reykjavik
+rss	Rhode Island
+rss	Riemst
+rss	Rio de Janeiro
+rss	Rio Grande do Sul
+rss	Rixensart
+rss	Riyadh
+rss	Rome
+rss	Ronse
+rss	Saint-Ghislain
+rss	Saint-Petersburg
+rss	Saint-Saulve
+rss	Saitama
+rss	Sakarya
+rss	Sakhalin Region
+rss	Samara Region
+rss	Santa Catarina
+rss	Santiago
+rss	Sao Paulo
+rss	Saskatchewan
+rss	Schwyz
+rss	Scotland
+rss	Selangor
+rss	Seoul
+rss	Seraing
+rss	Schoten
+rss	Shandong
+rss	Shanghai
+rss	Sichuan
+rss	Sihanoukville
+rss	Siirt
+rss	Silly
+rss	Singapore
+rss	Sint-Agatha-Berchem
+rss	Sint-Genesius-Rode
+rss	Sint-Gillis-Waas
+rss	Sint-Niklaas
+rss	Sint-Pieters-Woluwe
+rss	Sint-Truiden
+rss	Småland
+rss	Soignies
+rss	Sormland
+rss	Soumagne
+rss	South Carolina
+rss	South Holland
+rss	South Korea
+rss	South Yorkshire
+rss	Spain
+rss	St-Louis
+rss	Stekene
+rss	Stockholm
+rss	Sud Kivu
+rss	Sverdlovsk Region
+rss	Switzerland
+rss	Taipei
+rss	Taiwan
+rss	Talca
+rss	Taoyuan
+rss	Tatarstan
+rss	Tbilisi
+rss	Teramo
+rss	Tervuren
+rss	Texas
+rss	Thanh Hoa
+rss	Theux
+rss	Thies
+rss	Ticino
+rss	Tielt-Winge
+rss	Tienen
+rss	Tilburg
+rss	Tipperary
+rss	Tokyo
+rss	Touba
+rss	Tournai
+rss	Tubize
+rss	Tver Region
+rss	UK
+rss	Ukkel
+rss	United Kingdom
+rss	USA
+rss	Usti nad Labem
+rss	Utah
+rss	Utrecht
+rss	Vasterbotten
+rss	Varmland
+rss	Vaud
+rss	Veneto
+rss	Victoria
+rss	Vienna
+rss	Vilvoorde
+rss	Vinhphuc
+rss	Virginia
+rss	Vorst
+rss	Waasmunster
+rss	Wales
+rss	Walloon Brabant
+rss	Wanze
+rss	Waterloo
+rss	Watermaal-Bosvoorde
+rss	Washington
+rss	Wellington
+rss	Wervik
+rss	West Coast Region
+rss	Western Australia
+rss	Wevelgem
+rss	Wicklow
+rss	Wisconsin
+rss	Wyoming
+rss	Yunnan
+rss	Zhejiang
+rss	Zielonogorskie
+rss	Zinnik
+rss	Zolder
+rss	Zonhoven
+rss	Zoutleeuw
+rss	Zurich
+rss	Africa
+rss	Asia
+rss	Europe
+rss	North America
+rss	Oceania
+rss	South America
+division	Aargau
+division	Aatalunya
+division	Abruzzo
+division	Afyon
+division	Aichi
+division	Aksaray
+division	Alagoas
+division	Alken
+division	Amazonas State
+division	Andalusia
+division	Andel
+division	Andenne
+division	Anderlecht
+division	Anhui
+division	Ankara
+division	Antioquia
+division	Antwerp
+division	Arizona
+division	Asse
+division	Ath
+division	Athens
+division	Auckland
+division	Austria
+division	Auvergne Rhone Alpes
+division	Auvergne-Rhône-Alpes
+division	Baden-Wuerttemberg
+division	Bahia
+division	Balikesir
+division	Bangkok
+division	Baranya
+division	Barcelona
+division	Basel
+division	Basel-Stadt
+division	Basque Country
+division	Bavaria
+division	Beersel
+division	Beijing
+division	Belgium
+division	Beringen
+division	Berloz
+division	Bern
+division	Bierbeek
+division	Blegny
+division	Blida
+division	Bogota
+division	Bonheiden
+division	Boufarik
+division	Bourgogne-France-Comté
+division	Boussu
+division	Boutersem
+division	Braine-l alleud
+division	Bratislava
+division	Bree
+division	Bretagne
+division	British Columbia
+division	Brussels
+division	Budapest
+division	Buryat Republic
+division	California
+division	Canakkale
+division	Canary Islands
+division	Castel di Sangro
+division	Castilla La Mancha
+division	Castilla Y León
+division	Castilla y Leon
+division	Catalunya
+division	Central Hungary
+division	Centre-Val de Loire
+division	Chaineux
+division	Charleroi
+division	Chechen Republic
+division	Chelyabinsk Region
+division	Chiba
+division	Chihuahua
+division	China
+division	Chongqing
+division	Chungcheongnam
+division	Comunitat Valenciana
+division	Colfontaine
+division	Connecticut
+division	Copenhagen
+division	Cork
+division	Courcelles
+division	Couthuin
+division	Couvin
+division	Croatia
+division	Dakar
+division	Dalhem
+division	Deinze
+division	Dendermonde
+division	Denmark
+division	Diamond Princess
+division	Dilbeek
+division	District of Columbia
+division	Distrito Federal
+division	Doha
+division	Doornik
+division	Drenthe
+division	Dublin
+division	Duesseldorf
+division	Ellezelles
+division	Elsene
+division	England
+division	Estado de Mexico
+division	Eupen
+division	Eskisehir
+division	Espirito Santo
+division	Estinnes
+division	Etterbeek
+division	Europe
+division	Finland
+division	Flanders
+division	Flevoland
+division	Florida
+division	Fontaine-l Eveque
+division	Frameries
+division	France
+division	Friesland
+division	Friuli Venezia Giulia
+division	Fujian
+division	Galicia
+division	Ganshoren
+division	Gavleborgs lan
+division	Gelderland
+division	Genappe
+division	Geneva
+division	Gent
+division	Georgia
+division	Geraardsbergen
+division	Germany
+division	Ghent
+division	Gierle
+division	Gilgit Baltistan
+division	Goiais
+division	Grand Est
+division	Grand Canary Islands
+division	Grand Princess
+division	Graubünden
+division	Greater Accra
+division	Grimbergen
+division	Guangdong
+division	Guayas
+division	Gujarat
+division	Gyeonggi
+division	Halland
+division	Hangzhou
+division	Hasselt
+division	Hauts de France
+division	Havelange
+division	Hawaii
+division	Hawali
+division	Helden
+division	Helsinki
+division	Hemiksem
+division	Henan
+division	Henri-chapelle
+division	Herent
+division	Herselt
+division	Herstal
+division	Herve
+division	Holsbeek
+division	Ho Chi Minh City
+division	Hoegaarden
+division	Hong Kong
+division	Honnelles
+division	Houthalen-Helchteren
+division	Hubei
+division	Huldenberg
+division	Idaho
+division	Ile De France
+division	Illinois
+division	Indiana
+division	Iowa
+division	Iran
+division	Ireland
+division	Ishikawa
+division	Istanbul
+division	Italy
+division	Japan
+division	Jiangsu
+division	Jiangxi
+division	Kalmthout
+division	Kanagawa
+division	Kansai
+division	Kansas
+division	Kanto
+division	Karaman
+division	Karnataka
+division	Kastamonu
+division	Kasterlee
+division	Kathmandu
+division	Kaulile
+division	Kayseri
+division	Keelung
+division	Kerala
+division	Kessel-Lo
+division	Khabarovsk Region
+division	Khyber Pakhtunkhwa
+division	Kinshasa
+division	Kochi
+division	Knokke-Heist
+division	Kocaeli
+division	Komen
+division	Konya
+division	Kosice
+division	Kostoliste
+division	Kraainem
+division	Krasnodar Region
+division	Krasnoyarsk Region
+division	Kuala Lumpur
+division	Kuwait
+division	KwaZulu-Natal
+division	Kyoto
+division	La Louviere
+division	La Rioja
+division	Lagos
+division	Lanaken
+division	Lapland
+division	Lasne
+division	Lazio
+division	Leuven
+division	Liège
+division	Lima
+division	Limburg
+division	Limerick
+division	Linter
+division	Lipetsk Region
+division	Lisbon
+division	Lombardy
+division	Louisiana
+division	Louth
+division	Lubbeek
+division	Lucerne
+division	Lummen
+division	Luxembourg
+division	Madrid
+division	Malopolskie
+division	Manitoba
+division	Marche
+division	Martin
+division	Maryland
+division	Massachusetts
+division	Mbour
+division	Medellin
+division	Melbourne
+division	Merelbeke
+division	Mexico City
+division	Michigan
+division	Minas Gerais
+division	Minnesota
+division	Missouri
+division	Mons
+division	Montevideo
+division	Montigny-le-Tilleul
+division	Moscow
+division	Moscow Region
+division	Mouscron
+division	Munich
+division	Namur
+division	NanChang
+division	Nara
+division	Nebraska
+division	Netherlands
+division	Nevada
+division	Nevele
+division	Nevsehir
+division	New Brunswick
+division	New Jersey
+division	New Hampshire
+division	New South Wales
+division	New Taipei City
+division	Newfoundland and Labrador
+division	Nieuwerkerken
+division	Nonthaburi
+division	Normandie
+division	Normandie
+division	Norrbotten
+division	North Brabant
+division	North Carolina
+division	North Holland
+division	North Rhine Westphalia
+division	Northern Territory
+division	Northern Ireland
+division	Nottinghamshire
+division	Nova Scotia
+division	Novosibirsk Region
+division	Oevel
+division	Ohio
+division	Omsk Region
+division	Ontario
+division	Oostrozebeke
+division	Orebro lan
+division	Oregon
+division	Orenburg Region
+division	Osaka
+division	Oslo
+division	Ostergotland
+division	Otago
+division	Oudergem
+division	Overijssel
+division	Panama City
+division	Pays de la Loire
+division	Pelt
+division	Pennsylvania
+division	Perm Region
+division	Pichincha
+division	Pomorskie
+division	Portugal
+division	Primorskiy Region
+division	Pskov Region
+division	Puebla
+division	Prague
+division	Prince Edward Island
+division	Quangning
+division	Quaregnon
+division	Queretaro
+division	Queensland
+division	Quevy
+division	Quito
+division	Ramat Gan
+division	Ravels
+division	Red River Delta
+division	Republic of Buryatia
+division	Republic of Crymea
+division	Republic of Kabardino-Balkaria
+division	Republic of Sakha
+division	Republic of Tatarstan
+division	Reykjavik
+division	Rhode Island
+division	Riemst
+division	Rio de Janeiro
+division	Rio Grande do Sul
+division	Rixensart
+division	Riyadh
+division	Rome
+division	Ronse
+division	Saint-Ghislain
+division	Saint-Petersburg
+division	Saint-Saulve
+division	Saitama
+division	Sakarya
+division	Sakhalin Region
+division	Samara Region
+division	Santa Catarina
+division	Santiago
+division	Sao Paulo
+division	Saskatchewan
+division	Schwyz
+division	Scotland
+division	Selangor
+division	Seoul
+division	Seraing
+division	Schoten
+division	Shandong
+division	Shanghai
+division	Sichuan
+division	Sihanoukville
+division	Siirt
+division	Silly
+division	Singapore
+division	Sint-Agatha-Berchem
+division	Sint-Genesius-Rode
+division	Sint-Gillis-Waas
+division	Sint-Niklaas
+division	Sint-Pieters-Woluwe
+division	Sint-Truiden
+division	Småland
+division	Soignies
+division	Sormland
+division	Soumagne
+division	South Carolina
+division	South Holland
+division	South Korea
+division	South Yorkshire
+division	Spain
+division	St-Louis
+division	Stekene
+division	Stockholm
+division	Sud Kivu
+division	Sverdlovsk Region
+division	Switzerland
+division	Taipei
+division	Taiwan
+division	Talca
+division	Taoyuan
+division	Tatarstan
+division	Tbilisi
+division	Teramo
+division	Tervuren
+division	Texas
+division	Thanh Hoa
+division	Theux
+division	Thies
+division	Ticino
+division	Tielt-Winge
+division	Tienen
+division	Tilburg
+division	Tipperary
+division	Tokyo
+division	Touba
+division	Tournai
+division	Tubize
+division	Tver Region
+division	UK
+division	Ukkel
+division	United Kingdom
+division	USA
+division	Usti nad Labem
+division	Utah
+division	Utrecht
+division	Vasterbotten
+division	Varmland
+division	Vaud
+division	Veneto
+division	Victoria
+division	Vienna
+division	Vilvoorde
+division	Vinhphuc
+division	Virginia
+division	Vorst
+division	Waasmunster
+division	Wales
+division	Walloon Brabant
+division	Wanze
+division	Waterloo
+division	Watermaal-Bosvoorde
+division	Washington
+division	Wellington
+division	Wervik
+division	West Coast Region
+division	Western Australia
+division	Wevelgem
+division	Wicklow
+division	Wisconsin
+division	Wyoming
+division	Yunnan
+division	Zhejiang
+division	Zielonogorskie
+division	Zinnik
+division	Zolder
+division	Zonhoven
+division	Zoutleeuw
+division	Zurich
+division	Africa
+division	Asia
+division	Europe
+division	North America
+division	Oceania
+division	South America
+division	Alberta
+division	British Columbia
+division	Manitoba
+division	New Brunswick
+division	Newfoundland and Labrador
+division	Northwest Territory
+division	Nova Scotia
+division	Ontario
+division	Prince Edward Island
+division	Quebec
+division	Saskatchewan
+division	Yukon
+division	Argentina
+division	Asia
+division	Austria
+division	Croatia
+division	Denmark
+division	Democratic Republic of the Congo
+division	Ecuador
+division	Egypt
+division	England
+division	Georgia
+division	Ghana
+division	Iceland
+division	Iran
+division	Israel
+division	Luxembourg
+division	Norway
+division	Panama
+division	Peru
+division	Philippines
+division	Sri Lanka
+division	Turkey
+division	Africa
+division	Europe
+division	North America
+division	Oceania
+division	South America
+division	inde
+division	états-unis
+division	dominique
+division	rép. dominicaine
+division	suisse
+division	royaume-uni
+division	cuba
+division	australie
+division	puerto rico
+division	émirat arabes unis
+division	martinique
+division	guadeloupe
+division	mexique
+division	costa rica
+division	colombie
+division	jamaìque
+division	cameroun
+division	thailande
+division	afrique du sud
+division	haiti
+division	iles vierges (é-u)
+division	guatemala
+division	nouvelle-zélande
+division	indonésie
+division	aruba
+division	pologne
+division	republique tchèque
+division	iles turques-caiques
+division	zimbabwe
+division	jordanie
+division	argentine
+division	sénégal
+division	iraq
+division	algerie
+division	maroc
+division	cambodge
+division	Canada
+division	Aargau
+division	Aatalunya
+division	Abruzzo
+division	Afyon
+division	Aichi
+division	Aksaray
+division	Alagoas
+division	Alken
+division	Amazonas State
+division	Andalusia
+division	Andel
+division	Andenne
+division	Anderlecht
+division	Anhui
+division	Ankara
+division	Antioquia
+division	Antwerp
+division	Arizona
+division	Asse
+division	Ath
+division	Athens
+division	Auckland
+division	Austria
+division	Auvergne Rhone Alpes
+division	Auvergne-Rhône-Alpes
+division	Baden-Wuerttemberg
+division	Bahia
+division	Balikesir
+division	Bangkok
+division	Baranya
+division	Barcelona
+division	Basel
+division	Basel-Stadt
+division	Basque Country
+division	Bavaria
+division	Beersel
+division	Beijing
+division	Belgium
+division	Beringen
+division	Berloz
+division	Bern
+division	Bierbeek
+division	Blegny
+division	Blida
+division	Bogota
+division	Bonheiden
+division	Boufarik
+division	Bourgogne-France-Comté
+division	Boussu
+division	Boutersem
+division	Braine-l alleud
+division	Bratislava
+division	Bree
+division	Bretagne
+division	British Columbia
+division	Brussels
+division	Budapest
+division	Buryat Republic
+division	California
+division	Canakkale
+division	Canary Islands
+division	Castel di Sangro
+division	Castilla La Mancha
+division	Castilla Y León
+division	Castilla y Leon
+division	Catalunya
+division	Central Hungary
+division	Centre-Val de Loire
+division	Chaineux
+division	Charleroi
+division	Chechen Republic
+division	Chelyabinsk Region
+division	Chiba
+division	Chihuahua
+division	China
+division	Chongqing
+division	Chungcheongnam
+division	Comunitat Valenciana
+division	Colfontaine
+division	Connecticut
+division	Copenhagen
+division	Cork
+division	Courcelles
+division	Couthuin
+division	Couvin
+division	Croatia
+division	Dakar
+division	Dalhem
+division	Deinze
+division	Dendermonde
+division	Denmark
+division	Diamond Princess
+division	Dilbeek
+division	District of Columbia
+division	Distrito Federal
+division	Doha
+division	Doornik
+division	Drenthe
+division	Dublin
+division	Duesseldorf
+division	Ellezelles
+division	Elsene
+division	England
+division	Estado de Mexico
+division	Eupen
+division	Eskisehir
+division	Espirito Santo
+division	Estinnes
+division	Etterbeek
+division	Europe
+division	Finland
+division	Flanders
+division	Flevoland
+division	Florida
+division	Fontaine-l Eveque
+division	Frameries
+division	France
+division	Friesland
+division	Friuli Venezia Giulia
+division	Fujian
+division	Galicia
+division	Ganshoren
+division	Gavleborgs lan
+division	Gelderland
+division	Genappe
+division	Geneva
+division	Gent
+division	Georgia
+division	Geraardsbergen
+division	Germany
+division	Ghent
+division	Gierle
+division	Gilgit Baltistan
+division	Goiais
+division	Grand Est
+division	Grand Canary Islands
+division	Grand Princess
+division	Graubünden
+division	Greater Accra
+division	Grimbergen
+division	Guangdong
+division	Guayas
+division	Gujarat
+division	Gyeonggi
+division	Halland
+division	Hangzhou
+division	Hasselt
+division	Hauts de France
+division	Havelange
+division	Hawaii
+division	Hawali
+division	Helden
+division	Helsinki
+division	Hemiksem
+division	Henan
+division	Henri-chapelle
+division	Herent
+division	Herselt
+division	Herstal
+division	Herve
+division	Holsbeek
+division	Ho Chi Minh City
+division	Hoegaarden
+division	Hong Kong
+division	Honnelles
+division	Houthalen-Helchteren
+division	Hubei
+division	Huldenberg
+division	Idaho
+division	Ile De France
+division	Illinois
+division	Indiana
+division	Iowa
+division	Iran
+division	Ireland
+division	Ishikawa
+division	Istanbul
+division	Italy
+division	Japan
+division	Jiangsu
+division	Jiangxi
+division	Kalmthout
+division	Kanagawa
+division	Kansai
+division	Kansas
+division	Kanto
+division	Karaman
+division	Karnataka
+division	Kastamonu
+division	Kasterlee
+division	Kathmandu
+division	Kaulile
+division	Kayseri
+division	Keelung
+division	Kerala
+division	Kessel-Lo
+division	Khabarovsk Region
+division	Khyber Pakhtunkhwa
+division	Kinshasa
+division	Kochi
+division	Knokke-Heist
+division	Kocaeli
+division	Komen
+division	Konya
+division	Kosice
+division	Kostoliste
+division	Kraainem
+division	Krasnodar Region
+division	Krasnoyarsk Region
+division	Kuala Lumpur
+division	Kuwait
+division	KwaZulu-Natal
+division	Kyoto
+division	La Louviere
+division	La Rioja
+division	Lagos
+division	Lanaken
+division	Lapland
+division	Lasne
+division	Lazio
+division	Leuven
+division	Liège
+division	Lima
+division	Limburg
+division	Limerick
+division	Linter
+division	Lipetsk Region
+division	Lisbon
+division	Lombardy
+division	Louisiana
+division	Louth
+division	Lubbeek
+division	Lucerne
+division	Lummen
+division	Luxembourg
+division	Madrid
+division	Malopolskie
+division	Manitoba
+division	Marche
+division	Martin
+division	Maryland
+division	Massachusetts
+division	Mbour
+division	Medellin
+division	Melbourne
+division	Merelbeke
+division	Mexico City
+division	Michigan
+division	Minas Gerais
+division	Minnesota
+division	Missouri
+division	Mons
+division	Montevideo
+division	Montigny-le-Tilleul
+division	Moscow
+division	Moscow Region
+division	Mouscron
+division	Munich
+division	Namur
+division	NanChang
+division	Nara
+division	Nebraska
+division	Netherlands
+division	Nevada
+division	Nevele
+division	Nevsehir
+division	New Brunswick
+division	New Jersey
+division	New Hampshire
+division	New South Wales
+division	New Taipei City
+division	Newfoundland and Labrador
+division	Nieuwerkerken
+division	Nonthaburi
+division	Normandie
+division	Normandie
+division	Norrbotten
+division	North Brabant
+division	North Carolina
+division	North Holland
+division	North Rhine Westphalia
+division	Northern Territory
+division	Northern Ireland
+division	Nottinghamshire
+division	Nova Scotia
+division	Novosibirsk Region
+division	Oevel
+division	Ohio
+division	Omsk Region
+division	Ontario
+division	Oostrozebeke
+division	Orebro lan
+division	Oregon
+division	Orenburg Region
+division	Osaka
+division	Oslo
+division	Ostergotland
+division	Otago
+division	Oudergem
+division	Overijssel
+division	Panama City
+division	Pays de la Loire
+division	Pelt
+division	Pennsylvania
+division	Perm Region
+division	Pichincha
+division	Pomorskie
+division	Portugal
+division	Primorskiy Region
+division	Pskov Region
+division	Puebla
+division	Prague
+division	Prince Edward Island
+division	Quangning
+division	Quaregnon
+division	Queretaro
+division	Queensland
+division	Quevy
+division	Quito
+division	Ramat Gan
+division	Ravels
+division	Red River Delta
+division	Republic of Buryatia
+division	Republic of Crymea
+division	Republic of Kabardino-Balkaria
+division	Republic of Sakha
+division	Republic of Tatarstan
+division	Reykjavik
+division	Rhode Island
+division	Riemst
+division	Rio de Janeiro
+division	Rio Grande do Sul
+division	Rixensart
+division	Riyadh
+division	Rome
+division	Ronse
+division	Saint-Ghislain
+division	Saint-Petersburg
+division	Saint-Saulve
+division	Saitama
+division	Sakarya
+division	Sakhalin Region
+division	Samara Region
+division	Santa Catarina
+division	Santiago
+division	Sao Paulo
+division	Saskatchewan
+division	Schwyz
+division	Scotland
+division	Selangor
+division	Seoul
+division	Seraing
+division	Schoten
+division	Shandong
+division	Shanghai
+division	Sichuan
+division	Sihanoukville
+division	Siirt
+division	Silly
+division	Singapore
+division	Sint-Agatha-Berchem
+division	Sint-Genesius-Rode
+division	Sint-Gillis-Waas
+division	Sint-Niklaas
+division	Sint-Pieters-Woluwe
+division	Sint-Truiden
+division	Småland
+division	Soignies
+division	Sormland
+division	Soumagne
+division	South Carolina
+division	South Holland
+division	South Korea
+division	South Yorkshire
+division	Spain
+division	St-Louis
+division	Stekene
+division	Stockholm
+division	Sud Kivu
+division	Sverdlovsk Region
+division	Switzerland
+division	Taipei
+division	Taiwan
+division	Talca
+division	Taoyuan
+division	Tatarstan
+division	Tbilisi
+division	Teramo
+division	Tervuren
+division	Texas
+division	Thanh Hoa
+division	Theux
+division	Thies
+division	Ticino
+division	Tielt-Winge
+division	Tienen
+division	Tilburg
+division	Tipperary
+division	Tokyo
+division	Touba
+division	Tournai
+division	Tubize
+division	Tver Region
+division	UK
+division	Ukkel
+division	United Kingdom
+division	USA
+division	Usti nad Labem
+division	Utah
+division	Utrecht
+division	Vasterbotten
+division	Varmland
+division	Vaud
+division	Veneto
+division	Victoria
+division	Vienna
+division	Vilvoorde
+division	Vinhphuc
+division	Virginia
+division	Vorst
+division	Waasmunster
+division	Wales
+division	Walloon Brabant
+division	Wanze
+division	Waterloo
+division	Watermaal-Bosvoorde
+division	Washington
+division	Wellington
+division	Wervik
+division	West Coast Region
+division	Western Australia
+division	Wevelgem
+division	Wicklow
+division	Wisconsin
+division	Wyoming
+division	Yunnan
+division	Zhejiang
+division	Zielonogorskie
+division	Zinnik
+division	Zolder
+division	Zonhoven
+division	Zoutleeuw
+division	Zurich
+division	Africa
+division	Asia
+division	Europe
+division	North America
+division	Oceania
+division	South America
+country	Argentina
+country	Asia
+country	Austria
+country	Croatia
+country	Denmark
+country	Democratic Republic of the Congo
+country	Ecuador
+country	Egypt
+country	England
+country	Georgia
+country	Ghana
+country	Iceland
+country	Iran
+country	Israel
+country	Luxembourg
+country	Norway
+country	Panama
+country	Peru
+country	Philippines
+country	Sri Lanka
+country	Turkey
+country	Africa
+country	Europe
+country	North America
+country	Oceania
+country	South America
+country	inde
+country	états-unis
+country	dominique
+country	rép. dominicaine
+country	suisse
+country	royaume-uni
+country	cuba
+country	australie
+country	puerto rico
+country	émirat arabes unis
+country	martinique
+country	guadeloupe
+country	mexique
+country	costa rica
+country	colombie
+country	jamaìque
+country	cameroun
+country	thailande
+country	afrique du sud
+country	haiti
+country	iles vierges (é-u)
+country	guatemala
+country	nouvelle-zélande
+country	indonésie
+country	aruba
+country	pologne
+country	republique tchèque
+country	iles turques-caiques
+country	zimbabwe
+country	jordanie
+country	argentine
+country	sénégal
+country	iraq
+country	algerie
+country	maroc
+country	cambodge
+country	Canada
+country	Aargau
+country	Aatalunya
+country	Abruzzo
+country	Afyon
+country	Aichi
+country	Aksaray
+country	Alagoas
+country	Alken
+country	Amazonas State
+country	Andalusia
+country	Andel
+country	Andenne
+country	Anderlecht
+country	Anhui
+country	Ankara
+country	Antioquia
+country	Antwerp
+country	Arizona
+country	Asse
+country	Ath
+country	Athens
+country	Auckland
+country	Austria
+country	Auvergne Rhone Alpes
+country	Auvergne-Rhône-Alpes
+country	Baden-Wuerttemberg
+country	Bahia
+country	Balikesir
+country	Bangkok
+country	Baranya
+country	Barcelona
+country	Basel
+country	Basel-Stadt
+country	Basque Country
+country	Bavaria
+country	Beersel
+country	Beijing
+country	Belgium
+country	Beringen
+country	Berloz
+country	Bern
+country	Bierbeek
+country	Blegny
+country	Blida
+country	Bogota
+country	Bonheiden
+country	Boufarik
+country	Bourgogne-France-Comté
+country	Boussu
+country	Boutersem
+country	Braine-l alleud
+country	Bratislava
+country	Bree
+country	Bretagne
+country	British Columbia
+country	Brussels
+country	Budapest
+country	Buryat Republic
+country	California
+country	Canakkale
+country	Canary Islands
+country	Castel di Sangro
+country	Castilla La Mancha
+country	Castilla Y León
+country	Castilla y Leon
+country	Catalunya
+country	Central Hungary
+country	Centre-Val de Loire
+country	Chaineux
+country	Charleroi
+country	Chechen Republic
+country	Chelyabinsk Region
+country	Chiba
+country	Chihuahua
+country	China
+country	Chongqing
+country	Chungcheongnam
+country	Comunitat Valenciana
+country	Colfontaine
+country	Connecticut
+country	Copenhagen
+country	Cork
+country	Courcelles
+country	Couthuin
+country	Couvin
+country	Croatia
+country	Dakar
+country	Dalhem
+country	Deinze
+country	Dendermonde
+country	Denmark
+country	Diamond Princess
+country	Dilbeek
+country	District of Columbia
+country	Distrito Federal
+country	Doha
+country	Doornik
+country	Drenthe
+country	Dublin
+country	Duesseldorf
+country	Ellezelles
+country	Elsene
+country	England
+country	Estado de Mexico
+country	Eupen
+country	Eskisehir
+country	Espirito Santo
+country	Estinnes
+country	Etterbeek
+country	Europe
+country	Finland
+country	Flanders
+country	Flevoland
+country	Florida
+country	Fontaine-l Eveque
+country	Frameries
+country	France
+country	Friesland
+country	Friuli Venezia Giulia
+country	Fujian
+country	Galicia
+country	Ganshoren
+country	Gavleborgs lan
+country	Gelderland
+country	Genappe
+country	Geneva
+country	Gent
+country	Georgia
+country	Geraardsbergen
+country	Germany
+country	Ghent
+country	Gierle
+country	Gilgit Baltistan
+country	Goiais
+country	Grand Est
+country	Grand Canary Islands
+country	Grand Princess
+country	Graubünden
+country	Greater Accra
+country	Grimbergen
+country	Guangdong
+country	Guayas
+country	Gujarat
+country	Gyeonggi
+country	Halland
+country	Hangzhou
+country	Hasselt
+country	Hauts de France
+country	Havelange
+country	Hawaii
+country	Hawali
+country	Helden
+country	Helsinki
+country	Hemiksem
+country	Henan
+country	Henri-chapelle
+country	Herent
+country	Herselt
+country	Herstal
+country	Herve
+country	Holsbeek
+country	Ho Chi Minh City
+country	Hoegaarden
+country	Hong Kong
+country	Honnelles
+country	Houthalen-Helchteren
+country	Hubei
+country	Huldenberg
+country	Idaho
+country	Ile De France
+country	Illinois
+country	Indiana
+country	Iowa
+country	Iran
+country	Ireland
+country	Ishikawa
+country	Istanbul
+country	Italy
+country	Japan
+country	Jiangsu
+country	Jiangxi
+country	Kalmthout
+country	Kanagawa
+country	Kansai
+country	Kansas
+country	Kanto
+country	Karaman
+country	Karnataka
+country	Kastamonu
+country	Kasterlee
+country	Kathmandu
+country	Kaulile
+country	Kayseri
+country	Keelung
+country	Kerala
+country	Kessel-Lo
+country	Khabarovsk Region
+country	Khyber Pakhtunkhwa
+country	Kinshasa
+country	Kochi
+country	Knokke-Heist
+country	Kocaeli
+country	Komen
+country	Konya
+country	Kosice
+country	Kostoliste
+country	Kraainem
+country	Krasnodar Region
+country	Krasnoyarsk Region
+country	Kuala Lumpur
+country	Kuwait
+country	KwaZulu-Natal
+country	Kyoto
+country	La Louviere
+country	La Rioja
+country	Lagos
+country	Lanaken
+country	Lapland
+country	Lasne
+country	Lazio
+country	Leuven
+country	Liège
+country	Lima
+country	Limburg
+country	Limerick
+country	Linter
+country	Lipetsk Region
+country	Lisbon
+country	Lombardy
+country	Louisiana
+country	Louth
+country	Lubbeek
+country	Lucerne
+country	Lummen
+country	Luxembourg
+country	Madrid
+country	Malopolskie
+country	Manitoba
+country	Marche
+country	Martin
+country	Maryland
+country	Massachusetts
+country	Mbour
+country	Medellin
+country	Melbourne
+country	Merelbeke
+country	Mexico City
+country	Michigan
+country	Minas Gerais
+country	Minnesota
+country	Missouri
+country	Mons
+country	Montevideo
+country	Montigny-le-Tilleul
+country	Moscow
+country	Moscow Region
+country	Mouscron
+country	Munich
+country	Namur
+country	NanChang
+country	Nara
+country	Nebraska
+country	Netherlands
+country	Nevada
+country	Nevele
+country	Nevsehir
+country	New Brunswick
+country	New Jersey
+country	New Hampshire
+country	New South Wales
+country	New Taipei City
+country	Newfoundland and Labrador
+country	Nieuwerkerken
+country	Nonthaburi
+country	Normandie
+country	Normandie
+country	Norrbotten
+country	North Brabant
+country	North Carolina
+country	North Holland
+country	North Rhine Westphalia
+country	Northern Territory
+country	Northern Ireland
+country	Nottinghamshire
+country	Nova Scotia
+country	Novosibirsk Region
+country	Oevel
+country	Ohio
+country	Omsk Region
+country	Ontario
+country	Oostrozebeke
+country	Orebro lan
+country	Oregon
+country	Orenburg Region
+country	Osaka
+country	Oslo
+country	Ostergotland
+country	Otago
+country	Oudergem
+country	Overijssel
+country	Panama City
+country	Pays de la Loire
+country	Pelt
+country	Pennsylvania
+country	Perm Region
+country	Pichincha
+country	Pomorskie
+country	Portugal
+country	Primorskiy Region
+country	Pskov Region
+country	Puebla
+country	Prague
+country	Prince Edward Island
+country	Quangning
+country	Quaregnon
+country	Queretaro
+country	Queensland
+country	Quevy
+country	Quito
+country	Ramat Gan
+country	Ravels
+country	Red River Delta
+country	Republic of Buryatia
+country	Republic of Crymea
+country	Republic of Kabardino-Balkaria
+country	Republic of Sakha
+country	Republic of Tatarstan
+country	Reykjavik
+country	Rhode Island
+country	Riemst
+country	Rio de Janeiro
+country	Rio Grande do Sul
+country	Rixensart
+country	Riyadh
+country	Rome
+country	Ronse
+country	Saint-Ghislain
+country	Saint-Petersburg
+country	Saint-Saulve
+country	Saitama
+country	Sakarya
+country	Sakhalin Region
+country	Samara Region
+country	Santa Catarina
+country	Santiago
+country	Sao Paulo
+country	Saskatchewan
+country	Schwyz
+country	Scotland
+country	Selangor
+country	Seoul
+country	Seraing
+country	Schoten
+country	Shandong
+country	Shanghai
+country	Sichuan
+country	Sihanoukville
+country	Siirt
+country	Silly
+country	Singapore
+country	Sint-Agatha-Berchem
+country	Sint-Genesius-Rode
+country	Sint-Gillis-Waas
+country	Sint-Niklaas
+country	Sint-Pieters-Woluwe
+country	Sint-Truiden
+country	Småland
+country	Soignies
+country	Sormland
+country	Soumagne
+country	South Carolina
+country	South Holland
+country	South Korea
+country	South Yorkshire
+country	Spain
+country	St-Louis
+country	Stekene
+country	Stockholm
+country	Sud Kivu
+country	Sverdlovsk Region
+country	Switzerland
+country	Taipei
+country	Taiwan
+country	Talca
+country	Taoyuan
+country	Tatarstan
+country	Tbilisi
+country	Teramo
+country	Tervuren
+country	Texas
+country	Thanh Hoa
+country	Theux
+country	Thies
+country	Ticino
+country	Tielt-Winge
+country	Tienen
+country	Tilburg
+country	Tipperary
+country	Tokyo
+country	Touba
+country	Tournai
+country	Tubize
+country	Tver Region
+country	UK
+country	Ukkel
+country	United Kingdom
+country	USA
+country	Usti nad Labem
+country	Utah
+country	Utrecht
+country	Vasterbotten
+country	Varmland
+country	Vaud
+country	Veneto
+country	Victoria
+country	Vienna
+country	Vilvoorde
+country	Vinhphuc
+country	Virginia
+country	Vorst
+country	Waasmunster
+country	Wales
+country	Walloon Brabant
+country	Wanze
+country	Waterloo
+country	Watermaal-Bosvoorde
+country	Washington
+country	Wellington
+country	Wervik
+country	West Coast Region
+country	Western Australia
+country	Wevelgem
+country	Wicklow
+country	Wisconsin
+country	Wyoming
+country	Yunnan
+country	Zhejiang
+country	Zielonogorskie
+country	Zinnik
+country	Zolder
+country	Zonhoven
+country	Zoutleeuw
+country	Zurich
+country	Africa
+country	Asia
+country	Europe
+country	North America
+country	Oceania
+country	South America

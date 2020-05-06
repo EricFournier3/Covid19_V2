@@ -1,0 +1,89 @@
+{
+  "title": "Genomic epidemiology of novel coronavirus",
+  "build_url": "https://github.com/nextstrain/ncov",
+  "maintainers": [
+    {"name": "Eric Fournier", "url": "https://github.com/EricFournier3"},
+    {"name": "Pierre-Olivier Quirion", "url": "https://github.com/poquirion"}
+  ],
+  "colorings": [
+    {
+      "key": "rta",
+      "title": "RTA",
+      "type": "categorical"
+    },
+    {
+      "key": "rss",
+      "title": "RSS",
+      "type": "categorical"
+    },
+    {
+      "key": "division",
+      "title": "Division",
+      "type": "categorical"
+    },
+    {
+      "key": "country",
+      "title": "Country",
+      "type": "categorical"
+    },
+    {
+      "key": "age",
+      "title": "Age",
+      "type": "continuous"
+    },
+    {
+      "key": "sex",
+      "title": "Sex",
+      "type": "categorical"
+    },
+    {
+      "key": "rta_exposure",
+      "title": "RTA exposure",
+      "type": "categorical"
+    },
+    {
+      "key": "rss_exposure",
+      "title": "RSS exposure",
+      "type": "categorical"
+    },
+    {
+      "key": "division_exposure",
+      "title": "Division exposure",
+      "type": "categorical"
+    },
+    {
+      "key": "country_exposure",
+      "title": "Country exposure",
+      "type": "categorical"
+    },
+    {
+      "key": "ct",
+      "title": "Ct",
+      "type": "continuous"
+    }
+  ],
+  "geo_resolutions": [
+    "rta",
+    "rss",
+    "division",
+    "country"
+  ],
+  "display_defaults": {
+    "color_by": "country",
+    "distance_measure": "num_date",
+    "geo_resolution": "country",
+    "map_triplicate": true,
+    "branch_label": "none"
+  },
+  "filters": [
+    "rta",
+    "rss",
+    "division",
+    "country"
+  ],
+  "panels": [
+    "tree",
+    "map",
+    "entropy"
+  ]
+}
