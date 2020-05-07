@@ -278,14 +278,14 @@ rule align:
         reference = files.reference
     output:
         alignment = "results/split_alignments/{cluster}.fasta"
-    threads: 2
+    threads: -1
     shell:
         """
         augur align \
             --sequences {input.sequences} \
             --reference-sequence {input.reference} \
             --output {output.alignment} \
-            --nthreads {threads} \
+            --nthreads auto \
             --remove-reference \
             --fill-gaps
         """
