@@ -40,15 +40,17 @@ def get_todays_date():
 # Add new regions here!
 #EricF comment here
 #REGIONS = ["_africa", "_asia", "_europe", "_north-america", "_oceania", "_south-america", "_global"]
-#REGIONS = ["_quebec","_global"]
-REGIONS = ["_global"]
+REGIONS = ["_quebec","_global"]
+#REGIONS = ["_global"]
 
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
 script_dir = os.path.join(current_dir,"scripts")
 input_script = os.path.join(nextstrain_base_dir,"scripts","PrepareInput.sh")
 config_dir = os.path.join(current_dir,"config")
+data_dir = os.path.join(current_dir,"data")
 yaml_config = os.path.join(nextstrain_base_dir,"config","Snakefile.yaml")
+
 
 try:
     os.mkdir(script_dir)
@@ -66,6 +68,9 @@ os.chmod(os.path.join(script_dir,os.path.basename(input_script)),stat.S_IRWXU | 
 shutil.copyfile(yaml_config,os.path.join(config_dir,os.path.basename(yaml_config)))
 os.chmod(os.path.join(config_dir,os.path.basename(yaml_config)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
 
+os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir)
+
+
 wildcard_constraints:
     region = "|".join(REGIONS) + "||",
     date = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
@@ -74,13 +79,14 @@ configfile: "config/Snakefile.yaml"
 #EricF comment here
 #localrules: download
 
+
 # simple rule to call snakemake for outsider users
 rule all:
     input:
         auspice_json = "auspice/ncov.json",
         tip_frequencies_json = "auspice/ncov_tip-frequencies.json"
 
-rule files:
+rule files: 
     params:
         include = "config/include.txt",
         exclude = "config/exclude.txt",
@@ -97,6 +103,45 @@ rule files:
         clades = "config/clades.tsv"
 
 files = rules.files.params
+
+'''
+rule prepare_input:
+    message:
+        """
+        Prepare sequences.fasta and metadata.tsv
+        """
+    output:
+        sequences = "data/sequences.fasta",
+        metadata = "data/metadata.tsv"
+    params:
+        work_dir = current_dir,
+        nextstrain_dir = nextstrain_base_dir
+    shell:
+        """
+        ./scripts/PrepareInput.sh {params.work_dir} {params.nextstrain_dir}
+        """
+'''
+
+'''
+EricF comment here
+rule files:
+    params:
+        include = "config/include.txt",
+        exclude = "config/exclude.txt",
+        reference = "config/reference.gb",
+        outgroup = "config/outgroup.fasta",
+        ordering = "config/ordering.tsv",
+        color_schemes = "config/color_schemes.tsv",
+        auspice_config = "config/auspice_config.json",
+        auspice_config_gisaid = "config/auspice_config_gisaid.json",
+        auspice_config_zh = "config/auspice_config_zh.json",
+        lat_longs = "config/lat_longs.tsv",
+        description = "config/description.md",
+        description_zh = "config/description_zh.md",
+        clades = "config/clades.tsv"
+'''
+
+
 #EricF add
 sequences = config["sequences"],
 metadata = config["metadata"]
@@ -155,22 +200,6 @@ rule filter:
 '''
 
 
-rule prepare_input:
-    message:
-        """
-        Prepare sequences.fasta and metadata.tsv
-        """
-    output:
-        sequences = "data/sequences.fasta",
-        metadata = "data/metadata.tsv"
-    params:
-        work_dir = current_dir,
-        nextstrain_dir = nextstrain_base_dir
-    shell:
-        """
-        ./scripts/PrepareInput.sh {params.work_dir} {params.nextstrain_dir}
-        """
-
 rule filter:
     message:
         """
@@ -179,8 +208,8 @@ rule filter:
           - minimum genome length of {params.min_length}
         """
     input:
-        sequences = rules.prepare_input.output.sequences,
-        metadata = rules.prepare_input.output.metadata,
+        sequences = sequences,
+        metadata = metadata,
         include = files.include,
         exclude = files.exclude
     output:

@@ -26,13 +26,14 @@ BuildFramework(){
 
    touch ${init_file}
    mkdir ${temp_dir}
+   mkdir ${data_dir}
    mkdir ${gisaid_dir}
    mkdir ${lspq_dir}  
 }
 
 TransferConfigFiles(){
   #TODO wget
-  ext=(".txt" ".tsv" ".json")
+  ext=(".txt" ".tsv" ".json" ".gb" ".md")
 
   for _ext in ${ext[@]}
     do
