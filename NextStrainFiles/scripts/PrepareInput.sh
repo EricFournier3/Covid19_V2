@@ -7,8 +7,8 @@ temp_dir=${work_dir}"temp/"
 config_dir=${work_dir}"config"/
 data_dir=${work_dir}"data/"
 script_dir=${work_dir}"scripts/"
-gisaid_dir=${work_dir}"gisaid"
-lspq_dir=${work_dir}"lspq"
+gisaid_dir=${work_dir}"gisaid/"
+lspq_dir=${work_dir}"lspq/"
 init_file=${work_dir}"init.txt"
 create_new_config_script=${script_dir}"CreateNextstrainConfigV3.py"
 prepare_metadata_script=${script_dir}"PrepareMetadata.py"
@@ -20,6 +20,10 @@ metadata_out=${data_dir}"metadata.tsv"
 sequences_out=${data_dir}"sequences.fasta"
 
 nextstrain_files_base_dir="${2}"
+
+nb_lspq_seq_to_keep=$3
+nb_gisaid_seq_to_keep=$4
+
 
 BuildFramework(){
    echo "In BuildFrameWork"
@@ -86,12 +90,24 @@ PrepareMetadata(){
 
 }
 
+ExcludeSamples(){
+
+ mv ${gisaid_dir}"gisaid_all.fasta"   ${gisaid_dir}"gisaid_all_temp.fasta"
+ mv ${lspq_dir}"sequences.fasta" ${lspq_dir}"sequences_temp.fasta"
+
+ seqtk sample -s $RANDOM ${gisaid_dir}"gisaid_all_temp.fasta" ${nb_gisaid_seq_to_keep} > ${gisaid_dir}"gisaid_all.fasta"
+ seqtk sample -s $RANDOM ${lspq_dir}"sequences_temp.fasta" ${nb_lspq_seq_to_keep} > ${lspq_dir}"sequences.fasta"
+
+}
+
+
 if ! [ -f ${init_file} ]
   then
   BuildFramework
   ImportLatLong
   TransferGisaidFiles
   TransferLspqFiles
+  ExcludeSamples
 fi
 
 TransferConfigFiles

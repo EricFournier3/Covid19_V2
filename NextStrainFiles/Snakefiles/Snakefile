@@ -40,9 +40,13 @@ def get_todays_date():
 # Add new regions here!
 #EricF comment here
 #REGIONS = ["_africa", "_asia", "_europe", "_north-america", "_oceania", "_south-america", "_global"]
-REGIONS = ["_quebec","_global"]
+#REGIONS = ["_quebec","_global"]
 #REGIONS = ["_global"]
+REGIONS = ["_quebec"]
 
+
+nb_gisaid_seq_to_keep = "7"
+nb_lspq_seq_to_keep = "5"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
 script_dir = os.path.join(current_dir,"scripts")
@@ -68,7 +72,7 @@ os.chmod(os.path.join(script_dir,os.path.basename(input_script)),stat.S_IRWXU | 
 shutil.copyfile(yaml_config,os.path.join(config_dir,os.path.basename(yaml_config)))
 os.chmod(os.path.join(config_dir,os.path.basename(yaml_config)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
 
-os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir)
+os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir + " " + nb_lspq_seq_to_keep + " " + nb_gisaid_seq_to_keep)
 
 
 wildcard_constraints:
