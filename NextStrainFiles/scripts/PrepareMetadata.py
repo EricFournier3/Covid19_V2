@@ -30,6 +30,7 @@ translator = Translator()
 logging.basicConfig(level = logging.DEBUG)
 
 base_dir = args.base_dir
+rta_lat_long_file = os.path.join(base_dir,"config/rta_lat_long.tsv")
 lat_long_file = os.path.join(base_dir,"config/lat_longs.tsv")
 country_lat_long_file = os.path.join(base_dir,"config/country_lat_long.tsv")
 ordering_file = os.path.join(base_dir,"config/ordering.tsv")
@@ -82,6 +83,23 @@ def CheckMissingCountry():
     else:
         return None
 
+def CheckMissingRTA():
+    rta_df = pd.read_csv(rta_lat_long_file,delimiter="\t",header=None)
+    rta_val = rta_df.iloc[:,0].values
+    rta_val = [x.lower() for x  in rta_val]    
+
+    rta_in_df_lspq = df_lspq['POSTAL_CODE'].unique()
+    rta_in_df_lspq = [x.lower() for x in rta_in_df_lspq]
+
+    missing_rta_in_latlong = [rta for rta in rta_in_df_lspq if rta not in rta_val]
+    missing_rta_in_latlong = [x.upper() for x in missing_rta_in_latlong]
+
+    if len(missing_rta_in_latlong) > 0:
+        return missing_rta_in_latlong
+    else:
+        return []
+    
+missing_rta = CheckMissingRTA()
 missing_country = CheckMissingCountry()
 
 if  missing_country:
@@ -129,7 +147,8 @@ for rec in SeqIO.parse(lspq_sequences,'fasta'):
     rec.description = ""
     rec_list.append(rec)
 
-subset_lspq = df_lspq[df_lspq['NO_LSPQ'].isin(rec_id_list)]
+#subset_lspq = df_lspq[df_lspq['NO_LSPQ'].isin(rec_id_list)]
+subset_lspq = df_lspq[(df_lspq['NO_LSPQ'].isin(rec_id_list)) & (~df_lspq['POSTAL_CODE'].isin(missing_rta))]
 subset_gisaid = df_gisaid[df_gisaid['strain'].isin(rec_id_list)]
 
 #subset_lspq_subcol = subset_lspq[['NO_LSPQ','DATE_PRELEV','SEX','AGE','RSS_PATIENT','POSTAL_CODE','VOYAGE_PAYS_1']] this create a view https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
