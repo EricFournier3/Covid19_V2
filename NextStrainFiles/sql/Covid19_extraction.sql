@@ -32,7 +32,7 @@ end AS AUCUN_VOYAGE,
 case 
     when crm.FIELD45 is null
     then 'AUCUN_VOYAGE'
-    else crm.FIELD45
+    else LOWER(crm.FIELD45)
 end as VOYAGE_PAYS_1,
 
 nvl(to_char(cr.DATE_COLLECTED, 'YYYY-MM-DD'),'') AS DATE_PRELEVEMENT,
