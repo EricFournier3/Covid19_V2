@@ -12,6 +12,7 @@ import logging
 from googletrans import Translator
 import urllib3
 import argparse
+import string
 
 
 parser = argparse.ArgumentParser(description='Create metadata.tsv and sequences.fasta')
@@ -57,16 +58,29 @@ def ConvertFrench2English(countries_list):
 
     still_missing_countries = []
 
-
     for country in countries_list:
-        english_country = str(translator.translate(country,dest='en').text).capitalize()
+        english_country = str(translator.translate(country,dest='en').text)
         logging.info("Convert " + country + " in english => " + english_country)
-        if len(df_lat_long.loc[df_lat_long[1] == english_country,1].values) > 0:
-            df_lspq.loc[df_lspq['VOYAGE_PAYS_1'].isin([str(country).capitalize(),str(country).lower(),str(country).upper()]),'VOYAGE_PAYS_1'] = english_country
+
+        check_country_in_lat_long = df_lat_long.loc[df_lat_long[1].isin([str(english_country).lower(),str(english_country).upper(),str(english_country).capitalize(),string.capwords(english_country)]) ,1].values
+
+        if len(check_country_in_lat_long) > 0:
+            new_country_val = str(check_country_in_lat_long[0])            
+            df_lspq.loc[df_lspq['VOYAGE_PAYS_1'].isin([str(country).capitalize(),str(country).lower(),str(country).upper()]),'VOYAGE_PAYS_1'] = new_country_val
         else:
             still_missing_countries.append(country)
     return(still_missing_countries.copy())
 
+
+def ImportLatLongCountryNameInMetadata(countries_list):
+    
+    for country in countries_list:
+        check_country_in_lat_long = df_lat_long.loc[df_lat_long[1].isin([str(country).lower(),str(country).upper(),str(country).capitalize(),string.capwords(country)]) ,1].values
+
+        if len(check_country_in_lat_long) > 0:
+            new_country_val = str(check_country_in_lat_long[0])
+            df_lspq.loc[df_lspq['VOYAGE_PAYS_1'].isin([str(country).capitalize(),str(country).lower(),str(country).upper(),string.capwords(country)]),'VOYAGE_PAYS_1'] = new_country_val
+       
 
 def CheckMissingCountry():
     locs_w_latlong_orig = df_lat_long.loc[df_lat_long[0]=='country',1].values 
@@ -77,6 +91,9 @@ def CheckMissingCountry():
 
     missing_latlong_locs = [loc for loc in locs_in_lspq if loc not in locs_w_latlong]
     still_missing_country_in_latlong = ConvertFrench2English(missing_latlong_locs)
+
+    present_country = [loc for loc in locs_in_lspq if loc in locs_w_latlong]
+    ImportLatLongCountryNameInMetadata(present_country)
 
     if len(still_missing_country_in_latlong) > 0:
         return still_missing_country_in_latlong
