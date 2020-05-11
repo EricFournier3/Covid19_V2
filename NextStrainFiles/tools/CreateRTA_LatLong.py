@@ -26,7 +26,9 @@ quebec_rta_values = [x.lower() for x in quebec_rta_values]
 missing_rta = [rta for rta in rta_in_df_lspq if rta not in quebec_rta_values]
 
 #print(missing_rta)
-#['a9b', 'j3j', 'l6n', 'j3s', 'j9w', 'k4k', 'j6l', 'j5s', 'k1k', 'k1h', 'j8j', 'k1c', 'k1l', 'k2c']
+#all missing ['a9b', 'j3j', 'l6n', 'j3s', 'j9w', 'k4k', 'j6l', 'j5s', 'j8j', 'k1c', 'k1l', 'k2c']
+#Non assigne ['a9b', 'j3j', 'j3s', 'j9w', 'j6l', 'j5s', 'j8j']
+#hors quebec ['L6N','k4k', 'k1k', 'k1h', 'k1c', 'k1l', 'k2c']
 #print(df_lspq[(~df_lspq['POSTAL_CODE'].isin([x.upper() for x in missing_rta])) & (~df_lspq['NO_LSPQ'].isin(['L00256307']))])
 #print(df_lspq[df_lspq['POSTAL_CODE'].isin(['G1H','J2H'])])
 print(df_lspq[df_lspq['POSTAL_CODE'].isin([])])
