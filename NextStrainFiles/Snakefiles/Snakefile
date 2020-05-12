@@ -41,12 +41,12 @@ def get_todays_date():
 #EricF comment here
 #REGIONS = ["_africa", "_asia", "_europe", "_north-america", "_oceania", "_south-america", "_global"]
 #REGIONS = ["_quebec","_global"]
-#REGIONS = ["_global"]
-REGIONS = ["_quebec"]
+REGIONS = ["_global"]
+#REGIONS = ["_quebec"]
 
 
-nb_gisaid_seq_to_keep = "7"
-nb_lspq_seq_to_keep = "5"
+nb_gisaid_seq_to_keep = "15"
+nb_lspq_seq_to_keep = "15"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
 script_dir = os.path.join(current_dir,"scripts")
