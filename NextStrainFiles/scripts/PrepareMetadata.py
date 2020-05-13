@@ -157,19 +157,22 @@ for rec in SeqIO.parse(gisaid_sequences,'fasta'):
         rec_list.append(rec)
 
 for rec in SeqIO.parse(lspq_sequences,'fasta'):
-    seqid = re.search(r'(^\S+)\/\S+\/\S+',rec.id).group(1)
+    #seqid = re.search(r'(^\S+)\/\S+\/\S+',rec.id).group(1)
+    seqid = re.search(r'(^Canada\/Qc-L\S+\/\S+)',rec.id).group(1)
+    print("SEQ ID IS ",str(seqid))
     rec_id_list.append(seqid)
     rec.id = seqid
     rec.name = seqid
     rec.description = ""
     rec_list.append(rec)
 
+df_lspq['NO_GISAID'] = "Canada/Qc-" + df_lspq['NO_LSPQ'] + "/2020"
 #subset_lspq = df_lspq[df_lspq['NO_LSPQ'].isin(rec_id_list)]
-subset_lspq = df_lspq[(df_lspq['NO_LSPQ'].isin(rec_id_list)) & (~df_lspq['POSTAL_CODE'].isin(missing_rta))]
+subset_lspq = df_lspq[(df_lspq['NO_GISAID'].isin(rec_id_list)) & (~df_lspq['POSTAL_CODE'].isin(missing_rta))]
 subset_gisaid = df_gisaid[df_gisaid['strain'].isin(rec_id_list)]
 
-#subset_lspq_subcol = subset_lspq[['NO_LSPQ','DATE_PRELEV','SEX','AGE','RSS_PATIENT','POSTAL_CODE','VOYAGE_PAYS_1']] this create a view https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
-subset_lspq_subcol = subset_lspq.loc[:,('NO_LSPQ','DATE_PRELEV','SEX','AGE','RSS_PATIENT','POSTAL_CODE','VOYAGE_PAYS_1','MAX_CT')] # this create a copy
+#subset_lspq_subcol = subset_lspq[['NO_GISAID','DATE_PRELEV','SEX','AGE','RSS_PATIENT','POSTAL_CODE','VOYAGE_PAYS_1']] this create a view https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+subset_lspq_subcol = subset_lspq.loc[:,('NO_GISAID','DATE_PRELEV','SEX','AGE','RSS_PATIENT','POSTAL_CODE','VOYAGE_PAYS_1','MAX_CT')] # this create a copy
 subset_lspq_subcol.columns = ['strain','date','sex','age','rss','rta','voyage','ct']
 subset_lspq_subcol.insert(loc=1,column='virus',value='ncov',allow_duplicates=True)
 subset_lspq_subcol.insert(loc=5,column='country',value='Canada',allow_duplicates=True)
