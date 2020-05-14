@@ -382,6 +382,7 @@ rule tree:
         """
 '''
 
+'''
 rule tree:
     message: "Building tree"
     input:
@@ -398,6 +399,21 @@ rule tree:
             --output {output.tree} \
             --nthreads {threads} \
             --method {params.method}
+        """
+'''
+
+rule tree:
+    message: "Building tree"
+    input:
+        alignment = "results/subsampled_alignment{region}.fasta"
+    output:
+        tree = "results/tree_raw{region}.nwk"
+    shell:
+        """
+        augur tree \
+            --alignment {input.alignment} \
+            --output {output.tree} \
+            --nthreads AUTO 
         """
 
 def _get_alignments_for_tree(wildcards):

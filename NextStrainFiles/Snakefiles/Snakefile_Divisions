@@ -314,7 +314,7 @@ rule subsample_context:
     output:
         sequences = "results/subsample_context{region}.fasta"
     params:
-        group_by = "countext year month",
+        group_by = "country year month",
         sequences_per_group = 20
     shell:
         """
