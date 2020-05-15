@@ -5,7 +5,9 @@ case
     when Max(nCoV2019_nCoV_Ct) is null
     then '0'
     else TO_CHAR(ROUND(Max(nCoV2019_nCoV_Ct)))
-end as max_ct
+end as max_ct,
+
+ADDR_CH as addr_ch
 
 from (select distinct f.folderno as NOLSPQ, to_char(cr.BIRTH_DATE,'YYYY-MM-DD') as DATE_NAISSANCE,
 p.LAST_NAME as NOM, p.FIRST_NAME as PRENOM, 
@@ -38,7 +40,17 @@ end as VOYAGE_PAYS_1,
 nvl(to_char(cr.DATE_COLLECTED, 'YYYY-MM-DD'),'') AS DATE_PRELEVEMENT,
 nvl(to_char(cr.DATE_RECEIVED, 'YYYY-MM-DD'),'') AS DATE_RECEPTION,
 rc.COMPNAME AS CH,
-replace(replace(replace(crm.FIELD06, chr(13), ' '), chr(10),' '),';',':') AS RESULTAT_LABORATOIRE,
+
+(
+select max(concat(concat(concat(concat(concat(adress,', '),city),', '),state),', Candada')) FROM RASCLIENTS where compname = rc.COMPNAME
+group by compname)as ADDR_CH,
+
+case 
+   when replace(replace(replace(crm.FIELD06, chr(13), ' '), chr(10),' '),';',':') is null
+   then ' '
+   else replace(replace(replace(crm.FIELD06, chr(13), ' '), chr(10),' '),';',':')
+end as RESULTAT_LABORATOIRE,
+
 ( select    
     Final
     from RESULTS coro
@@ -72,8 +84,8 @@ where
         and cr.PANEL_LIST like '2019-nCoV%' and rc.RASCLIENTID not in ('LSPQCEC','LSPQCIC','LSPQF','LSPQP','LSPQV') 
         
 order by f.FOLDERNO)   GROUP BY NOLSPQ, AGE_ANNEE,SEX, RSS_PATIENT,AUCUN_VOYAGE, VOYAGE_PAYS_1, DATE_PRELEVEMENT, DATE_RECEPTION,
-CH,RESULTAT_LABORATOIRE, SUBSTR(POSTAL_CODE,1,3) ORDER BY NOLSPQ) select v.no_lspq,v.age,v.sex,v.rss_patient,v.aucun_voyage, v.voyage_pays_1, v.date_prelev,
-v.date_recu, v.ch, v.postal_code,  v.max_res, v.max_ct from v where  v.max_res in ('Détecté','détecté');    
+CH,RESULTAT_LABORATOIRE, SUBSTR(POSTAL_CODE,1,3),ADDR_CH ORDER BY NOLSPQ) select v.no_lspq,v.age,v.sex,v.rss_patient,v.aucun_voyage, v.voyage_pays_1, v.date_prelev,
+v.date_recu, v.ch, v.postal_code,  v.max_res, v.max_ct,v.res_lab,v.addr_ch from v where  v.max_res in ('Détecté','détecté');    
 
 
 
