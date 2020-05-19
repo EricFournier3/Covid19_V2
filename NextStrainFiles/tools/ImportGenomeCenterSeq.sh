@@ -29,6 +29,7 @@ read beluga_pw < ${beluga_pass_file}
 
 final_unpublished="FinalUnpublished"
 final_published="FinalPublished"
+final_submitted="FinalSubmitted"
 transfered_2_lspq_dir=${final_unpublished}"/Transfered2Lspq/"
 
 ImportSeqFromBeluga(){
@@ -67,7 +68,9 @@ ExportSeqForNextstrain(){
 FinaliseImportOnBeluga(){
   echo -e "Begin move sequence from ${beluga_server}:${beluga_seq_dir}${final_unpublished} to ${beluga_server}:${transfered_2_lspq_dir} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}  
 
-  transfer_cmd="sshpass -p ${beluga_pw} ssh ${beluga_server} 'mv  ${beluga_seq_dir}${final_unpublished}/*.fasta ${beluga_seq_dir}${transfered_2_lspq_dir}' "
+  #transfer_cmd="sshpass -p ${beluga_pw} ssh ${beluga_server} 'mv  ${beluga_seq_dir}${final_unpublished}/*.fasta ${beluga_seq_dir}${transfered_2_lspq_dir}' "
+
+  transfer_cmd="sshpass -p ${beluga_pw} ssh ${beluga_server} /home/fournie1/COVID_consensus/mybash.sh"
 
   eval ${transfer_cmd}
  
@@ -75,10 +78,47 @@ FinaliseImportOnBeluga(){
   
 }
 
+MakeAlreadyTransferList(){
+  seq_list=()
+  
+  already_transfered_file=${out_seq_slbio}"already_transfered_file.txt"
+ 
+  if [ -f $already_transfered_file ]
+      then
+      rm $already_transfered_file
+  fi
 
-ImportSeqFromBeluga
+
+  for seq in $(ls "${out_seq_slbio}${final_unpublished}/L"*".fasta" 2>/dev/null)
+    do
+    seq=$(basename $seq | cut -d '.' -f1)
+    #seq_list+=($seq)
+    echo $seq >> ${already_transfered_file}
+  done
+
+  for seq in $(ls "${out_seq_slbio}${final_published}/L"*".fasta" 2>/dev/null)
+    do
+    seq=$(basename $seq | cut -d '.' -f1)
+    #seq_list+=($seq)
+    echo $seq >> ${already_transfered_file}
+  done
+
+  for seq in $(ls "${out_seq_slbio}${final_submitted}/"*"/L"*".fasta" 2>/dev/null)
+    do
+    seq=$(basename $seq | cut -d '.' -f1)
+    #seq_list+=($seq)
+    echo $seq >> ${already_transfered_file}
+  done
+
+  scp_cmd="sshpass -p ${beluga_pw}  scp   ${already_transfered_file}    ${beluga_server}:${beluga_seq_dir}"
+  eval $scp_cmd
+}
+
+MakeAlreadyTransferList
+
+#ImportSeqFromBeluga
 #ExportSeqForNextstrain(){
-FinaliseImportOnBeluga
+#FinaliseImportOnBeluga
 exit 0
 
 
