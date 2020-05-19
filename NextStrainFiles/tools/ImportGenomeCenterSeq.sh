@@ -14,7 +14,9 @@ lspq_data_nextstrain_dir="/data/Applications/GitScript/Covid19_V2/NextStrainFile
 lspq_seq_for_nextstrain=${lspq_data_nextstrain_dir}"sequences.fasta"
 
 base_dir_slbio="/data/Runs/SARS-CoV-2/GenomeCenterSeq/"
-out_seq_slbio=${base_dir_slbio}"FinalRelease/"
+
+#TODO enlever TEST
+out_seq_slbio=${base_dir_slbio}"FinalRelease/TEST/"
 log_slbio="${out_seq_slbio}BelugaImport.log"
 
 beluga_server="fournie1@beluga.computecanada.ca"
@@ -27,25 +29,59 @@ read beluga_pw < ${beluga_pass_file}
 
 final_unpublished="FinalUnpublished"
 final_published="FinalPublished"
+transfered_2_lspq_dir=${final_unpublished}"/Transfered2Lspq/"
 
-#scp_cmd="sshpass -p ${beluga_pw}  scp -r ${beluga_server}:\"${beluga_seq_dir}{${final_unpublished}/*.fasta,${final_published}/*.fasta}\" ${out_seq_slbio}"
-scp_cmd="sshpass -p ${beluga_pw}  scp -r ${beluga_server}:\"${beluga_seq_dir}{${final_published}/,${final_unpublished}/}\" ${out_seq_slbio}"
+ImportSeqFromBeluga(){
+  #echo -e "${green_message}INFO: " "Begin import from ${beluga_server}:${beluga_seq_dir}"
+  echo -e "Begin import from ${beluga_server}:${beluga_seq_dir}\t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
 
-echo -e "Begin import from ${beluga_server}:${beluga_seq_dir}\t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
+  #scp_cmd_obsolete="sshpass -p ${beluga_pw}  scp -r ${beluga_server}:\"${beluga_seq_dir}{${final_unpublished}/*.fasta,${final_published}/*.fasta}\" ${out_seq_slbio}"
+  #scp_cmd_obsolete_2="sshpass -p ${beluga_pw}  scp -r ${beluga_server}:\"${beluga_seq_dir}{${final_published}/,${final_unpublished}/}\" ${out_seq_slbio}"
 
-#echo -e "${green_message}INFO: " "Begin import from ${beluga_server}:${beluga_seq_dir}"
-#TODO remove comment
-eval ${scp_cmd}
-#echo -e "${green_message}INFO: " "End import from ${beluga_server}:${beluga_seq_dir}"
+  
+  scp_cmd="sshpass -p ${beluga_pw}  scp -r ${beluga_server}:\"${beluga_seq_dir}${final_unpublished}/*.fasta\" ${out_seq_slbio}${final_unpublished}"
 
-echo -e "End import from ${beluga_server}:${beluga_seq_dir}\t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
+  #TODO remove comment
+  eval ${scp_cmd}
 
-#echo -e "${white_message}"
+  #echo -e "${green_message}INFO: " "End import from ${beluga_server}:${beluga_seq_dir}"
+  echo -e "End import from ${beluga_server}:${beluga_seq_dir}\t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
 
-echo -e "Begin concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
-#TODO remove comment
-cat ${out_seq_slbio}{${final_unpublished}/*.fasta,${final_published}/*.fasta} >${lspq_seq_for_nextstrain}
+  #echo -e "${white_message}"
+}
 
-echo -e "End concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")\n" >> ${log_slbio}
+
+ExportSeqForNextstrain(){
+  
+ echo "In ExportSeqForNextstrain"
+
+  #echo -e "Begin concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
+
+  #TODO remove comment
+  #cat ${out_seq_slbio}{${final_unpublished}/*.fasta,${final_published}/*.fasta} >${lspq_seq_for_nextstrain}
+
+  #echo -e "End concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")\n" >> ${log_slbio}
+}
+
+
+FinaliseImportOnBeluga(){
+  echo -e "Begin move sequence from ${beluga_server}:${beluga_seq_dir}${final_unpublished} to ${beluga_server}:${transfered_2_lspq_dir} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}  
+
+  transfer_cmd="sshpass -p ${beluga_pw} ssh ${beluga_server} 'mv  ${beluga_seq_dir}${final_unpublished}/*.fasta ${beluga_seq_dir}${transfered_2_lspq_dir}' "
+
+  eval ${transfer_cmd}
+ 
+  echo -e "End move sequence from ${beluga_server}:${beluga_seq_dir}${final_unpublished} to ${beluga_server}:${transfered_2_lspq_dir} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}  
+  
+}
+
+
+ImportSeqFromBeluga
+#ExportSeqForNextstrain(){
+FinaliseImportOnBeluga
+exit 0
+
+
+
 
 
