@@ -15,12 +15,10 @@ lspq_seq_for_nextstrain=${lspq_data_nextstrain_dir}"sequences.fasta"
 
 base_dir_slbio="/data/Runs/SARS-CoV-2/GenomeCenterSeq/"
 
-#TODO enlever TEST
-out_seq_slbio=${base_dir_slbio}"FinalRelease/TEST/"
+out_seq_slbio=${base_dir_slbio}"FinalRelease/"
 log_slbio="${out_seq_slbio}BelugaImport.log"
 
 beluga_server="fournie1@beluga.computecanada.ca"
-#TODO Change path
 beluga_seq_dir="/home/fournie1/COVID_consensus/"
 
 slbio_user=$(whoami)
@@ -30,10 +28,10 @@ read beluga_pw < ${beluga_pass_file}
 final_unpublished="FinalUnpublished"
 final_published="FinalPublished"
 final_submitted="FinalSubmitted"
+final_do_not_publish="DoNotPublish"
 transfered_2_lspq_dir=${final_unpublished}"/Transfered2Lspq/"
 
 ImportSeqFromBeluga(){
-  #echo -e "${green_message}INFO: " "Begin import from ${beluga_server}:${beluga_seq_dir}"
   echo -e "Begin import from ${beluga_server}:${beluga_seq_dir}\t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
 
   #scp_cmd_obsolete="sshpass -p ${beluga_pw}  scp -r ${beluga_server}:\"${beluga_seq_dir}{${final_unpublished}/*.fasta,${final_published}/*.fasta}\" ${out_seq_slbio}"
@@ -42,40 +40,32 @@ ImportSeqFromBeluga(){
   
   scp_cmd="sshpass -p ${beluga_pw}  scp -r ${beluga_server}:\"${beluga_seq_dir}${final_unpublished}/*.fasta\" ${out_seq_slbio}${final_unpublished}"
 
-  #TODO remove comment
   eval ${scp_cmd}
 
-  #echo -e "${green_message}INFO: " "End import from ${beluga_server}:${beluga_seq_dir}"
   echo -e "End import from ${beluga_server}:${beluga_seq_dir}\t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
 
-  #echo -e "${white_message}"
 }
 
 
 ExportSeqForNextstrain(){
-  
- echo "In ExportSeqForNextstrain"
-
+  echo "In ExportSeqForNextstrain"
   #echo -e "Begin concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
 
   #TODO remove comment
-  #cat ${out_seq_slbio}{${final_unpublished}/*.fasta,${final_published}/*.fasta} >${lspq_seq_for_nextstrain}
+  #cat ${out_seq_slbio}{${final_unpublished}/L*.fasta,${final_published}/L*.fasta,${final_submitted}/L*.fasta} >${lspq_seq_for_nextstrain}
 
   #echo -e "End concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")\n" >> ${log_slbio}
 }
 
 
-FinaliseImportOnBeluga(){
-  echo -e "Begin move sequence from ${beluga_server}:${beluga_seq_dir}${final_unpublished} to ${beluga_server}:${transfered_2_lspq_dir} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}  
+SelectSamplesOnBeluga(){
+  echo -e "Begin select sequences on ${beluga_server}  \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}  
 
-  #transfer_cmd="sshpass -p ${beluga_pw} ssh ${beluga_server} 'mv  ${beluga_seq_dir}${final_unpublished}/*.fasta ${beluga_seq_dir}${transfered_2_lspq_dir}' "
-
-  transfer_cmd="sshpass -p ${beluga_pw} ssh ${beluga_server} /home/fournie1/COVID_consensus/mybash.sh"
+  transfer_cmd="sshpass -p ${beluga_pw} ssh ${beluga_server} /home/fournie1/SelectSamplesForLSPQimport.sh"
 
   eval ${transfer_cmd}
- 
-  echo -e "End move sequence from ${beluga_server}:${beluga_seq_dir}${final_unpublished} to ${beluga_server}:${transfered_2_lspq_dir} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}  
   
+  echo -e "End select sequences on ${beluga_server}  \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}  
 }
 
 MakeAlreadyTransferList(){
@@ -86,6 +76,9 @@ MakeAlreadyTransferList(){
   if [ -f $already_transfered_file ]
       then
       rm $already_transfered_file
+      touch $already_transfered_file
+  else
+     touch $already_transfered_file
   fi
 
 
@@ -110,17 +103,23 @@ MakeAlreadyTransferList(){
     echo $seq >> ${already_transfered_file}
   done
 
+  for seq in $(ls "${out_seq_slbio}${final_do_not_publish}/L"*".fasta" 2>/dev/null)
+    do
+    seq=$(basename $seq | cut -d '.' -f1)
+    #seq_list+=($seq)
+    echo $seq >> ${already_transfered_file}
+  done
+
   scp_cmd="sshpass -p ${beluga_pw}  scp   ${already_transfered_file}    ${beluga_server}:${beluga_seq_dir}"
   eval $scp_cmd
 }
 
 MakeAlreadyTransferList
-
-#ImportSeqFromBeluga
+SelectSamplesOnBeluga
+ImportSeqFromBeluga
 #ExportSeqForNextstrain(){
-#FinaliseImportOnBeluga
-exit 0
 
+echo "Finish"
 
 
 
