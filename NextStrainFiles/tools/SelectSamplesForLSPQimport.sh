@@ -26,6 +26,7 @@ BuildAlreadyImportSeqList(){
 
 BuildAlreadyImportSeqList
 
+rm "${final_ready_to_import_dir}/"*".fasta"
 
 for fasta in $(ls ${all_final_unpublished_dir})
   do 
