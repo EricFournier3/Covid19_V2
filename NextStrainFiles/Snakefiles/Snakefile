@@ -257,6 +257,7 @@ rule filter:
         min_length = 25000,
         exclude_where = "date='2015'",
         group_by = "rta year month",
+        max_date = "2020-10-01",
         sequences_per_group = 10000
     shell:
         """
