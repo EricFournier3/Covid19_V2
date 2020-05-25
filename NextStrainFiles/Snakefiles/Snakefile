@@ -45,7 +45,7 @@ REGIONS = ["_global"]
 #REGIONS = ["_quebec"]
 
 
-nb_gisaid_seq_to_keep = "170"
+nb_gisaid_seq_to_keep = "7"
 nb_lspq_seq_to_keep = "7"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
@@ -55,25 +55,6 @@ config_dir = os.path.join(current_dir,"config")
 data_dir = os.path.join(current_dir,"data")
 yaml_config = os.path.join(nextstrain_base_dir,"config","Snakefile.yaml")
 
-'''
-try:
-    os.mkdir(script_dir)
-except FileExistsError:
-    print("Directory ",script_dir, " already exists")
-
-try:
-    os.mkdir(config_dir)
-except FileExistsError:
-    print("Directory ",config_dir, " already exists")
-
-shutil.copyfile(input_script,os.path.join(script_dir,os.path.basename(input_script)))
-os.chmod(os.path.join(script_dir,os.path.basename(input_script)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
-
-shutil.copyfile(yaml_config,os.path.join(config_dir,os.path.basename(yaml_config)))
-os.chmod(os.path.join(config_dir,os.path.basename(yaml_config)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
-
-os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir + " " + nb_lspq_seq_to_keep + " " + nb_gisaid_seq_to_keep)
-'''
 
 wildcard_constraints:
     region = "|".join(REGIONS) + "||",
@@ -257,7 +238,7 @@ rule filter:
         min_length = 25000,
         exclude_where = "date='2015'",
         group_by = "rta year month",
-        max_date = "2020-02-27",
+        max_date = "2020-10-27",
         sequences_per_group = 10000
     shell:
         """
