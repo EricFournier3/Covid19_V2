@@ -269,7 +269,7 @@ rule filter:
             --min-length {params.min_length} \
             --group-by {params.group_by} \
             --sequences-per-group {params.sequences_per_group} \
-            --max-date {params.max_date}
+            --max-date {params.max_date} \
             --output {output.sequences}
         """
 
