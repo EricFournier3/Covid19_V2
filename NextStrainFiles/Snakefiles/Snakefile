@@ -45,8 +45,8 @@ REGIONS = ["_global"]
 #REGIONS = ["_quebec"]
 
 
-nb_gisaid_seq_to_keep = "15"
-nb_lspq_seq_to_keep = "15"
+nb_gisaid_seq_to_keep = "170"
+nb_lspq_seq_to_keep = "7"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
 script_dir = os.path.join(current_dir,"scripts")
@@ -55,7 +55,7 @@ config_dir = os.path.join(current_dir,"config")
 data_dir = os.path.join(current_dir,"data")
 yaml_config = os.path.join(nextstrain_base_dir,"config","Snakefile.yaml")
 
-
+'''
 try:
     os.mkdir(script_dir)
 except FileExistsError:
@@ -73,13 +73,14 @@ shutil.copyfile(yaml_config,os.path.join(config_dir,os.path.basename(yaml_config
 os.chmod(os.path.join(config_dir,os.path.basename(yaml_config)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
 
 os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir + " " + nb_lspq_seq_to_keep + " " + nb_gisaid_seq_to_keep)
-
+'''
 
 wildcard_constraints:
     region = "|".join(REGIONS) + "||",
     date = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
 
-configfile: "config/Snakefile.yaml"
+#configfile: "config/Snakefile.yaml"
+configfile: "Snakefile.yaml"
 #EricF comment here
 #localrules: download
 
@@ -203,7 +204,7 @@ rule filter:
 
 '''
 
-
+'''
 rule filter:
     message:
         """
@@ -236,7 +237,39 @@ rule filter:
             --sequences-per-group {params.sequences_per_group} \
             --output {output.sequences}
         """
+'''
 
+rule filter:
+    message:
+        """
+        Filtering to
+          - excluding strains in {input.exclude}
+          - minimum genome length of {params.min_length}
+        """
+    input:
+        sequences = sequences,
+        metadata = metadata,
+        include = files.include,
+        exclude = files.exclude
+    output:
+        sequences = "results/filtered.fasta"
+    params:
+        min_length = 25000,
+        exclude_where = "date='2015'",
+        group_by = "rta year month",
+        sequences_per_group = 10000
+    shell:
+        """
+        augur filter \
+            --sequences {input.sequences} \
+            --metadata {input.metadata} \
+            --include {input.include} \
+            --exclude {input.exclude} \
+            --min-length {params.min_length} \
+            --group-by {params.group_by} \
+            --sequences-per-group {params.sequences_per_group} \
+            --output {output.sequences}
+        """
 
 checkpoint partition_sequences:
     input:
@@ -382,6 +415,7 @@ rule tree:
         """
 '''
 
+
 '''
 rule tree:
     message: "Building tree"
@@ -413,7 +447,7 @@ rule tree:
         augur tree \
             --alignment {input.alignment} \
             --output {output.tree} \
-            --nthreads AUTO 
+            --nthreads AUTO
         """
 
 def _get_alignments_for_tree(wildcards):
@@ -425,12 +459,13 @@ def _get_alignments_for_tree(wildcards):
     else:
         return rules.subsample_regions.output.alignment
 
+'''
+EricF comment
 rule refine:
     message:
         """
         Refining tree
           - estimate timetree
-          - use {params.coalescent} coalescent timescale
           - estimate {params.date_inference} node dates
         """
     input:
@@ -442,13 +477,13 @@ rule refine:
         node_data = "results/branch_lengths{region}.json"
     threads: 1
     params:
-        root = "Wuhan-Hu-1/2019 Wuhan/WH01/2019",
+        root = "Wuhan-Hu-1/2019",
         clock_rate = 0.0008,
         clock_std_dev = 0.0004,
-        coalescent = "skyline",
         date_inference = "marginal",
         divergence_unit = "mutations",
-        clock_filter_iqd = 4
+        clock_filter_iqd = 4,
+        coalescent = "skyline"
     shell:
         """
         augur refine \
@@ -465,6 +500,50 @@ rule refine:
             --date-inference {params.date_inference} \
             --divergence-unit {params.divergence_unit} \
             --date-confidence \
+            --no-covariance \
+            --clock-filter-iqd {params.clock_filter_iqd}
+        """
+'''
+
+rule refine:
+    message:
+        """
+        Refining tree
+          - estimate timetree
+          - estimate {params.date_inference} node dates
+          - use {params.coalescent} coalescent timescale
+        """
+    input:
+        tree = rules.tree.output.tree,
+        alignment = _get_alignments_for_tree,
+        metadata = "results/metadata_adjusted{region}.tsv"
+    output:
+        tree = "results/tree{region}.nwk",
+        node_data = "results/branch_lengths{region}.json"
+    threads: 40
+    params:
+        root = "Wuhan-Hu-1/2019",
+        clock_rate = 0.0008,
+        clock_std_dev = 0.0004,
+        date_inference = "joint",
+        divergence_unit = "mutations",
+        clock_filter_iqd = 4,
+        coalescent = "const"
+    shell:
+        """
+        augur refine \
+            --tree {input.tree} \
+            --alignment {input.alignment} \
+            --metadata {input.metadata} \
+            --output-tree {output.tree} \
+            --output-node-data {output.node_data} \
+            --root {params.root} \
+            --timetree \
+            --coalescent {params.coalescent} \
+            --clock-rate {params.clock_rate} \
+            --clock-std-dev {params.clock_std_dev} \
+            --date-inference {params.date_inference} \
+            --divergence-unit {params.divergence_unit} \
             --no-covariance \
             --clock-filter-iqd {params.clock_filter_iqd}
         """
@@ -909,10 +988,63 @@ rule dated_json:
         cp {input.tip_frequencies_json} {output.dated_tip_frequencies_json}
         """
 
-rule clean:
+#EricF
+rule clean_all:
     message: "Removing directories: {params}"
     params:
         "results ",
-        "auspice"
+        "auspice ",
+        "config ",
+        "data ",
+        "gisaid ",
+        "init.txt ",
+        "lspq ",
+        "results ",
+        "scripts ",
+        "temp "
+    
     shell:
         "rm -rfv {params}"
+
+#EricF
+rule clean_dat:
+    message: "Removing directories: {params}"
+    params:
+        "config ",
+        "data ",
+        "gisaid ",
+        "init.txt ",
+        "lspq ",
+        "scripts ",
+        "temp "
+    
+    shell:
+        "rm -rfv {params}"
+
+#EricF
+rule clean_res:
+    message: "Removing directories: {params}"
+    params:
+        "results ",
+        "auspice "
+    shell:
+        "rm -rfv {params}"
+
+#EricF
+rule prepare_input:
+    message: "Pepare input "
+    run:
+        print("In prepare input")
+	
+	os.mkdir(script_dir)
+	os.mkdir(config_dir)
+
+	shutil.copyfile(input_script,os.path.join(script_dir,os.path.basename(input_script)))
+	os.chmod(os.path.join(script_dir,os.path.basename(input_script)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
+
+	shutil.copyfile(yaml_config,os.path.join(config_dir,os.path.basename(yaml_config)))
+	os.chmod(os.path.join(config_dir,os.path.basename(yaml_config)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
+
+	os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir + " " + nb_lspq_seq_to_keep + " " + nb_gisaid_seq_to_keep)
+	
+
