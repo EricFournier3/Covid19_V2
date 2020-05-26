@@ -60,6 +60,8 @@ def ConvertFrench2English(countries_list):
 
     for country in countries_list:
         english_country = str(translator.translate(country,dest='en').text)
+
+
         logging.info("Convert " + country + " in english => " + english_country)
 
         check_country_in_lat_long = df_lat_long.loc[df_lat_long[1].isin([str(english_country).lower(),str(english_country).upper(),str(english_country).capitalize(),string.capwords(english_country)]) ,1].values
@@ -69,6 +71,7 @@ def ConvertFrench2English(countries_list):
             df_lspq.loc[df_lspq['VOYAGE_PAYS_1'].isin([str(country).capitalize(),str(country).lower(),str(country).upper()]),'VOYAGE_PAYS_1'] = new_country_val
         else:
             still_missing_countries.append(country)
+    
     return(still_missing_countries.copy())
 
 
@@ -203,6 +206,11 @@ subset_gisaid_subcol.loc[:,'rss'] = subset_gisaid_subcol.country
 subset_gisaid_subcol.loc[:,'rta'] = subset_gisaid_subcol.country
 subset_gisaid_subcol.loc[:,'rss_exposure'] = subset_gisaid_subcol.country_exposure
 subset_gisaid_subcol.loc[:,'rta_exposure'] = subset_gisaid_subcol.country_exposure
+
+subset_gisaid_subcol.loc[subset_gisaid_subcol.country != 'Canada','division'] = subset_gisaid_subcol.country
+subset_gisaid_subcol.loc[subset_gisaid_subcol.country_exposure != 'Canada','division_exposure'] = subset_gisaid_subcol.country_exposure
+
+
 #print(subset_gisaid_subcol)
 
 #print(subset_lspq_subcol.columns)
