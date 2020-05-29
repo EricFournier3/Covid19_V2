@@ -1,5 +1,7 @@
 import argparse
 import pandas as pd
+import yaml
+
 
 # Forced colours MUST NOT appear in the ordering TSV
 forced_colors = {
@@ -15,7 +17,17 @@ if __name__ == '__main__':
     parser.add_argument('--color-schemes', type=str, required=True, help="input color schemes file")
     parser.add_argument('--metadata', type=str, help="if provided, restrict colors to only those found in metadata")
     parser.add_argument('--output', type=str, required=True, help="output colors tsv")
+
+    #EricF 20200526
+    parser.add_argument('--user-colors', type=str, required=True, help="yaml input for user defined color")
     args = parser.parse_args()
+
+    #EricF 20200526
+    user_colors = args.user_colors
+    focal = False
+    color_handle = open(user_colors)
+    color_yaml = yaml.load(color_handle)
+    user_colors_dict = color_yaml['colors'][0] 
 
     assignment = {}
     with open(args.ordering) as f:
@@ -42,6 +54,7 @@ if __name__ == '__main__':
                 focal_list = metadata.loc[metadata['focal'] == True, name].unique()
                 subset_focal = [x for x in assignment[name] if x in focal_list]
                 assignment[name] = subset_focal
+                focal = True
 
     schemes = {}
     counter = 0
@@ -53,12 +66,22 @@ if __name__ == '__main__':
 
     with open(args.output, 'w') as f:
         for trait_name, trait_array in assignment.items():
+
+            #EricF
+            trait_array = list(set(trait_array))
+
             if len(trait_array)==0:
                 print(f"No traits found for {trait_name}")
                 continue
             color_array = schemes[len(trait_array)]
-            extra_trait_values = list(forced_colors.get(trait_name, {}).keys())
-            extra_color_values = list(forced_colors.get(trait_name, {}).values())
+            #extra_trait_values = list(forced_colors.get(trait_name, {}).keys())
+            #extra_color_values = list(forced_colors.get(trait_name, {}).values())
+            if focal:
+                extra_trait_values = list(user_colors_dict.keys())
+                extra_color_values = list(user_colors_dict.values())
+            else:
+                extra_trait_values = []
+                extra_color_values = []
 
             zipped = list(zip(trait_array+extra_trait_values, color_array+extra_color_values))
             for trait_value, color in zipped:

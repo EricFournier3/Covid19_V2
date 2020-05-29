@@ -37,7 +37,7 @@ BuildFramework(){
 
 TransferConfigFiles(){
   #TODO wget
-  ext=(".txt" ".tsv" ".json" ".gb" ".md")
+  ext=(".txt" ".tsv" ".json" ".gb" ".md" ".yaml")
 
   for _ext in ${ext[@]}
     do

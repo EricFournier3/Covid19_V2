@@ -1,0 +1,6 @@
+# This file contains users defined colors for auspice
+---
+colors:
+ - Australia: "#ff0000"
+   USA: "#ffff00"
+   16-Montérégie: "#00ff00"

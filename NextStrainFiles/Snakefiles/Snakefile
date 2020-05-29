@@ -41,11 +41,11 @@ def get_todays_date():
 #EricF comment here
 #REGIONS = ["_africa", "_asia", "_europe", "_north-america", "_oceania", "_south-america", "_global"]
 #REGIONS = ["_quebec","_global"]
-REGIONS = ["_global"]
-#REGIONS = ["_quebec"]
+#REGIONS = ["_global"]
+REGIONS = ["_quebec"]
 
 
-nb_gisaid_seq_to_keep = "7"
+nb_gisaid_seq_to_keep = "20"
 nb_lspq_seq_to_keep = "7"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
@@ -55,6 +55,8 @@ config_dir = os.path.join(current_dir,"config")
 data_dir = os.path.join(current_dir,"data")
 yaml_config = os.path.join(nextstrain_base_dir,"config","Snakefile.yaml")
 
+#EricF 20200526
+user_colors = os.path.join(config_dir,"User_colors.yaml")
 
 wildcard_constraints:
     region = "|".join(REGIONS) + "||",
@@ -671,6 +673,9 @@ rule clades:
             --output-node-data {output.clade_data}
         """
 
+
+'''
+EricF 20200526
 rule colors:
     message: "Constructing colors file"
     input:
@@ -686,6 +691,27 @@ rule colors:
             --color-schemes {input.color_schemes} \
             --output {output.colors} \
             --metadata {input.metadata}
+        """
+'''
+
+
+rule colors:
+    message: "Constructing colors file"
+    input:
+        ordering = files.ordering,
+        color_schemes = files.color_schemes,
+        metadata = "results/metadata_adjusted{region}.tsv",
+        user_colors = user_colors
+    output:
+        colors = "config/colors{region}.tsv"
+    shell:
+        """
+        python3 scripts/assign-colors.py \
+            --ordering {input.ordering} \
+            --color-schemes {input.color_schemes} \
+            --output {output.colors} \
+            --metadata {input.metadata} \
+            --user-colors {input.user_colors}
         """
 
 rule recency:
@@ -1009,7 +1035,8 @@ rule clean_res:
     message: "Removing directories: {params}"
     params:
         "results ",
-        "auspice "
+        "auspice ",
+        "config/colors_*"
     shell:
         "rm -rfv {params}"
 

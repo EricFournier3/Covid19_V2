@@ -156,8 +156,8 @@ rule subsample_focus:
         sequences = "results/subsample_focus{region}.fasta"
     params:
         group_by = "rta year month",
-        seq_per_group_global = 40, # i.e. if not regional build
-        seq_per_group_regional = 260
+        seq_per_group_global = 10000, # i.e. if not regional build
+        seq_per_group_regional = 10000
     shell:
         """
         #Figure out what region being wanted
@@ -315,7 +315,7 @@ rule subsample_context:
         sequences = "results/subsample_context{region}.fasta"
     params:
         group_by = "country year month",
-        sequences_per_group = 20
+        sequences_per_group = 10000
     shell:
         """
         #Figure out what region being wanted
