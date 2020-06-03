@@ -34,8 +34,8 @@ division_lat_long_file = os.path.join(base_dir,"config/division_lat_long.tsv")
 country_lat_long_file = os.path.join(base_dir,"config/country_lat_long.tsv")
 
 
-lat_long_level = {'rta' : ['rta','country'], 'rss' : ['rss','country'], 'division' : ['division','country'], 'country' : ['country']}
-lat_long_file = {'rta' : [rta_lat_long_file], 'rss' : [rss_lat_long_file], 'division' : [division_lat_long_file,province_lat_long_file], 'country' : [country_lat_long_file,canada_lat_long_file,division_lat_long_file]} 
+lat_long_level = {'rta' : ['rta','province','division','country'], 'rss' : ['rss','province','division','country'], 'division' : ['province','division','country'], 'country' : ['division','country']}
+lat_long_file = {'rta' : [rta_lat_long_file], 'rss' : [rss_lat_long_file], 'province' : [province_lat_long_file], 'division': [division_lat_long_file] ,'country' : [country_lat_long_file,canada_lat_long_file]} 
 
 
 def Create_RTA_LatLong():

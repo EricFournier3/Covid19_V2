@@ -202,6 +202,7 @@ subset_gisaid_subcol.insert(loc=8,column='rta',value='',allow_duplicates=True)
 subset_gisaid_subcol.insert(loc=11,column='rss_exposure',value='',allow_duplicates=True)
 subset_gisaid_subcol.insert(loc=12,column='rta_exposure',value='',allow_duplicates=True)
 subset_gisaid_subcol.insert(loc=13,column='ct',value='0',allow_duplicates=True)
+
 subset_gisaid_subcol.loc[:,'rss'] = subset_gisaid_subcol.country
 subset_gisaid_subcol.loc[:,'rta'] = subset_gisaid_subcol.country
 subset_gisaid_subcol.loc[:,'rss_exposure'] = subset_gisaid_subcol.country_exposure
@@ -210,6 +211,11 @@ subset_gisaid_subcol.loc[:,'rta_exposure'] = subset_gisaid_subcol.country_exposu
 subset_gisaid_subcol.loc[subset_gisaid_subcol.country != 'Canada','division'] = subset_gisaid_subcol.country
 subset_gisaid_subcol.loc[subset_gisaid_subcol.country_exposure != 'Canada','division_exposure'] = subset_gisaid_subcol.country_exposure
 
+subset_gisaid_subcol.loc[subset_gisaid_subcol.country == 'Canada' ,['rss','rta']] = subset_gisaid_subcol.division
+subset_gisaid_subcol.loc[subset_gisaid_subcol.country_exposure == 'Canada' ,['rss_exposure','rta_exposure']] = subset_gisaid_subcol.division_exposure
+
+subset_gisaid_final = subset_gisaid_subcol.loc[subset_gisaid_subcol.division != 'Quebec']
+
 
 #print(subset_gisaid_subcol)
 
@@ -217,7 +223,7 @@ subset_gisaid_subcol.loc[subset_gisaid_subcol.country_exposure != 'Canada','divi
 #print(subset_gisaid_subcol.columns)
 
 subset_lspq_subcol.to_csv(out_metadata,sep="\t",index=False)
-subset_gisaid_subcol.to_csv(out_metadata,sep="\t",index=False,mode='a',header=False)
+subset_gisaid_final.to_csv(out_metadata,sep="\t",index=False,mode='a',header=False)
 
 SeqIO.write(rec_list,out_sequences,'fasta')
 

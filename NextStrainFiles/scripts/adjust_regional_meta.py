@@ -27,11 +27,21 @@ if __name__ == '__main__':
     metadata.insert(12, 'focal', True)
 
     metadata.loc[metadata.division != focal_region, 'focal'] = False
-    metadata.loc[metadata.division != focal_region, 'rta'] = metadata.country
-    metadata.loc[metadata.division != focal_region, 'rss'] = metadata.country
+
+#    metadata.loc[metadata.division != focal_region, 'rta'] = metadata.country
+    metadata.loc[metadata.division != focal_region, 'rta'] = metadata.division
+
+#    metadata.loc[metadata.division != focal_region, 'rss'] = metadata.country
+    metadata.loc[metadata.division != focal_region, 'rss'] = metadata.division
+
     metadata.loc[metadata.division != focal_region, 'country'] = metadata.country
-    metadata.loc[(metadata.division == focal_region) & (metadata.division_exposure != focal_region), 'rta_exposure'] = metadata.country_exposure
-    metadata.loc[(metadata.division == focal_region) & (metadata.division_exposure != focal_region), 'rss_exposure'] = metadata.country_exposure
+
+#    metadata.loc[(metadata.division == focal_region) & (metadata.division_exposure != focal_region), 'rta_exposure'] = metadata.country_exposure
+    metadata.loc[(metadata.division == focal_region) & (metadata.division_exposure != focal_region), 'rta_exposure'] = metadata.division_exposure
+
+#    metadata.loc[(metadata.division == focal_region) & (metadata.division_exposure != focal_region), 'rss_exposure'] = metadata.country_exposure
+    metadata.loc[(metadata.division == focal_region) & (metadata.division_exposure != focal_region), 'rss_exposure'] = metadata.division_exposure
+
     metadata.loc[(metadata.division == focal_region) & (metadata.division_exposure != focal_region), 'country_exposure'] = metadata.country_exposure
 
     metadata.to_csv(args.output, index=False, sep="\t")
