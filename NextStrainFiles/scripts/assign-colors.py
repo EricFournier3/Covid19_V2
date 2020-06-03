@@ -1,11 +1,75 @@
 import argparse
 import pandas as pd
 import yaml
+import os
+import subprocess
 
 
 # Forced colours MUST NOT appear in the ordering TSV
 forced_colors = {
 }
+
+def CleanUserColorsDict(TraitName,user_color):
+
+    cleaned_user_color = {}
+
+    rta_lat_long_file = os.path.join(os.getcwd(),"config/rta_lat_long.tsv")
+    rss_lat_long_file = os.path.join(os.getcwd(),"config/rss_lat_long.tsv")
+   
+    lookup = {'rss':rss_lat_long_file,'rta':rta_lat_long_file}
+ 
+    if (TraitName in ['country','division']):
+        for my_trait in user_color.keys():
+
+            check_rta = 0
+            check_rss = 0
+            try:
+                check_rta = subprocess.check_output(['grep','-c',my_trait, lookup['rta']])
+            except:
+                pass
+           
+            try:
+                check_rss = subprocess.check_output(['grep','-c',my_trait, lookup['rss']])
+            except:
+                pass
+
+            
+            if (int(check_rta) > 0) or (int(check_rss) > 0):
+                continue
+            else:
+                cleaned_user_color[my_trait] = user_color[my_trait] 
+       
+    elif (TraitName == 'rss'): 
+        for my_trait in user_color.keys():
+
+            check_rta = 0
+
+            try:
+                check_rta = subprocess.check_output(['grep','-c',my_trait, lookup['rta']])
+            except:
+                pass
+            
+            if (int(check_rta) > 0):
+                continue
+            else:
+                cleaned_user_color[my_trait] = user_color[my_trait] 
+
+    elif (TraitName == 'rta'): 
+        for my_trait in user_color.keys():
+            check_rss = 0
+
+            try:
+                check_rss = subprocess.check_output(['grep','-c',my_trait, lookup['rss']])
+            except:
+                pass
+
+            if (int(check_rss) > 0):
+                continue
+            else:
+                cleaned_user_color[my_trait] = user_color[my_trait] 
+        
+    return cleaned_user_color
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -18,11 +82,9 @@ if __name__ == '__main__':
     parser.add_argument('--metadata', type=str, help="if provided, restrict colors to only those found in metadata")
     parser.add_argument('--output', type=str, required=True, help="output colors tsv")
 
-    #EricF 20200526
     parser.add_argument('--user-colors', type=str, required=True, help="yaml input for user defined color")
     args = parser.parse_args()
 
-    #EricF 20200526
     user_colors = args.user_colors
     focal = False
     color_handle = open(user_colors)
@@ -67,21 +129,28 @@ if __name__ == '__main__':
     with open(args.output, 'w') as f:
         for trait_name, trait_array in assignment.items():
 
-            #EricF
-            trait_array = list(set(trait_array))
-
-            if len(trait_array)==0:
-                print(f"No traits found for {trait_name}")
-                continue
-            color_array = schemes[len(trait_array)]
-            #extra_trait_values = list(forced_colors.get(trait_name, {}).keys())
-            #extra_color_values = list(forced_colors.get(trait_name, {}).values())
             if focal:
-                extra_trait_values = list(user_colors_dict.keys())
-                extra_color_values = list(user_colors_dict.values())
+                cleaned_user_colors_dict = CleanUserColorsDict(trait_name,user_colors_dict)
+                extra_trait_values = list(cleaned_user_colors_dict.keys())
+                extra_color_values = list(cleaned_user_colors_dict.values())
+
             else:
                 extra_trait_values = []
                 extra_color_values = []
+
+            trait_array = set(trait_array)
+
+            extra_trait_values_set = set(extra_trait_values)
+
+            trait_array = list(trait_array - extra_trait_values_set)
+
+            if len(trait_array)==0 and len(extra_trait_values)==0:
+                print(f"No traits found for {trait_name}")
+                continue
+            try:
+                color_array = schemes[len(trait_array)]
+            except:
+                color_array = []
 
             zipped = list(zip(trait_array+extra_trait_values, color_array+extra_color_values))
             for trait_value, color in zipped:

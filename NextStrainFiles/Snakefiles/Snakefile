@@ -39,14 +39,14 @@ def get_todays_date():
 
 # Add new regions here!
 #EricF comment here
-#REGIONS = ["_africa", "_asia", "_europe", "_north-america", "_oceania", "_south-america", "_global"]
 #REGIONS = ["_quebec","_global"]
 #REGIONS = ["_global"]
 REGIONS = ["_quebec"]
 
+TRAIT_RESOLUTION = ["rta_exposure","rss_exposure"]
 
-nb_gisaid_seq_to_keep = "20"
-nb_lspq_seq_to_keep = "7"
+nb_gisaid_seq_to_keep = "70"
+nb_lspq_seq_to_keep = "20"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
 script_dir = os.path.join(current_dir,"scripts")
@@ -62,10 +62,7 @@ wildcard_constraints:
     region = "|".join(REGIONS) + "||",
     date = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
 
-#configfile: "config/Snakefile.yaml"
 configfile: "Snakefile.yaml"
-#EricF comment here
-#localrules: download
 
 
 # simple rule to call snakemake for outsider users
@@ -91,136 +88,9 @@ rule files:
         clades = "config/clades.tsv"
 
 files = rules.files.params
-
-'''
-rule prepare_input:
-    message:
-        """
-        Prepare sequences.fasta and metadata.tsv
-        """
-    output:
-        sequences = "data/sequences.fasta",
-        metadata = "data/metadata.tsv"
-    params:
-        work_dir = current_dir,
-        nextstrain_dir = nextstrain_base_dir
-    shell:
-        """
-        ./scripts/PrepareInput.sh {params.work_dir} {params.nextstrain_dir}
-        """
-'''
-
-'''
-EricF comment here
-rule files:
-    params:
-        include = "config/include.txt",
-        exclude = "config/exclude.txt",
-        reference = "config/reference.gb",
-        outgroup = "config/outgroup.fasta",
-        ordering = "config/ordering.tsv",
-        color_schemes = "config/color_schemes.tsv",
-        auspice_config = "config/auspice_config.json",
-        auspice_config_gisaid = "config/auspice_config_gisaid.json",
-        auspice_config_zh = "config/auspice_config_zh.json",
-        lat_longs = "config/lat_longs.tsv",
-        description = "config/description.md",
-        description_zh = "config/description_zh.md",
-        clades = "config/clades.tsv"
-'''
-
-
-#EricF add
 sequences = config["sequences"],
 metadata = config["metadata"]
 
-
-'''
-EricF comment here
-rule download:
-    message: "Downloading metadata and fasta files from S3"
-    output:
-        sequences = config["sequences"],
-        metadata = config["metadata"]
-    shell:
-        """
-        aws s3 cp s3://nextstrain-ncov-private/metadata.tsv {output.metadata:q}
-        aws s3 cp s3://nextstrain-ncov-private/sequences.fasta {output.sequences:q}
-        """
-
-'''
-
-'''
-EricF comment here
-rule filter:
-    message:
-        """
-        Filtering to
-          - excluding strains in {input.exclude}
-          - minimum genome length of {params.min_length}
-        """
-    input:
-        sequences = rules.download.output.sequences,
-        metadata = rules.download.output.metadata,
-        include = files.include,
-        exclude = files.exclude
-    output:
-        sequences = "results/filtered.fasta"
-    params:
-        min_length = 25000,
-        exclude_where = "date='2020' date='2020-01-XX' date='2020-02-XX' date='2020-03-XX' date='2020-04-XX' date='2020-01' date='2020-02' date='2020-03' date='2020-04'",
-        group_by = "division year month",
-        sequences_per_group = 2000
-    shell:
-        """
-        augur filter \
-            --sequences {input.sequences} \
-            --metadata {input.metadata} \
-            --include {input.include} \
-            --exclude {input.exclude} \
-            --exclude-where {params.exclude_where}\
-            --min-length {params.min_length} \
-            --group-by {params.group_by} \
-            --sequences-per-group {params.sequences_per_group} \
-            --output {output.sequences}
-        """
-
-'''
-
-'''
-rule filter:
-    message:
-        """
-        Filtering to
-          - excluding strains in {input.exclude}
-          - minimum genome length of {params.min_length}
-        """
-    input:
-        sequences = sequences,
-        metadata = metadata,
-        include = files.include,
-        exclude = files.exclude
-    output:
-        sequences = "results/filtered.fasta"
-    params:
-        min_length = 25000,
-        exclude_where = "date='2015'",
-        group_by = "division year month",
-        sequences_per_group = 2000
-    shell:
-        """
-        augur filter \
-            --sequences {input.sequences} \
-            --metadata {input.metadata} \
-            --include {input.include} \
-            --exclude {input.exclude} \
-            --exclude-where {params.exclude_where}\
-            --min-length {params.min_length} \
-            --group-by {params.group_by} \
-            --sequences-per-group {params.sequences_per_group} \
-            --output {output.sequences}
-        """
-'''
 
 rule filter:
     message:
@@ -360,19 +230,6 @@ rule subsample:
         cp {input} {output}
         """
 
-'''
-EricF comment
-rule adjust_metadata:
-    input:
-        rules.download.output.metadata
-    output:
-        "results/metadata_adjusted{region}.tsv"
-    shell:
-        """
-        cp {input} {output}
-        """
-'''
-
 rule adjust_metadata:
     input:
         metadata
@@ -382,44 +239,6 @@ rule adjust_metadata:
         """
         cp {input} {output}
         """
-'''
-EricF comment
-rule tree:
-    message: "Building tree"
-    input:
-        alignment = "results/subsampled_alignment{region}.fasta"
-    output:
-        tree = "results/tree_raw{region}.nwk"
-    threads: 4
-    shell:
-        """
-        augur tree \
-            --alignment {input.alignment} \
-            --output {output.tree} \
-            --nthreads {threads}
-        """
-'''
-
-
-'''
-rule tree:
-    message: "Building tree"
-    input:
-        alignment = "results/subsampled_alignment{region}.fasta"
-    output:
-        tree = "results/tree_raw{region}.nwk"
-    params:
-        method = "raxml"
-    threads: 35
-    shell:
-        """
-        augur tree \
-            --alignment {input.alignment} \
-            --output {output.tree} \
-            --nthreads {threads} \
-            --method {params.method}
-        """
-'''
 
 rule tree:
     message: "Building tree"
@@ -443,52 +262,6 @@ def _get_alignments_for_tree(wildcards):
         return rules.mask.output.alignment
     else:
         return rules.subsample_regions.output.alignment
-
-'''
-EricF comment
-rule refine:
-    message:
-        """
-        Refining tree
-          - estimate timetree
-          - estimate {params.date_inference} node dates
-        """
-    input:
-        tree = rules.tree.output.tree,
-        alignment = _get_alignments_for_tree,
-        metadata = "results/metadata_adjusted{region}.tsv"
-    output:
-        tree = "results/tree{region}.nwk",
-        node_data = "results/branch_lengths{region}.json"
-    threads: 1
-    params:
-        root = "Wuhan-Hu-1/2019",
-        clock_rate = 0.0008,
-        clock_std_dev = 0.0004,
-        date_inference = "marginal",
-        divergence_unit = "mutations",
-        clock_filter_iqd = 4,
-        coalescent = "skyline"
-    shell:
-        """
-        augur refine \
-            --tree {input.tree} \
-            --alignment {input.alignment} \
-            --metadata {input.metadata} \
-            --output-tree {output.tree} \
-            --output-node-data {output.node_data} \
-            --root {params.root} \
-            --timetree \
-            --clock-rate {params.clock_rate} \
-            --clock-std-dev {params.clock_std_dev} \
-            --coalescent {params.coalescent} \
-            --date-inference {params.date_inference} \
-            --divergence-unit {params.divergence_unit} \
-            --date-confidence \
-            --no-covariance \
-            --clock-filter-iqd {params.clock_filter_iqd}
-        """
-'''
 
 rule refine:
     message:
@@ -556,24 +329,6 @@ rule ancestral:
             --infer-ambiguous
         """
 
-'''
-EricF comment here
-rule haplotype_status:
-    message: "Annotating haplotype status relative to {params.reference_node_name}"
-    input:
-        nt_muts = rules.ancestral.output.node_data
-    output:
-        node_data = "results/haplotype_status{region}.json"
-    params:
-        reference_node_name = "USA/WA1/2020"
-    shell:
-        """
-        python3 scripts/annotate-haplotype-status.py \
-            --ancestral-sequences {input.nt_muts} \
-            --reference-node-name {params.reference_node_name:q} \
-            --output {output.node_data}
-        """
-'''
 
 rule haplotype_status:
     message: "Annotating haplotype status relative to {params.reference_node_name}"
@@ -608,24 +363,10 @@ rule translate:
             --output-node-data {output.node_data} \
         """
 
-'''
-EricF comment here
-def _get_sampling_trait_for_wildcards(wildcards):
-    mapping = {"_north-america": "country", "_oceania": "country"} # TODO: switch to "division"
-    return mapping[wildcards.region] if wildcards.region in mapping else "country"
-'''
 
 def _get_sampling_trait_for_wildcards(wildcards):
     mapping = {}
     return mapping[wildcards.region] if wildcards.region in mapping else "rta"
-
-'''
-EricF comment here
-def _get_exposure_trait_for_wildcards(wildcards):
-    mapping = {"_north-america": "country_exposure", "_oceania": "country_exposure"} # TODO: switch to "division_exposure"
-    return mapping[wildcards.region] if wildcards.region in mapping else "country_exposure"
-'''
-
 
 def _get_exposure_trait_for_wildcards(wildcards):
     mapping = {}
@@ -641,9 +382,11 @@ rule traits:
         tree = "results/tree{region}.nwk",
         metadata = "results/metadata_adjusted{region}.tsv"
     output:
-        node_data = "results/traits{region}.json",
+        #node_data = "results/traits{region}.json",
+        node_data = "results/traits{region}_{trait_resolution}.json",
     params:
-        columns = _get_exposure_trait_for_wildcards,
+#        columns = _get_exposure_trait_for_wildcards,
+        columns = "{trait_resolution}",
         sampling_bias_correction = 2.5
     shell:
         """
@@ -672,28 +415,6 @@ rule clades:
             --clades {input.clades} \
             --output-node-data {output.clade_data}
         """
-
-
-'''
-EricF 20200526
-rule colors:
-    message: "Constructing colors file"
-    input:
-        ordering = files.ordering,
-        color_schemes = files.color_schemes,
-        metadata = "results/metadata_adjusted{region}.tsv"
-    output:
-        colors = "config/colors{region}.tsv"
-    shell:
-        """
-        python3 scripts/assign-colors.py \
-            --ordering {input.ordering} \
-            --color-schemes {input.color_schemes} \
-            --output {output.colors} \
-            --metadata {input.metadata}
-        """
-'''
-
 
 rule colors:
     message: "Constructing colors file"
@@ -771,7 +492,8 @@ rule export:
         branch_lengths = rules.refine.output.node_data,
         nt_muts = rules.ancestral.output.node_data,
         aa_muts = rules.translate.output.node_data,
-        traits = rules.traits.output.node_data,
+        #traits = rules.traits.output.node_data,
+        traits = expand(rules.traits.output.node_data,trait_resolution=TRAIT_RESOLUTION, allow_missing=True),
         auspice_config = files.auspice_config,
         colors = rules.colors.output.colors,
         lat_longs = files.lat_longs,
@@ -796,72 +518,6 @@ rule export:
             --output {output.auspice_json}
         """
 
-'''
-EricF comment
-rule export_gisaid:
-    message: "Exporting data files for for auspice"
-    input:
-        tree = rules.refine.output.tree,
-        metadata = "results/metadata_adjusted{region}.tsv",
-        branch_lengths = rules.refine.output.node_data,
-        nt_muts = rules.ancestral.output.node_data,
-        aa_muts = rules.translate.output.node_data,
-        traits = rules.traits.output.node_data,
-        auspice_config = files.auspice_config_gisaid,
-        colors = rules.colors.output.colors,
-        lat_longs = files.lat_longs,
-        description = files.description,
-        clades = rules.clades.output.clade_data,
-        recency = rules.recency.output
-    output:
-        auspice_json = "results/ncov_gisaid_with_accessions{region}.json"
-    shell:
-        """
-        augur export v2 \
-            --tree {input.tree} \
-            --metadata {input.metadata} \
-            --node-data {input.branch_lengths} {input.nt_muts} {input.aa_muts} {input.traits} {input.clades} {input.recency} \
-            --auspice-config {input.auspice_config} \
-            --colors {input.colors} \
-            --lat-longs {input.lat_longs} \
-            --description {input.description} \
-            --output {output.auspice_json}
-        """
-'''
-
-'''
-EricF comment
-rule export_zh:
-    message: "Exporting data files for for auspice"
-    input:
-        tree = rules.refine.output.tree,
-        metadata = "results/metadata_adjusted{region}.tsv",
-        branch_lengths = rules.refine.output.node_data,
-        nt_muts = rules.ancestral.output.node_data,
-        aa_muts = rules.translate.output.node_data,
-        traits = rules.traits.output.node_data,
-        auspice_config = files.auspice_config_zh,
-        colors = rules.colors.output.colors,
-        lat_longs = files.lat_longs,
-        description = files.description_zh,
-        clades = rules.clades.output.clade_data,
-        recency = rules.recency.output
-    output:
-        auspice_json = "results/ncov_zh_with_accessions{region}.json"
-    shell:
-        """
-        augur export v2 \
-            --tree {input.tree} \
-            --metadata {input.metadata} \
-            --node-data {input.branch_lengths} {input.nt_muts} {input.aa_muts} {input.traits} {input.clades} {input.recency} \
-            --auspice-config {input.auspice_config} \
-            --colors {input.colors} \
-            --lat-longs {input.lat_longs} \
-            --description {input.description} \
-            --output {output.auspice_json}
-        """
-'''
-
 
 rule incorporate_travel_history:
     message: "Adjusting main auspice JSON to take into account travel history"
@@ -870,8 +526,10 @@ rule incorporate_travel_history:
         colors = rules.colors.output.colors,
         lat_longs = files.lat_longs
     params:
-        sampling = _get_sampling_trait_for_wildcards,
-        exposure = _get_exposure_trait_for_wildcards
+        sampling = "rta rss",
+        exposure = "rta_exposure rss_exposure",
+        #sampling = "rta",
+        #exposure = "rta_exposure",
     output:
         auspice_json = "results/ncov_with_accessions_and_travel_branches{region}.json"
     shell:
@@ -885,57 +543,6 @@ rule incorporate_travel_history:
             --output {output.auspice_json}
         """
 
-'''
-EricF comment
-rule incorporate_travel_history_gisaid:
-    message: "Adjusting GISAID auspice JSON to take into account travel history"
-    input:
-        auspice_json = rules.export_gisaid.output.auspice_json,
-        colors = rules.colors.output.colors,
-        lat_longs = files.lat_longs
-    params:
-        sampling = _get_sampling_trait_for_wildcards,
-        exposure = _get_exposure_trait_for_wildcards
-    output:
-        auspice_json = "results/ncov_gisaid_with_accessions_and_travel_branches{region}.json"
-    shell:
-        """
-        python3 ./scripts/modify-tree-according-to-exposure.py \
-            --input {input.auspice_json} \
-            --colors {input.colors} \
-            --lat-longs {input.lat_longs} \
-            --sampling {params.sampling} \
-            --exposure {params.exposure} \
-            --output {output.auspice_json}
-        """
-'''
-
-'''
-EricF comment
-rule incorporate_travel_history_zh:
-    message: "Adjusting ZH auspice JSON to take into account travel history"
-    input:
-        auspice_json = rules.export_zh.output.auspice_json,
-        colors = rules.colors.output.colors,
-        lat_longs = files.lat_longs
-    params:
-        sampling = _get_sampling_trait_for_wildcards,
-        exposure = _get_exposure_trait_for_wildcards
-    output:
-        auspice_json = "results/ncov_zh_with_accessions_and_travel_branches{region}.json"
-    shell:
-        """
-        python3 ./scripts/modify-tree-according-to-exposure.py \
-            --input {input.auspice_json} \
-            --colors {input.colors} \
-            --lat-longs {input.lat_longs} \
-            --sampling {params.sampling} \
-            --exposure {params.exposure} \
-            --output {output.auspice_json}
-        """
-'''
-
-
 rule fix_colorings:
     message: "Remove extraneous colorings for main build"
     input:
@@ -948,39 +555,6 @@ rule fix_colorings:
             --input {input.auspice_json} \
             --output {output.auspice_json}
         """
-
-
-'''
-EricF comment
-rule fix_colorings_gisaid:
-    message: "Remove extraneous colorings for the GISAID build"
-    input:
-        auspice_json = rules.incorporate_travel_history_gisaid.output.auspice_json
-    output:
-        auspice_json = "auspice/ncov{region}_gisaid.json"
-    shell:
-        """
-        python scripts/fix-colorings.py \
-            --input {input.auspice_json} \
-            --output {output.auspice_json}
-        """
-'''
-
-'''
-EricF comment
-rule fix_colorings_zh:
-    message: "Remove extraneous colorings for the Chinese language build"
-    input:
-        auspice_json = rules.incorporate_travel_history_zh.output.auspice_json
-    output:
-        auspice_json = "auspice/ncov{region}_zh.json"
-    shell:
-        """
-        python scripts/fix-colorings.py \
-            --input {input.auspice_json} \
-            --output {output.auspice_json}
-        """
-'''
 
 
 rule dated_json:
