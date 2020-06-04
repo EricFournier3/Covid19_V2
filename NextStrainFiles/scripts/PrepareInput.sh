@@ -24,6 +24,9 @@ nextstrain_files_base_dir="${2}"
 nb_lspq_seq_to_keep=$3
 nb_gisaid_seq_to_keep=$4
 
+nb_canadian_gisaid_seq_to_keep=$5
+
+
 
 BuildFramework(){
    echo "In BuildFrameWork"
@@ -95,8 +98,21 @@ ExcludeSamples(){
  mv ${gisaid_dir}"gisaid_all.fasta"   ${gisaid_dir}"gisaid_all_temp.fasta"
  mv ${lspq_dir}"sequences.fasta" ${lspq_dir}"sequences_temp.fasta"
 
- seqtk sample -s $RANDOM ${gisaid_dir}"gisaid_all_temp.fasta" ${nb_gisaid_seq_to_keep} > ${gisaid_dir}"gisaid_all.fasta"
+ non_canadian_seq=${gisaid_dir}"non_canadian_seq.fasta"
+ canadian_seq=${gisaid_dir}"canadian_seq.fasta"
+
+ seqkit grep -r -p 'Canada' ${gisaid_dir}"gisaid_all_temp.fasta" > ${canadian_seq} 
+ seqkit grep -r -p 'Canada' ${gisaid_dir}"gisaid_all_temp.fasta" -v > ${non_canadian_seq} 
+
+ seqtk sample -s $RANDOM "${canadian_seq}" ${nb_canadian_gisaid_seq_to_keep} > ${gisaid_dir}"gisaid_all.fasta"
+ seqtk sample -s $RANDOM "${non_canadian_seq}" ${nb_gisaid_seq_to_keep} >> ${gisaid_dir}"gisaid_all.fasta"
  seqtk sample -s $RANDOM ${lspq_dir}"sequences_temp.fasta" ${nb_lspq_seq_to_keep} > ${lspq_dir}"sequences.fasta"
+
+ rm ${canadian_seq}
+ rm ${non_canadian_seq}
+ rm ${gisaid_dir}"gisaid_all_temp.fasta"
+ rm ${lspq_dir}"sequences_temp.fasta"
+
 
 }
 
