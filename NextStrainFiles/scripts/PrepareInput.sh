@@ -104,7 +104,13 @@ ExcludeSamples(){
  seqkit grep -r -p 'Canada' ${gisaid_dir}"gisaid_all_temp.fasta" > ${canadian_seq} 
  seqkit grep -r -p 'Canada' ${gisaid_dir}"gisaid_all_temp.fasta" -v > ${non_canadian_seq} 
 
- seqtk sample -s $RANDOM "${canadian_seq}" ${nb_canadian_gisaid_seq_to_keep} > ${gisaid_dir}"gisaid_all.fasta"
+ if ! [ "${nb_canadian_gisaid_seq_to_keep}" == "all" ]
+   then
+   seqtk sample -s $RANDOM "${canadian_seq}" ${nb_canadian_gisaid_seq_to_keep} > ${gisaid_dir}"gisaid_all.fasta"
+ else
+   cat "${canadian_seq}" > ${gisaid_dir}"gisaid_all.fasta"
+ fi
+
  seqtk sample -s $RANDOM "${non_canadian_seq}" ${nb_gisaid_seq_to_keep} >> ${gisaid_dir}"gisaid_all.fasta"
  seqtk sample -s $RANDOM ${lspq_dir}"sequences_temp.fasta" ${nb_lspq_seq_to_keep} > ${lspq_dir}"sequences.fasta"
 
