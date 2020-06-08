@@ -84,7 +84,8 @@ rule subsample_focus:
     params:
         group_by = "rta year month",
         seq_per_group_global = 10000, # i.e. if not regional build
-        seq_per_group_regional = 10000
+        seq_per_group_regional = 10000,
+        max_dup_seq_per_group = 2
     shell:
         """
         #Figure out what region being wanted
@@ -111,6 +112,7 @@ rule subsample_focus:
             $regionarg"$region" \
             --group-by {params.group_by} \
             --sequences-per-group $seq_per_group \
+            --max-dup-per-group {params.max_dup_seq_per_group} \
             --output {output.sequences} \
 
         """
@@ -160,12 +162,22 @@ rule subsample_context:
     output:
         sequences = "results/subsample_context{region}.fasta"
     params:
+        #group_by = "country year month",
         group_by = "country year month",
-        sequences_per_group = 10000
+        max_dup_seq_per_group = 1,
+        sequences_per_group = 3,
+        all_canadian_seq = True
     shell:
         """
         #Figure out what region being wanted
         rgn="{wildcards.region}"
+        
+        all_canadian_seq_option=""        
+
+        if [ "{params.all_canadian_seq}" == "True" ]
+            then
+            all_canadian_seq_option="--all-canadian-seq"
+        fi
 
         if [ "$rgn" = "_global" ]; then
             echo "Global run - no context needed"
@@ -184,7 +196,10 @@ rule subsample_context:
                 --priority {input.priorities} \
                 --group-by {params.group_by} \
                 --sequences-per-group {params.sequences_per_group} \
-                --output {output.sequences}
+                --max-dup-per-group {params.max_dup_seq_per_group} \
+                --output {output.sequences} \
+                $all_canadian_seq_option \
+                
         fi
         """
 

@@ -46,8 +46,9 @@ REGIONS = ["_quebec"]
 TRAIT_RESOLUTION = ["rta_exposure","rss_exposure"]
 
 
+#nb_canadian_gisaid_seq_to_keep = "all"
 nb_canadian_gisaid_seq_to_keep = "10"
-nb_gisaid_seq_to_keep = "70"
+nb_gisaid_seq_to_keep = "10"
 nb_lspq_seq_to_keep = "5"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
@@ -93,6 +94,8 @@ files = rules.files.params
 sequences = config["sequences"],
 metadata = config["metadata"]
 
+#--group-by {params.group_by} \
+#--sequences-per-group {params.sequences_per_group} \
 
 rule filter:
     message:
@@ -111,9 +114,9 @@ rule filter:
     params:
         min_length = 25000,
         exclude_where = "date='2015'",
-        group_by = "rta year month",
-        max_date = "2020-10-27",
-        sequences_per_group = 10000
+        #group_by = "rta year month",
+        max_date = "2020-10-27"
+        #sequences_per_group = 10000
     shell:
         """
         augur filter \
@@ -122,8 +125,6 @@ rule filter:
             --include {input.include} \
             --exclude {input.exclude} \
             --min-length {params.min_length} \
-            --group-by {params.group_by} \
-            --sequences-per-group {params.sequences_per_group} \
             --max-date {params.max_date} \
             --output {output.sequences}
         """
@@ -382,7 +383,8 @@ rule traits:
         """
     input:
         tree = "results/tree{region}.nwk",
-        metadata = "results/metadata_adjusted{region}.tsv"
+        metadata = "results/metadata_adjusted{region}.tsv",
+        weights = "config/weights.tsv"
     output:
         #node_data = "results/traits{region}.json",
         node_data = "results/traits{region}_{trait_resolution}.json",
@@ -399,6 +401,7 @@ rule traits:
             --columns {params.columns} \
             --confidence \
             --sampling-bias-correction {params.sampling_bias_correction} \
+            --weights {input.weights} \
         """
 
 rule clades:
