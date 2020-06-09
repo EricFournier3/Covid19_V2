@@ -43,13 +43,14 @@ def get_todays_date():
 #REGIONS = ["_global"]
 REGIONS = ["_quebec"]
 
-TRAIT_RESOLUTION = ["rta_exposure","rss_exposure"]
+#TRAIT_RESOLUTION = ["rta_exposure","rss_exposure"]
+TRAIT_RESOLUTION = ["rss_exposure"]
 
 
 #nb_canadian_gisaid_seq_to_keep = "all"
-nb_canadian_gisaid_seq_to_keep = "10"
+nb_canadian_gisaid_seq_to_keep = "0"
 nb_gisaid_seq_to_keep = "10"
-nb_lspq_seq_to_keep = "5"
+nb_lspq_seq_to_keep = "500"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
 script_dir = os.path.join(current_dir,"scripts")
@@ -508,7 +509,8 @@ rule export:
     output:
         auspice_json = "results/ncov_with_accessions{region}.json"
     params:
-        title = export_title
+        title = export_title,
+        geo_resolutions = "rss division country"
     shell:
         """
         augur export v2 \
@@ -520,9 +522,35 @@ rule export:
             --lat-longs {input.lat_longs} \
             --title {params.title:q} \
             --description {input.description} \
+            --geo-resolutions {params.geo_resolutions} \
             --output {output.auspice_json}
         """
 
+rule incorporate_travel_history:
+    message: "Adjusting main auspice JSON to take into account travel history"
+    input:
+        auspice_json = rules.export.output.auspice_json,
+        colors = rules.colors.output.colors,
+        lat_longs = files.lat_longs
+    params:
+        sampling = "rss",
+        exposure = "rss_exposure",
+        #sampling = "rta",
+        #exposure = "rta_exposure",
+    output:
+        auspice_json = "results/ncov_with_accessions_and_travel_branches{region}.json"
+    shell:
+        """
+        python3 ./scripts/modify-tree-according-to-exposure.py \
+            --input {input.auspice_json} \
+            --colors {input.colors} \
+            --lat-longs {input.lat_longs} \
+            --sampling {params.sampling} \
+            --exposure {params.exposure} \
+            --output {output.auspice_json}
+        """
+
+'''
 
 rule incorporate_travel_history:
     message: "Adjusting main auspice JSON to take into account travel history"
@@ -547,6 +575,8 @@ rule incorporate_travel_history:
             --exposure {params.exposure} \
             --output {output.auspice_json}
         """
+
+'''
 
 rule fix_colorings:
     message: "Remove extraneous colorings for main build"

@@ -3,6 +3,10 @@ import json
 from functools import partial
 import copy
 
+
+do_rta = False
+
+
 def traverse(node, fun):
     """ Traverse the tree calling `fun(node)` on each node """
     fun(node)
@@ -25,34 +29,57 @@ def modify(node):
     """
     if "children" in node:
         return node
-    rta_trait = node["node_attrs"].get(RTA_SAMPLING_TRAIT, {}).get("value", "")
-    rta_recoded = node["node_attrs"].get(RTA_EXPOSURE_TRAIT, {}).get("value", "")
+
+    if do_rta:
+        rta_trait = node["node_attrs"].get(RTA_SAMPLING_TRAIT, {}).get("value", "")
+        rta_recoded = node["node_attrs"].get(RTA_EXPOSURE_TRAIT, {}).get("value", "")
+
     rss_trait = node["node_attrs"].get(RSS_SAMPLING_TRAIT, {}).get("value", "")
     rss_recoded = node["node_attrs"].get(RSS_EXPOSURE_TRAIT, {}).get("value", "")
 
-    if (not rta_trait or not rta_recoded or rta_trait == rta_recoded) or (not rss_trait or not rss_recoded or rss_trait == rss_recoded):
-        return node
+    if do_rta:
+        if (not rta_trait or not rta_recoded or rta_trait == rta_recoded) or (not rss_trait or not rss_recoded or rss_trait == rss_recoded):
+            return node
+    else:
+        if (not rss_trait or not rss_recoded or rss_trait == rss_recoded):
+            return node
 
     ## Make a new node which is the INTERMEDIATE (i.e. a single child, which is `node` with slight modifications)
-    n = {
-        "name": node["name"]+"_travel_history",
-        "node_attrs": {
-            "div": node["node_attrs"]["div"],
-            "num_date": node["node_attrs"]["num_date"],
-            RTA_EXPOSURE_TRAIT: node["node_attrs"][RTA_EXPOSURE_TRAIT],
-            RSS_EXPOSURE_TRAIT: node["node_attrs"][RSS_EXPOSURE_TRAIT]
-        },
-        "children": [node]
+    if do_rta:
+        n = {
+            "name": node["name"]+"_travel_history",
+            "node_attrs": {
+                "div": node["node_attrs"]["div"],
+                "num_date": node["node_attrs"]["num_date"],
+                RTA_EXPOSURE_TRAIT: node["node_attrs"][RTA_EXPOSURE_TRAIT],
+                RSS_EXPOSURE_TRAIT: node["node_attrs"][RSS_EXPOSURE_TRAIT]
+            },
+            "children": [node]
     }
+    else:
+        n = {
+            "name": node["name"]+"_travel_history",
+            "node_attrs": {
+                "div": node["node_attrs"]["div"],
+                "num_date": node["node_attrs"]["num_date"],
+                RSS_EXPOSURE_TRAIT: node["node_attrs"][RSS_EXPOSURE_TRAIT]
+            },
+            "children": [node]
+        }
 
 
     # Store a backup of the original exposure, to put back in later
     #node["node_attrs"]["exposure_backup"] = node["node_attrs"][EXPOSURE_TRAIT]
     # change actual NODE EXPOSURE_TRAIT to have SAMPLING_TRAIT
     #node["node_attrs"][EXPOSURE_TRAIT] = node["node_attrs"][SAMPLING_TRAIT]
-    node["node_attrs"]["rta_exposure_backup"] = node["node_attrs"][RTA_EXPOSURE_TRAIT]
+
+
+    if do_rta:
+        node["node_attrs"]["rta_exposure_backup"] = node["node_attrs"][RTA_EXPOSURE_TRAIT]
     node["node_attrs"]["rss_exposure_backup"] = node["node_attrs"][RSS_EXPOSURE_TRAIT]
-    node["node_attrs"][RTA_EXPOSURE_TRAIT] = node["node_attrs"][RTA_SAMPLING_TRAIT]
+
+    if do_rta:
+        node["node_attrs"][RTA_EXPOSURE_TRAIT] = node["node_attrs"][RTA_SAMPLING_TRAIT]
     node["node_attrs"][RSS_EXPOSURE_TRAIT] = node["node_attrs"][RSS_SAMPLING_TRAIT]
     return n
 
@@ -71,32 +98,49 @@ def switch_attribute(node):
     """
     For a given node, replace SAMPLING_TRAIT with the info in EXPOSURE_TRAIT (removing the latter)
     """
-    rta_exposure = node["node_attrs"].get(RTA_EXPOSURE_TRAIT, None)
+    
+
+    if do_rta:
+        rta_exposure = node["node_attrs"].get(RTA_EXPOSURE_TRAIT, None)
     rss_exposure = node["node_attrs"].get(RSS_EXPOSURE_TRAIT, None)
 
-    rta_sampling = node["node_attrs"].get(RTA_SAMPLING_TRAIT, None)
-    rss_sampling = node["node_attrs"].get(RTA_SAMPLING_TRAIT, None)
 
-    if (rta_sampling and not rta_exposure):
-        raise Exception("Where there's RTA_SAMPLING_TRAIT we should always have RTA_EXPOSURE_TRAIT")
+    if do_rta:
+        rta_sampling = node["node_attrs"].get(RTA_SAMPLING_TRAIT, None)
+    rss_sampling = node["node_attrs"].get(RSS_SAMPLING_TRAIT, None)
+
+
+    if do_rta:
+        if (rta_sampling and not rta_exposure):
+            raise Exception("Where there's RTA_SAMPLING_TRAIT we should always have RTA_EXPOSURE_TRAIT")
     if (rss_sampling and not rss_exposure):
         raise Exception("Where there's RSS_SAMPLING_TRAIT we should always have RSS_EXPOSURE_TRAIT")
 
-    if rta_exposure:
-        node["node_attrs"][RTA_SAMPLING_TRAIT] = copy.copy(rta_exposure)
-        if "rta_exposure_backup" in node["node_attrs"] and node["node_attrs"]["rta_exposure_backup"]["value"] != node["node_attrs"][RTA_EXPOSURE_TRAIT]["value"]:
-            node["node_attrs"][RTA_EXPOSURE_TRAIT]["value"] = node["node_attrs"]["rta_exposure_backup"]["value"]
-            del node["node_attrs"]["rta_exposure_backup"]
-        else:
-            del node["node_attrs"][RTA_EXPOSURE_TRAIT]
 
-    if rss_exposure:
-        node["node_attrs"][RSS_SAMPLING_TRAIT] = copy.copy(rss_exposure)
-        if "rss_exposure_backup" in node["node_attrs"] and node["node_attrs"]["rss_exposure_backup"]["value"] != node["node_attrs"][RSS_EXPOSURE_TRAIT]["value"]:
-            node["node_attrs"][RSS_EXPOSURE_TRAIT]["value"] = node["node_attrs"]["rss_exposure_backup"]["value"]
-            del node["node_attrs"]["rss_exposure_backup"]
-        else:
-            del node["node_attrs"][RSS_EXPOSURE_TRAIT]
+    if do_rta:
+        if rta_exposure:
+            node["node_attrs"][RTA_SAMPLING_TRAIT] = copy.copy(rta_exposure)
+            if "rta_exposure_backup" in node["node_attrs"] and node["node_attrs"]["rta_exposure_backup"]["value"] != node["node_attrs"][RTA_EXPOSURE_TRAIT]["value"]:
+                node["node_attrs"][RTA_EXPOSURE_TRAIT]["value"] = node["node_attrs"]["rta_exposure_backup"]["value"]
+                del node["node_attrs"]["rta_exposure_backup"]
+            else:
+                del node["node_attrs"][RTA_EXPOSURE_TRAIT]
+
+        if rss_exposure:
+            node["node_attrs"][RSS_SAMPLING_TRAIT] = copy.copy(rss_exposure)
+            if "rss_exposure_backup" in node["node_attrs"] and node["node_attrs"]["rss_exposure_backup"]["value"] != node["node_attrs"][RSS_EXPOSURE_TRAIT]["value"]:
+                node["node_attrs"][RSS_EXPOSURE_TRAIT]["value"] = node["node_attrs"]["rss_exposure_backup"]["value"]
+                del node["node_attrs"]["rss_exposure_backup"]
+            else:
+                del node["node_attrs"][RSS_EXPOSURE_TRAIT]
+    else:
+        if rss_exposure:
+            node["node_attrs"][RSS_SAMPLING_TRAIT] = copy.copy(rss_exposure)
+            if "rss_exposure_backup" in node["node_attrs"] and node["node_attrs"]["rss_exposure_backup"]["value"] != node["node_attrs"][RSS_EXPOSURE_TRAIT]["value"]:
+                node["node_attrs"][RSS_EXPOSURE_TRAIT]["value"] = node["node_attrs"]["rss_exposure_backup"]["value"]
+                del node["node_attrs"]["rss_exposure_backup"]
+            else:
+                del node["node_attrs"][RSS_EXPOSURE_TRAIT]
 
 
 def reset_rta_colors(colorings, values_wanted, colors):
@@ -129,7 +173,7 @@ def reset_rss_colors(colorings, values_wanted, colors):
             print("Heads up: a colour has been set for RSS_SAMPLING_TRAIT -> {} but it is not found in the data!".format(name))
 
     for missing_name in values_wanted_lower - values_added:
-        print("WARNING: Colour for {}  -> {} is missing & auspice will choose a shade of grey for this.".format(RTA_SAMPLING_TRAIT, missing_name))
+        print("WARNING: Colour for {}  -> {} is missing & auspice will choose a shade of grey for this.".format(RSS_SAMPLING_TRAIT, missing_name))
 
 
 def update_rta_latlongs(geo_resolutions, values_wanted, latlongs):
@@ -171,22 +215,40 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=str, metavar="JSON", required=True, help="output Auspice JSON")
     args = parser.parse_args()
 
-    RTA_SAMPLING_TRAIT = args.sampling[0]
-    RSS_SAMPLING_TRAIT = args.sampling[1]
 
-    RTA_EXPOSURE_TRAIT = args.exposure[0]
-    RSS_EXPOSURE_TRAIT = args.exposure[1]
+    if('rta' in args.sampling ):
+        do_rta = True
+
+
+    print("DO RTA IS ",str(do_rta))
+
+
+    if do_rta:
+        RTA_SAMPLING_TRAIT = args.sampling[0]
+        RSS_SAMPLING_TRAIT = args.sampling[1]
+    
+        RTA_EXPOSURE_TRAIT = args.exposure[0]
+        RSS_EXPOSURE_TRAIT = args.exposure[1]
+    else:
+        RSS_SAMPLING_TRAIT = args.sampling[0]
+    
+        RSS_EXPOSURE_TRAIT = args.exposure[0]
+
 
     with open(args.input) as fh:
        input_json = json.load(fh)
 
+    print("****************************** RSS_SAMPLING_TRAIT is ",str(RSS_SAMPLING_TRAIT))
+
+
     # Read colorings & lat-longs
-    rta_colors = []
-    with open(args.colors) as fh:
-        for line in fh:
-            fields = line.strip().split("\t")
-            if len(fields) == 3 and ((fields[0] == RTA_SAMPLING_TRAIT)):
-                rta_colors.append([fields[1], fields[2]])
+    if do_rta:
+        rta_colors = []
+        with open(args.colors) as fh:
+            for line in fh:
+                fields = line.strip().split("\t")
+                if len(fields) == 3 and ((fields[0] == RTA_SAMPLING_TRAIT)):
+                    rta_colors.append([fields[1], fields[2]])
 
     rss_colors = []
     with open(args.colors) as fh:
@@ -195,12 +257,14 @@ if __name__ == '__main__':
             if len(fields) == 3 and ((fields[0] == RSS_SAMPLING_TRAIT)):
                 rss_colors.append([fields[1], fields[2]])
 
-    rta_latlongs = {}
-    with open(args.lat_longs) as fh:
-        for line in fh:
-            fields = line.strip().split("\t")
-            if (len(fields) == 4) and ((fields[0] == RTA_SAMPLING_TRAIT)):
-                rta_latlongs[fields[1]] = {"latitude": float(fields[2]), "longitude": float(fields[3])}
+
+    if do_rta:
+        rta_latlongs = {}
+        with open(args.lat_longs) as fh:
+            for line in fh:
+                fields = line.strip().split("\t")
+                if (len(fields) == 4) and ((fields[0] == RTA_SAMPLING_TRAIT)):
+                    rta_latlongs[fields[1]] = {"latitude": float(fields[2]), "longitude": float(fields[3])}
 
     rss_latlongs = {}
     with open(args.lat_longs) as fh:
@@ -220,22 +284,31 @@ if __name__ == '__main__':
     #sampling_values = set()
     #traverse(input_json["tree"], partial(collect_exposures, sampling_values))
 
-    rta_sampling_values = set()
-    traverse(input_json["tree"], partial(collect_rta_exposures, rta_sampling_values))
+
+    if do_rta:
+        rta_sampling_values = set()
+        traverse(input_json["tree"], partial(collect_rta_exposures, rta_sampling_values))
     rss_sampling_values = set()
     traverse(input_json["tree"], partial(collect_rss_exposures, rss_sampling_values))
 
 
     # Ensure the colors & lat-longsare up-to-date
-    reset_rta_colors(input_json["meta"]["colorings"], rta_sampling_values, rta_colors)
+    if do_rta:
+        reset_rta_colors(input_json["meta"]["colorings"], rta_sampling_values, rta_colors)
     reset_rss_colors(input_json["meta"]["colorings"], rss_sampling_values, rss_colors)
-    update_rta_latlongs(input_json["meta"]["geo_resolutions"], rta_sampling_values, rss_latlongs)
+
+    if do_rta:
+        update_rta_latlongs(input_json["meta"]["geo_resolutions"], rta_sampling_values, rta_latlongs)
     update_rss_latlongs(input_json["meta"]["geo_resolutions"], rss_sampling_values, rss_latlongs)
 
     # Remove EXPOSURE_TRAIT from filters - we only included it so that `augur_export` would include the trait
     # on the nodes.
     #input_json["meta"]["filters"] = [f for f in input_json["meta"]["filters"] if f!=EXPOSURE_TRAIT]
-    input_json["meta"]["filters"] = [f for f in input_json["meta"]["filters"] if f not in [RSS_EXPOSURE_TRAIT,RTA_EXPOSURE_TRAIT]]
+
+    if do_rta:
+        input_json["meta"]["filters"] = [f for f in input_json["meta"]["filters"] if f not in [RSS_EXPOSURE_TRAIT,RTA_EXPOSURE_TRAIT]]
+    else:
+        input_json["meta"]["filters"] = [f for f in input_json["meta"]["filters"] if f not in [RSS_EXPOSURE_TRAIT]]
 
     #with open(args.output, 'w') as fh:
     with open(args.output, 'w') as fh:

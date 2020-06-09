@@ -157,7 +157,7 @@ def get_config_colorings_as_dict(config):
     return config_colorings
 
 
-def set_colorings(data_json, config, command_line_colorings, metadata_names, node_data_colorings, provided_colors, node_attrs):
+def set_colorings(data_json, config, command_line_colorings, metadata_names, node_data_colorings, provided_colors, node_attrs,geo_resol):
 
     def _get_type(key, trait_values):
         # for some keys we know what the type must be
@@ -210,10 +210,12 @@ def set_colorings(data_json, config, command_line_colorings, metadata_names, nod
         # fallthrough
         return key
 
-    def _add_color_scale(coloring):
-        #print("HERE COLORING IS ", str(coloring))
+    def _add_color_scale(coloring,geo_resol):
         key = coloring["key"]
-        #print("**************** KEY IS ",str(key))
+        if geo_resol and 'rta' not in geo_resol:
+            if key == 'rta':
+                return coloring
+        
         #print("PROVIDED COLOR IS ", str(provided_colors))
         if key.lower() in provided_colors:
             scale = []
@@ -228,6 +230,7 @@ def set_colorings(data_json, config, command_line_colorings, metadata_names, nod
                 #print("PROVIDED KEY IS HERE ", str(provided_key.lower()))
                 #print("CHECK IN ", str(trait_values))
                 if provided_key.lower() in trait_values:
+                    #print("***************** TRAIT VALUES IS ",str(trait_values))
                     #print("YES FOR ",provided_key.lower())
                     scale.append([trait_values[provided_key.lower()], provided_color])
                     trait_values_unseen.discard(provided_key.lower())
@@ -276,7 +279,7 @@ def set_colorings(data_json, config, command_line_colorings, metadata_names, nod
         auto_colorings = [name for name in node_data_colorings
                           if node_data_prop_is_normal_trait(name) and name not in metadata_names]
 
-        print("AUTO COLORING ",str(auto_colorings))
+        #print("AUTO COLORING ",str(auto_colorings))
 
         colorings = []
         # If we have command line colorings, it seems we (a) ignore any provided in the config file
@@ -291,8 +294,6 @@ def set_colorings(data_json, config, command_line_colorings, metadata_names, nod
             for x in command_line_colorings:
                 colorings.append(_create_coloring(x))
         else:
-            print("IN ELSE")
-            print("CONFIG IS ", str(config))
             # if we have a config file, start with these (extra info, such as title&type, is added in later)
             if config:
                 for x in config.keys():
@@ -304,7 +305,7 @@ def set_colorings(data_json, config, command_line_colorings, metadata_names, nod
 
         explicitly_defined_colorings = [x["key"] for x in colorings]
 
-        print("EXPLICITLY COLORING ", str(explicitly_defined_colorings))
+        #print("EXPLICITLY COLORING ", str(explicitly_defined_colorings))
         # add in genotype as a special case if (a) not already set and (b) the data supports it
         if "gt" not in explicitly_defined_colorings and are_mutations_defined(node_attrs):
             colorings.insert(0,{'key':'gt'})
@@ -323,7 +324,7 @@ def set_colorings(data_json, config, command_line_colorings, metadata_names, nod
     # add the title / type from config or via predefined logic rules. Note this can return False on an error.
     colorings = [x for x in [_add_title_and_type(coloring) for coloring in colorings] if x]
     # for each coloring, if colors have been provided, save them as a "scale"
-    colorings = [_add_color_scale(coloring) for coloring in colorings]
+    colorings = [_add_color_scale(coloring,geo_resol) for coloring in colorings]
     # save them to the data json to be exported
     data_json['meta']["colorings"] = colorings
 
@@ -402,11 +403,13 @@ def set_annotations(data_json, node_data):
     if "annotations" in node_data:
         data_json['meta']["genome_annotations"] = node_data["annotations"]
 
-def set_filters(data_json, config):
+def set_filters(data_json, config, geo_resol):
     # NB set_colorings() must have been run as we access those results
     if config.get('filters') == []:
         # an empty config section indicates no filters are to be exported
         data_json['meta']['filters'] = []
+    elif geo_resol:
+        data_json['meta']['filters'] = [resol for resol in geo_resol ]
     elif config.get('filters'):
         # set filters as long as they are not continuous
         data_json['meta']['filters'] = config['filters']
@@ -514,7 +517,7 @@ def create_author_data(node_attrs):
     return node_author_info
 
 
-def set_node_attrs_on_tree(data_json, node_attrs):
+def set_node_attrs_on_tree(data_json, node_attrs, geo_resol):
     '''
     Assign desired colorings, metadata etc to the tree structure
 
@@ -578,11 +581,17 @@ def set_node_attrs_on_tree(data_json, node_attrs):
             if is_valid(raw_data.get(prop, None)):
                 node["node_attrs"][prop] = str(raw_data[prop])
 
-    def _transfer_colorings_filters(node, raw_data):
+    def _transfer_colorings_filters(node, raw_data,geo_resol):
         trait_keys = set() # order we add to the node_attrs is not important for auspice
-        if "colorings" in data_json["meta"]:
+ 
+        if geo_resol and 'rta' not in geo_resol : 
+            trait_keys = trait_keys.union([t["key"] for t in data_json["meta"]["colorings"] if t["key"] not in ["rta","rta_exposure"]  ])
+        elif "colorings" in data_json["meta"]:
             trait_keys = trait_keys.union([t["key"] for t in data_json["meta"]["colorings"]])
-        if "filters" in data_json["meta"]:
+
+        if geo_resol and 'rta' not in geo_resol : 
+            trait_keys = trait_keys.union([resol for resol in data_json["meta"]["filters"] if resol not in ['rta','rta_exposure']])
+        elif "filters" in data_json["meta"]:
             trait_keys = trait_keys.union(data_json["meta"]["filters"])
         exclude_list = ["gt", "num_date", "author"] # exclude special cases already taken care of
         trait_keys = trait_keys.difference(exclude_list)
@@ -610,7 +619,7 @@ def set_node_attrs_on_tree(data_json, node_attrs):
         _transfer_url_accession(node, raw_data)
         _transfer_author_data(node)
         # transfer colorings & filters, including entropy & confidence if available
-        _transfer_colorings_filters(node, raw_data)
+        _transfer_colorings_filters(node, raw_data,geo_resol)
 
         for child in node.get("children", []):
             _recursively_set_data(child)
@@ -861,6 +870,7 @@ def run_v2(args):
     node_data, node_attrs, node_data_names, metadata_names = parse_node_data_and_metadata(T, args.node_data, args.metadata)
     config = get_config(args)
 
+
     # set metadata data structures
     set_title(data_json, config, args.title)
     set_display_defaults(data_json, config)
@@ -869,7 +879,6 @@ def run_v2(args):
     set_annotations(data_json, node_data)
     if args.description:
         set_description(data_json, args.description)
-    print("********************** COLOR FILE IS ", str(args.colors))
     set_colorings(
         data_json=data_json,
         config=get_config_colorings_as_dict(config),
@@ -877,13 +886,16 @@ def run_v2(args):
         metadata_names=metadata_names,
         node_data_colorings=node_data_names,
         provided_colors=read_colors(args.colors),
-        node_attrs=node_attrs
+        node_attrs=node_attrs,
+        geo_resol=args.geo_resolutions
     )
-    set_filters(data_json, config)
+    set_filters(data_json, config, args.geo_resolutions)
 
     # set tree structure
     data_json["tree"] = convert_tree_to_json_structure(T.root, node_attrs)
-    set_node_attrs_on_tree(data_json, node_attrs)
+    set_node_attrs_on_tree(data_json, node_attrs,args.geo_resolutions)
+
+
     set_geo_resolutions(data_json, config, args.geo_resolutions, read_lat_longs(args.lat_longs), node_attrs)
     set_panels(data_json, config, args.panels)
 

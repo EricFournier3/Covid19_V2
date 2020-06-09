@@ -283,6 +283,7 @@ def run(args):
         random.seed(args.subsample_seed)
     num_excluded_subsamp = 0
     if args.group_by and args.sequences_per_group:
+        #print("************************* SEQUENCE PER GROUP IS ",str(args.sequences_per_group))
         spg = args.sequences_per_group
         seq_names_by_group = defaultdict(list)
         canadian_seq_list = []
@@ -372,8 +373,17 @@ def run(args):
 
             seq_keep += canadian_seq_list
 
+    if (args.sequences_per_group == 0):
+        seq_keep_tmp = seq_keep.copy()
+        seq_keep = []
 
-    #print("FINAL SEQ KEEP ",str(seq_keep))
+        for myseq_id in seq_keep_tmp:
+            if myseq_id in ['Wuhan-Hu-1/2019', 'Wuhan/WH01/2019']:
+                seq_keep.append(myseq_id) 
+        
+
+
+    #print("********************* FINAL SEQ KEEP ",str(seq_keep))
 
     # force include sequences specified in file.
     # Note that this might re-add previously excluded sequences
