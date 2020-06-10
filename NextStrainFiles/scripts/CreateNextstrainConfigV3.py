@@ -42,7 +42,7 @@ def Create_RTA_LatLong():
     canada_rta_file = os.path.join(base_dir,"config/canada_rta.tsv")
     canada_rta_df = pd.read_csv(canada_rta_file,delimiter="\t",header=None)
     canada_rta_df.columns = ['COUNTRY_CODE','RTA','PLACE_NAME','ADMIN_NAME_1','ADMIN_CODE_1','ADMIN_NAME_2','ADMIN_CODE_2','ADMIN_NAME_3','ADMIN_CODE_3','LATITUDE','LONGITUDE','ACCURACY']
-    quebec_rta_df = canada_rta_df.loc[canada_rta_df['ADMIN_CODE_1'] == 'QC',['RTA','LATITUDE','LONGITUDE']]
+    quebec_rta_df = canada_rta_df.loc[canada_rta_df['ADMIN_NAME_1'].isin(['Quebec','Ontario']),['RTA','LATITUDE','LONGITUDE']]
 
     quebec_rta_df.to_csv(rta_lat_long_file,sep="\t",index=False,header=None)
          
