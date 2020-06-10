@@ -49,12 +49,11 @@ ImportSeqFromBeluga(){
 
 ExportSeqForNextstrain(){
   echo "In ExportSeqForNextstrain"
-  #echo -e "Begin concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
+  echo -e "Begin concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")" >> ${log_slbio}
 
-  #TODO remove comment
-  #cat ${out_seq_slbio}{${final_unpublished}/L*.fasta,${final_published}/L*.fasta,${final_submitted}/L*.fasta} >${lspq_seq_for_nextstrain}
+  cat ${out_seq_slbio}{${final_unpublished}/L*.fasta,${final_published}/L*.fasta,${final_submitted}/L*.fasta} >${lspq_seq_for_nextstrain}
 
-  #echo -e "End concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")\n" >> ${log_slbio}
+  echo -e "End concat fasta to ${lspq_seq_for_nextstrain} \t$(date "+%Y-%m-%d @ %H:%M$S")\n" >> ${log_slbio}
 }
 
 
@@ -117,7 +116,7 @@ MakeAlreadyTransferList(){
 MakeAlreadyTransferList
 SelectSamplesOnBeluga
 ImportSeqFromBeluga
-#ExportSeqForNextstrain(){
+ExportSeqForNextstrain
 
 echo "Finish"
 
