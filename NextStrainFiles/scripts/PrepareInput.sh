@@ -101,7 +101,7 @@ ExcludeSamples(){
  non_canadian_seq=${gisaid_dir}"non_canadian_seq.fasta"
  canadian_seq=${gisaid_dir}"canadian_seq.fasta"
 
- seqkit grep -r -p 'Canada' ${gisaid_dir}"gisaid_all_temp.fasta" > ${canadian_seq} 
+ seqkit grep -r -p 'Canada' ${gisaid_dir}"gisaid_all_temp.fasta" | seqkit grep -r -p 'Canada/Qc-' -v > ${canadian_seq} 
  seqkit grep -r -p 'Canada' ${gisaid_dir}"gisaid_all_temp.fasta" -v > ${non_canadian_seq} 
 
  if ! [ "${nb_canadian_gisaid_seq_to_keep}" == "all" ]
