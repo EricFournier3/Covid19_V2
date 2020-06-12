@@ -5,6 +5,39 @@ import argparse
 import Bio
 import Bio.SeqIO
 from Bio.Seq import Seq
+from Bio import SeqIO
+import os
+
+def check_cobas_mutation(fasta_seq):
+    check_dir = {}
+    cobas_mutant = {}
+    cobas_undefined = {}
+
+    res_file = os.path.join(os.path.dirname(fasta_seq),"Cobas_mutant.txt")
+    res_file_undefined = os.path.join(os.path.dirname(fasta_seq),"Cobas_undefined.txt")
+
+    res_file_handle = open(res_file,'w')
+    res_file_undefined_handle = open(res_file_undefined,'w')
+
+    for record in SeqIO.parse(fasta_seq,'fasta'):
+        target_nuc_at_26340 = str(record.seq[26339])
+        check_dir[record.id] = target_nuc_at_26340
+
+        if target_nuc_at_26340.upper() not in ['C','N']:
+            cobas_mutant[record.id] = target_nuc_at_26340
+
+        if target_nuc_at_26340.upper() == 'N':
+            cobas_undefined[record.id] = target_nuc_at_26340
+        
+    for spec_id,nuc in cobas_mutant.items():
+        res_file_handle.write(spec_id + "\t" + nuc + "\n")
+
+    for spec_id,nuc in cobas_undefined.items():
+        res_file_undefined_handle.write(spec_id + "\t" + nuc + "\n")
+
+    res_file_handle.close()
+    res_file_undefined_handle.close()
+
 
 
 if __name__ == '__main__':
@@ -18,6 +51,11 @@ if __name__ == '__main__':
     parser.add_argument("--mask-sites", nargs='+', type = int,  help="list of sites to mask")
     parser.add_argument("--output", required=True, help="FASTA file of output alignment")
     args = parser.parse_args()
+
+    check_cobas_mutation(args.alignment)
+    
+
+
 
     being_length = 0
     if args.mask_from_beginning:
