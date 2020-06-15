@@ -284,7 +284,7 @@ rule refine:
         node_data = "results/branch_lengths{region}.json"
     threads: 40
     params:
-        root = "Wuhan-Hu-1/2019",
+        root = "Wuhan/WH01/2019",
         clock_rate = 0.0008,
         clock_std_dev = 0.0004,
         date_inference = "joint",
