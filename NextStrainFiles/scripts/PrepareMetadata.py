@@ -71,7 +71,7 @@ def ConvertFrench2English(countries_list):
             df_lspq.loc[df_lspq['VOYAGE_PAYS_1'].isin([str(country).capitalize(),str(country).lower(),str(country).upper()]),'VOYAGE_PAYS_1'] = new_country_val
         else:
             still_missing_countries.append(country)
-    
+    #print("*********************** MISSING IS ",str(still_missing_countries))    
     return(still_missing_countries.copy())
 
 
