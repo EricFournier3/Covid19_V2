@@ -172,7 +172,9 @@ for rec in SeqIO.parse(lspq_sequences,'fasta'):
 df_lspq['NO_GISAID'] = "Canada/Qc-" + df_lspq['NO_LSPQ'] + "/2020"
 #subset_lspq = df_lspq[df_lspq['NO_LSPQ'].isin(rec_id_list)]
 subset_lspq = df_lspq[(df_lspq['NO_GISAID'].isin(rec_id_list)) & (~df_lspq['POSTAL_CODE'].isin(missing_rta))]
-subset_gisaid = df_gisaid[df_gisaid['strain'].isin(rec_id_list)]
+
+subset_gisaid = df_gisaid[df_gisaid['strain'].isin(rec_id_list) & (df_gisaid['host'].isin(['Human']))]
+
 
 #subset_lspq_subcol = subset_lspq[['NO_GISAID','DATE_PRELEV','SEX','AGE','RSS_PATIENT','POSTAL_CODE','VOYAGE_PAYS_1']] this create a view https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
 subset_lspq_subcol = subset_lspq.loc[:,('NO_GISAID','DATE_PRELEV','SEX','AGE','RSS_PATIENT','POSTAL_CODE','VOYAGE_PAYS_1','MAX_CT')] # this create a copy
