@@ -264,6 +264,7 @@ def run(args):
             tmp = [s for s in tmp if (np.isscalar(dates[s]) or all(dates[s])) and np.min(dates[s])<my_max_date]
             #print("TMP IS ", str(tmp))
         num_excluded_by_date = len(seq_keep) - len(tmp)
+        #print("Filter by date ",str(set(seq_keep) - set(tmp)))
         seq_keep = tmp
 
     # exclude sequences with non-nucleotide characters
@@ -381,7 +382,8 @@ def run(args):
             if myseq_id in ['Wuhan-Hu-1/2019', 'Wuhan/WH01/2019']:
                 seq_keep.append(myseq_id) 
         
-
+    if(args.priority):
+        print("Total context : ", str(len(seq_keep)))
 
     #print("********************* FINAL SEQ KEEP ",str(seq_keep))
 

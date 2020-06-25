@@ -105,6 +105,9 @@ def build_raxml(aln_file, out_file, clean_up=True, nthreads=1, tree_builder_args
         #    os.remove("RAxML_log.%s"%(random_string))
         #    os.remove("RAxML_parsimonyTree.%s"%(random_string))
         #    os.remove("RAxML_result.%s"%(random_string))
+
+        #clean_up = False
+
         if clean_up:
             os.remove("RAxML.raxml.bestTree")
             os.remove("RAxML.raxml.reduced.phy")
@@ -208,6 +211,9 @@ def build_iqtree(aln_file, out_file, substitution_model="GTR", clean_up=True, nt
         "-n",     "2",
         "-me",    "0.05"
     ]
+
+
+    clean_up = False
 
     if substitution_model.lower() != "none":
         call = ["iqtree", *fast_opts, "-nt", str(nthreads), "-s", shquote(tmp_aln_file),

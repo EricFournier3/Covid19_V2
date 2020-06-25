@@ -13,8 +13,8 @@ from .utils import first_line
 recursion_limit = os.environ.get("AUGUR_RECURSION_LIMIT")
 if recursion_limit:
     #sys.setrecursionlimit(int(recursion_limit))
-    #EricF 20200522
-    sys.setrecursionlimit(10000000000)
+    #EricF 20200522 voir https://github.com/nextstrain/augur/issues/328
+    sys.setrecursionlimit(15000)
 
 command_strings = [
     "parse",
@@ -73,6 +73,8 @@ def make_parser():
 def run(argv):
     args = make_parser().parse_args(argv)
     try:
+        sys.setrecursionlimit(15000)
+        print("RECURSION LIMIT IS ", str(sys.getrecursionlimit()))
         return args.__command__.run(args)
     except RecursionError:
         print("FATAL: Maximum recursion depth reached. You can set the env variable AUGUR_RECURSION_LIMIT to adjust this (current limit: {})".format(sys.getrecursionlimit()))

@@ -114,6 +114,7 @@ def run(args):
         write_seqs(seqs, args.output)
 
 
+
     except AlignmentError as e:
         print(str(e))
         return 1
@@ -123,6 +124,8 @@ def run(args):
         os.remove(fname)
 
 #####################################################################################################
+
+
 
 def read_sequences(*fnames):
     seqs = {}
