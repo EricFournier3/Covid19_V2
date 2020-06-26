@@ -43,8 +43,8 @@ def get_todays_date():
 #REGIONS = ["_global"]
 REGIONS = ["_quebec"]
 
-#TRAIT_RESOLUTION = ["rta_exposure","rss_exposure"]
-TRAIT_RESOLUTION = ["rss_exposure"]
+TRAIT_RESOLUTION = ["rta_exposure","rss_exposure"]
+#TRAIT_RESOLUTION = ["rss_exposure"]
 
 
 #nb_canadian_gisaid_seq_to_keep = "all"
@@ -510,7 +510,7 @@ rule export:
         auspice_json = "results/ncov_with_accessions{region}.json"
     params:
         title = export_title,
-        geo_resolutions = "rss division country"
+        geo_resolutions = "rta rss division country"
     shell:
         """
         augur export v2 \
@@ -533,8 +533,8 @@ rule incorporate_travel_history:
         colors = rules.colors.output.colors,
         lat_longs = files.lat_longs
     params:
-        sampling = "rss",
-        exposure = "rss_exposure",
+        sampling = "rta rss",
+        exposure = "rta_exposure rss_exposure",
         #sampling = "rta",
         #exposure = "rta_exposure",
     output:
