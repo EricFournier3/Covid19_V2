@@ -12,8 +12,8 @@ Eric Fournier 2020-06-23
 """
 
 
-#fasta_file = '/data/Users/Eric/Covid19/test.fasta'
-fasta_file = '/data/Users/Eric/Covid19/subsampled_alignment_quebec.fasta'
+fasta_file = '/data/Users/Eric/Covid19/subsampled_alignment_quebec_24seq.fasta'
+#fasta_file = '/data/Users/Eric/Covid19/subsampled_alignment_quebec.fasta'
 
 wuhan_ref = str(SeqIO.read('/data/Users/Eric/Covid19/reference.gb','genbank').seq)
 
@@ -34,7 +34,25 @@ nuc = {'A':0,'C':1,'G':2,'T':3,'N':4}
 nuc_colors = {'A':'#0000FF','C':'#FF0000','G':'#008000','T':'#FFFF00','N':'#FFC0CB'}
 
 
+def PrepareMinorFreqNuc(nuc_freq):
 
+    nuc_freq_arr = np.array(nuc_freq)
+
+    max_by_col = np.amax(nuc_freq_arr,axis=0)
+    min_freq_nuc = np.zeros(nuc_freq_arr.shape)
+
+    for i in range(0,nuc_freq_arr.shape[0]):
+        for j in range(0,nuc_freq_arr.shape[1]):
+            val = nuc_freq_arr[i][j]
+            if (val != max_by_col[j]) and (val != 0):
+                min_freq_nuc[i][j] = 1
+            else:
+                min_freq_nuc[i][j] = 0
+
+    min_freq_nuc = pd.DataFrame(data=min_freq_nuc)
+    return(min_freq_nuc)
+    
+                
 def FindPrimerBindingRange(primer):
     start = wuhan_ref.find(primer,0,len(wuhan_ref))
     end = start + len(primer)
@@ -107,8 +125,12 @@ def PlotNucFrequency(primer,ax,nuc_freq,primer_name):
         plt.bar(bar_index,dat,bar_width,bottom=y_offset,color=colors[row])
         y_offset = y_offset + dat
         nuc_freq_text.append([x for x in dat])
-        
-    the_table = plt.table(cellText=nuc_freq_text,rowLabels=table_row_name,colLabels=table_col_name,rowColours=colors,cellLoc='center',loc='bottom',bbox=[0,-0.65,1,0.65])
+
+    minor_freq_nuc = PrepareMinorFreqNuc(nuc_freq_text)
+
+    #print("MINOR FREQ ",minor_freq_nuc)
+    #print(nuc_freq_text) 
+    the_table = plt.table(cellText=nuc_freq_text,rowLabels=table_row_name,colLabels=table_col_name,rowColours=colors,cellLoc='center',loc='bottom',bbox=[0,-0.65,1,0.65],cellColours=plt.cm.YlOrRd(minor_freq_nuc))
 
     the_table.scale(1,2.5)
     the_table.auto_set_font_size(False)
