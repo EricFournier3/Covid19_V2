@@ -50,7 +50,7 @@ TRAIT_RESOLUTION = ["rta_exposure","rss_exposure"]
 #nb_canadian_gisaid_seq_to_keep = "all"
 nb_canadian_gisaid_seq_to_keep = "0"
 nb_gisaid_seq_to_keep = "10"
-nb_lspq_seq_to_keep = "500"
+nb_lspq_seq_to_keep = "30"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 current_dir = os.getcwd()
 script_dir = os.path.join(current_dir,"scripts")
@@ -222,6 +222,25 @@ rule mask:
             --mask-from-end {params.mask_from_end} \
             --mask-sites {params.mask_sites} \
             --output {output.alignment}
+        """
+
+rule view_primer_binding_site_profile:
+    message:
+        """
+        Create primer pcr primer binding sites profile
+        - primer Sarbeco and Lspq
+        """
+    input:
+        alignment = rules.aggregate_alignments.output.alignment
+    output: 
+        sarbeco_profil = "results/PrimerSarbeco.png",
+        lspq_profil = "results/PrimerLspq.png"
+    shell:
+        """
+        python3 ./scripts/CovidPrimerProfileInNextStrain.py \
+            --input {input.alignment} \
+            --out-sarbeco {output.sarbeco_profil} \
+            --out-lspq {output.lspq_profil}
         """
 
 rule subsample:
