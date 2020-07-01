@@ -29,16 +29,19 @@ wuhan_ref = str(SeqIO.read('/data/Users/Eric/Covid19/reference.gb','genbank').se
 
 forward_primer_sarbeco = "ACAGGTACGTTAATAGTTAATAGCGT"
 rev_primer_sarbeco = str(Seq('ATATTGCAGCAGTACGCACACA', generic_dna).reverse_complement())
+probe_primer_sarbeco = "ACACTAGCCATCCTTACTGCGCTTCG"
 primer_sarbeco_fig = args.out_sarbeco
 forwad_primer_sarbeco_name = 'E_Sarbeco_F1'
 rev_primer_sarbeco_name = 'E_Sarbeco_R2'
+probe_primer_sarbeco_name = 'E_Sarbeco_P1'
 
 forward_primer_lspq = "AACCAGAATGGAGAACGCAGTG"
 rev_primer_lspq = str(Seq('CGGTGAACCAAGACGCAGTATTAT', generic_dna).reverse_complement())
+probe_primer_lspq = "CGATCAAAACAACGTCGGCCCCAAGGTTTAC"
 primer_lspq_fig = args.out_lspq
-
 forwad_primer_lspq_name = 'WuhanCoVNf'
 rev_primer_lspq_name = 'WuhanCoVNr'
+probe_primer_lspq_name = 'CoVNp'
 
 nuc = {'A':0,'C':1,'G':2,'T':3,'N':4}
 nuc_colors = {'A':'#0000FF','C':'#FF0000','G':'#008000','T':'#FFFF00','N':'#FFC0CB'}
@@ -94,6 +97,12 @@ def BuildNucFrequency():
 
         site_index = 0
 
+        for pos_site in range(*probe_primer_sarbeco_range):
+            UpdateNucFrequency(rec.seq[pos_site],site_index,nuc_freq_by_site_probe_primer_sarbeco)
+            site_index += 1
+
+        site_index = 0
+
         for pos_site in range(*forward_primer_lspq_range):
             UpdateNucFrequency(rec.seq[pos_site],site_index,nuc_freq_by_site_forward_primer_lspq)
             site_index += 1
@@ -102,6 +111,12 @@ def BuildNucFrequency():
 
         for pos_site in range(*rev_primer_lspq_range):
             UpdateNucFrequency(rec.seq[pos_site],site_index,nuc_freq_by_site_rev_primer_lspq)
+            site_index += 1
+
+        site_index = 0
+
+        for pos_site in range(*probe_primer_lspq_range):
+            UpdateNucFrequency(rec.seq[pos_site],site_index,nuc_freq_by_site_probe_primer_lspq)
             site_index += 1
 
 matplotlib.rc('font', family='sans-serif')
@@ -113,7 +128,7 @@ matplotlib.rcParams.update({'font.size': 10})
 
 def PlotNucFrequency(primer,ax,nuc_freq,primer_name):
 
-    base_title = "Nucleotids distribution from primer "
+    base_title = "Nucleotids distribution for primer "
 
     table_row_name = [y[0] for y in sorted(nuc.items(), key=lambda x:x[1])]
     table_col_name = [primer[i] for i in range(0,len(primer))]
@@ -138,9 +153,22 @@ def PlotNucFrequency(primer,ax,nuc_freq,primer_name):
 
     minor_freq_nuc = PrepareMinorFreqNuc(nuc_freq_text)
 
-    the_table = plt.table(cellText=nuc_freq_text,rowLabels=table_row_name,colLabels=table_col_name,rowColours=colors,cellLoc='center',loc='bottom',bbox=[0,-0.65,1,0.65],cellColours=plt.cm.YlOrRd(minor_freq_nuc))
+    the_table = plt.table(cellText=nuc_freq_text,rowLabels=table_row_name,colLabels=table_col_name,rowColours=colors,cellLoc='center',loc='bottom',bbox=[0,-0.95,1,0.95],cellColours=plt.cm.YlOrRd(minor_freq_nuc))
 
-    the_table.scale(1,2.5)
+    
+    #voir https://stackoverflow.com/questions/27972524/matplotlib-row-heights-table-property et https://stackoverflow.com/questions/13921338/matplotlib-table-formatting-change-width-of-row-label-cells
+    cellDict = the_table.get_celld()
+    #header line
+    for column in range(0,len(table_col_name)):
+        cellDict[(0,column)].set_height(.8)
+
+    #lines A, C, G, T and N
+    for column in range(-1,len(table_col_name)):
+        for line in range(1,len(table_row_name)+1):
+            cellDict[(line,column)].set_height(.75)
+
+
+    the_table.scale(1,3.5)
     the_table.auto_set_font_size(False)
     the_table.set_fontsize(10)
 
@@ -153,39 +181,51 @@ def PlotNucFrequency(primer,ax,nuc_freq,primer_name):
             
 forward_primer_sarbeco_range = FindPrimerBindingRange(forward_primer_sarbeco)
 rev_primer_sarbeco_range = FindPrimerBindingRange(rev_primer_sarbeco)
+probe_primer_sarbeco_range = FindPrimerBindingRange(probe_primer_sarbeco)
 forward_primer_lspq_range = FindPrimerBindingRange(forward_primer_lspq)
 rev_primer_lspq_range = FindPrimerBindingRange(rev_primer_lspq)
+probe_primer_lspq_range = FindPrimerBindingRange(probe_primer_lspq)
 
 '''
 print("forward_primer_sarbeco_range: ",forward_primer_sarbeco_range)
 print("rev_primer_sarbeco_range: ",rev_primer_sarbeco_range)
+print("probe_primer_sarbeco_range: ",probe_primer_sarbeco_range)
 print("forward_primer_lspq_range: ",forward_primer_lspq_range)
 print("rev_primer_lspq_range: ",rev_primer_lspq_range)
+print("probe_primer_lspq_range: ",probe_primer_lspq_range)
 '''
 
 forward_primer_sarbeco_range_len = len(range(*forward_primer_sarbeco_range))
 rev_primer_sarbeco_range_len = len(range(*rev_primer_sarbeco_range))
+probe_primer_sarbeco_range_len = len(range(*probe_primer_sarbeco_range))
 forward_primer_lspq_range_len = len(range(*forward_primer_lspq_range))
 rev_primer_lspq_range_len = len(range(*rev_primer_lspq_range))
+probe_primer_lspq_range_len = len(range(*probe_primer_lspq_range))
 
 nuc_freq_by_site_forward_primer_sarbeco = np.zeros(len(nuc) * forward_primer_sarbeco_range_len).reshape(len(nuc),forward_primer_sarbeco_range_len)
 nuc_freq_by_site_rev_primer_sarbeco = np.zeros(len(nuc) * rev_primer_sarbeco_range_len).reshape(len(nuc),rev_primer_sarbeco_range_len)
+nuc_freq_by_site_probe_primer_sarbeco = np.zeros(len(nuc) * probe_primer_sarbeco_range_len).reshape(len(nuc),probe_primer_sarbeco_range_len)
 nuc_freq_by_site_forward_primer_lspq = np.zeros(len(nuc) * forward_primer_lspq_range_len).reshape(len(nuc),forward_primer_lspq_range_len)
 nuc_freq_by_site_rev_primer_lspq = np.zeros(len(nuc) * rev_primer_lspq_range_len).reshape(len(nuc),rev_primer_lspq_range_len)
+nuc_freq_by_site_probe_primer_lspq = np.zeros(len(nuc) * probe_primer_lspq_range_len).reshape(len(nuc),probe_primer_lspq_range_len)
 
 BuildNucFrequency()
 
 
 fig_sarbeco = plt.figure()
-fig_sarbeco.set_size_inches(20.0,7.5)
+#fig_sarbeco.set_size_inches(20.0,7.5)
+fig_sarbeco.set_size_inches(20.0,12.5)
 
-forward_sarbeco_ax = fig_sarbeco.add_subplot(211)
+forward_sarbeco_ax = fig_sarbeco.add_subplot(311)
 PlotNucFrequency(forward_primer_sarbeco,forward_sarbeco_ax,nuc_freq_by_site_forward_primer_sarbeco,forwad_primer_sarbeco_name)
 
-rev_sarbeco_ax = fig_sarbeco.add_subplot(212)
+rev_sarbeco_ax = fig_sarbeco.add_subplot(312)
 PlotNucFrequency(rev_primer_sarbeco,rev_sarbeco_ax,nuc_freq_by_site_rev_primer_sarbeco,rev_primer_sarbeco_name)
 
-fig_sarbeco.tight_layout(pad=0.5)
+probe_sarbeco_ax = fig_sarbeco.add_subplot(313)
+PlotNucFrequency(probe_primer_sarbeco,probe_sarbeco_ax,nuc_freq_by_site_probe_primer_sarbeco,probe_primer_sarbeco_name)
+
+fig_sarbeco.tight_layout(pad=0.2)
 plt.subplots_adjust(left=0.05, bottom=0.2)
 plt.savefig(primer_sarbeco_fig)
 
@@ -193,15 +233,18 @@ plt.savefig(primer_sarbeco_fig)
 plt.close()
 
 fig_lspq = plt.figure()
-fig_lspq.set_size_inches(20.0,7.5)
+fig_lspq.set_size_inches(20.0,12.5)
 
-forward_lspq_ax = fig_lspq.add_subplot(211)
+forward_lspq_ax = fig_lspq.add_subplot(311)
 PlotNucFrequency(forward_primer_lspq,forward_lspq_ax,nuc_freq_by_site_forward_primer_lspq,forwad_primer_lspq_name)
 
-rev_lspq_ax = fig_lspq.add_subplot(212)
+rev_lspq_ax = fig_lspq.add_subplot(312)
 PlotNucFrequency(rev_primer_lspq,rev_lspq_ax,nuc_freq_by_site_rev_primer_lspq,rev_primer_lspq_name)
 
-fig_lspq.tight_layout(pad=0.5)
+probe_lspq_ax = fig_lspq.add_subplot(313)
+PlotNucFrequency(probe_primer_lspq,probe_lspq_ax,nuc_freq_by_site_probe_primer_lspq,probe_primer_lspq_name)
+
+fig_lspq.tight_layout(pad=0.2)
 plt.subplots_adjust(left=0.05, bottom=0.2)
 plt.savefig(primer_lspq_fig)
 
