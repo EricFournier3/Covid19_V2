@@ -61,7 +61,8 @@ TransferScripts(){
 
 
 ImportLatLong(){
-  wget https://raw.githubusercontent.com/nextstrain/ncov/master/config/lat_longs.tsv -O ${temp_dir}"lat_longs.tsv" 1>/dev/null  2>&1
+  #wget https://raw.githubusercontent.com/nextstrain/ncov/master/config/lat_longs.tsv -O ${temp_dir}"lat_longs.tsv" 1>/dev/null  2>&1
+   cp "${nextstrain_files_base_dir}config/lat_longs.tsv" ${temp_dir}
 }
 
 CreateNewConfigFiles(){
