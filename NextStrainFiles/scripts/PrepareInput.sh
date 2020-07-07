@@ -96,7 +96,7 @@ PrepareMetadata(){
     python ${prepare_metadata_script} --metadata-out ${metadata_out}   --sequences-out ${sequences_out}  --base-dir ${work_dir} --wuhan-root  
   else
     python ${prepare_metadata_script} --metadata-out ${metadata_out}   --sequences-out ${sequences_out}  --base-dir ${work_dir}
-    sed -i "s/Wuhan\/WH01\/2019/${root//\//\\/}/g" /data/PROJETS/COVID_19/2020_07_06-full_pass_flag/Snakefile
+    sed -i "s/Wuhan\/WH01\/2019/${root//\//\\/}/g" ${work_dir}Snakefile
   fi
 }
 
