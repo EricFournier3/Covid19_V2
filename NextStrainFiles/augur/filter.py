@@ -175,6 +175,10 @@ def run(args):
             tmp.append(seq_name)
         else:
             print("No meta data for %s, excluding from all further analysis."%seq_name)
+            #print("CURRENT DIR IS ",os.getcwd())
+            #print("args.output is ",args.output)
+            with open(os.path.join(os.getcwd(),"results","QC_missing_metadata.txt"),'a') as nometadata_f:
+                nometadata_f.write(seq_name + "\n")
     seq_keep = tmp
 
     # remove strains explicitly excluded by name
@@ -237,6 +241,8 @@ def run(args):
                     #myout.write(str(seq_name) + " : " + str(length) + "\n")
                 else:
                     print(">>>>>>>>>>>>>>>>>>> " + str(seq_name) + " rejected by length : " + str(length))
+                    with open(os.path.join(os.getcwd(),"results","QC_short_seq.txt"),'a') as shortseq_f:
+                        shortseq_f.write(seq_name + " " + str(length) + "\n")
                     #myout.write(str(seq_name) + " : " + str(length) + " => ************* REJECTED ****************\n")
             num_excluded_by_length = len(seq_keep) - len(seq_keep_by_length)
             seq_keep = seq_keep_by_length
@@ -424,6 +430,8 @@ def run(args):
                         to_include.append(seq_name)
                 else:
                     print("WARNING: no metadata for %s, skipping"%seq_name)
+                    #print("CURRENT DIR IS ",os.getcwd())
+                    #print("args.output is ",args.output)
                     continue
 
         for s in to_include:
