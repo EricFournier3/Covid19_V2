@@ -11,13 +11,13 @@ ADDR_CH as addr_ch
 
 from (select distinct f.folderno as NOLSPQ, to_char(cr.BIRTH_DATE,'YYYY-MM-DD') as DATE_NAISSANCE,
 p.LAST_NAME as NOM, p.FIRST_NAME as PRENOM, 
-case 
+COALESCE(case 
     when FLOOR(MONTHS_BETWEEN(COALESCE(cr.DATE_COLLECTED,cr.DATE_RECEIVED),cr.BIRTH_DATE )/12) > 1
     THEN TRUNC(MONTHS_BETWEEN(COALESCE(cr.DATE_COLLECTED,cr.DATE_RECEIVED),cr.BIRTH_DATE)/12,0)
     else
         TRUNC(MONTHS_BETWEEN(COALESCE(cr.DATE_COLLECTED,cr.DATE_RECEIVED),cr.BIRTH_DATE )/12,2)
-end as AGE_ANNEE,
-p.SEX as SEX, 
+end,999) as AGE_ANNEE,
+COALESCE(p.SEX,'NA') as SEX, 
  
 case
     when cr.OWNER_COUNTY is null
@@ -81,11 +81,12 @@ from
         
 where 
 		ot.TESTCODE in (2685,2689,2167) and cr.DATE_RECEIVED > to_date('2020-01-01', 'YYYY-MM-DD') 
-        and cr.PANEL_LIST like '2019-nCoV%' and rc.RASCLIENTID not in ('LSPQCEC','LSPQCIC','LSPQF','LSPQP','LSPQV') 
+        --and cr.PANEL_LIST like '2019-nCoV%' and rc.RASCLIENTID not in ('LSPQCEC','LSPQCIC','LSPQF','LSPQP','LSPQV') 
+        and (cr.PANEL_LIST like '2019-nCoV%' or cr.PANEL_LIST like '%COVID-19 - Confirmation%' or cr.PANEL_LIST like '%COVID-19 - Soustraitant%') and rc.RASCLIENTID not in ('LSPQCEC','LSPQCIC','LSPQF','LSPQP','LSPQV') 
         
 order by f.FOLDERNO)   GROUP BY NOLSPQ, AGE_ANNEE,SEX, RSS_PATIENT,AUCUN_VOYAGE, VOYAGE_PAYS_1, DATE_PRELEVEMENT, DATE_RECEPTION,
 CH,RESULTAT_LABORATOIRE, SUBSTR(POSTAL_CODE,1,3),ADDR_CH ORDER BY NOLSPQ) select v.no_lspq,v.age,v.sex,v.rss_patient,v.aucun_voyage, v.voyage_pays_1, v.date_prelev,
-v.date_recu, v.ch, v.postal_code,  v.max_res, v.max_ct,v.res_lab,v.addr_ch from v where  v.max_res in ('Détecté','détecté');    
+v.date_recu, v.ch, v.postal_code,  v.max_res, v.max_ct,v.res_lab,v.addr_ch from v where  v.max_res in ('Détecté','détecté'); 
 
 
 
