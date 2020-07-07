@@ -676,14 +676,14 @@ rule prepare_input:
     run:
         print("In prepare input")
 	
-	#os.mkdir(script_dir)
-	#os.mkdir(config_dir)
+	os.mkdir(script_dir)
+	os.mkdir(config_dir)
 
-	#shutil.copyfile(input_script,os.path.join(script_dir,os.path.basename(input_script)))
-	#os.chmod(os.path.join(script_dir,os.path.basename(input_script)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
+	shutil.copyfile(input_script,os.path.join(script_dir,os.path.basename(input_script)))
+	os.chmod(os.path.join(script_dir,os.path.basename(input_script)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
 
-	#shutil.copyfile(yaml_config,os.path.join(config_dir,os.path.basename(yaml_config)))
-	#os.chmod(os.path.join(config_dir,os.path.basename(yaml_config)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
+	shutil.copyfile(yaml_config,os.path.join(config_dir,os.path.basename(yaml_config)))
+	os.chmod(os.path.join(config_dir,os.path.basename(yaml_config)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
 
 	os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir + " " + nb_lspq_seq_to_keep + " " + nb_gisaid_seq_to_keep + " " + nb_canadian_gisaid_seq_to_keep + " " + root) 
 	

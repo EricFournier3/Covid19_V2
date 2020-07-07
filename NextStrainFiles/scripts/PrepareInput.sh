@@ -140,9 +140,9 @@ if ! [ -f ${init_file} ]
   ExcludeSamples
 fi
 
-#TransferConfigFiles
-#TransferScripts
-#CreateNewConfigFiles
+TransferConfigFiles
+TransferScripts
+CreateNewConfigFiles
 PrepareMetadata
 
 
