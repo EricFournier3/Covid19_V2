@@ -452,8 +452,9 @@ def run(args):
     else:
         seq_to_keep = [seq for id,seq in seqs.items() if id in seq_keep]
         if len(seq_to_keep) == 0:
-            print("ERROR: All samples have been dropped! Check filter rules and metadata file format.")
-            return 1
+            #print("ERROR2: All samples have been dropped! Check filter rules and metadata file format.")
+            #return 1
+            pass # eric fournier 2020-07-07
         SeqIO.write(seq_to_keep, args.output, 'fasta')
 
     print("\n%i sequences were dropped during filtering" % (len(all_seq) - len(seq_keep),))

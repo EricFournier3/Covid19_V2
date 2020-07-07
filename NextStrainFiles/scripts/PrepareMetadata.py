@@ -19,6 +19,7 @@ parser = argparse.ArgumentParser(description='Create metadata.tsv and sequences.
 parser.add_argument('--base-dir', '-b', required=True, help="path to working directory")
 parser.add_argument('--metadata-out', '-m', required=True, help="path to resulting metadata.tsv")
 parser.add_argument('--sequences-out', '-s', required=True, help="path to resulting sequences.fasta")
+parser.add_argument('--wuhan-root',help="include Wuhan/WH01/2019 as root",action='store_true')
 args=parser.parse_args()
 
 
@@ -131,18 +132,20 @@ if  missing_country:
 
 id_ref_list = []
 
-for rec in SeqIO.parse(gisaid_ref_sequences,'fasta'):
-    try:
-        seqid = re.search(r'^\S+\/(\S+\/\S+\/\d{4})\|\S+',rec.id).group(1)
-    except:
-        seqid = re.search(r'^\S+\/(\S+\/\d{4})\|\S+',rec.id).group(1)
 
-    id_ref_list.append(seqid)
-    rec_id_list.append(seqid)
-    rec.id = seqid
-    rec.name = seqid
-    rec.description = ""
-    rec_list.append(rec)
+if args.wuhan_root:
+    for rec in SeqIO.parse(gisaid_ref_sequences,'fasta'):
+        try:
+            seqid = re.search(r'^\S+\/(\S+\/\S+\/\d{4})\|\S+',rec.id).group(1)
+        except:
+            seqid = re.search(r'^\S+\/(\S+\/\d{4})\|\S+',rec.id).group(1)
+
+        id_ref_list.append(seqid)
+        rec_id_list.append(seqid)
+        rec.id = seqid
+        rec.name = seqid
+        rec.description = ""
+        rec_list.append(rec)
 
 for rec in SeqIO.parse(gisaid_sequences,'fasta'):
     
@@ -162,7 +165,7 @@ for rec in SeqIO.parse(gisaid_sequences,'fasta'):
 for rec in SeqIO.parse(lspq_sequences,'fasta'):
     #seqid = re.search(r'(^\S+)\/\S+\/\S+',rec.id).group(1)
     seqid = re.search(r'(^Canada\/Qc-L\S+\/\S+)',rec.id).group(1)
-    print("SEQ ID IS ",str(seqid))
+    #print("SEQ ID IS ",str(seqid))
     rec_id_list.append(seqid)
     rec.id = seqid
     rec.name = seqid

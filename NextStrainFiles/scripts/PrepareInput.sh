@@ -26,6 +26,7 @@ nb_gisaid_seq_to_keep=$4
 
 nb_canadian_gisaid_seq_to_keep=$5
 
+root=$6
 
 
 BuildFramework(){
@@ -90,8 +91,13 @@ TransferLspqFiles(){
 }
 
 PrepareMetadata(){
-  python ${prepare_metadata_script} --metadata-out ${metadata_out}   --sequences-out ${sequences_out}  --base-dir ${work_dir}  
-
+  if [ "${root}" = "Wuhan/WH01/2019" ]
+    then
+    python ${prepare_metadata_script} --metadata-out ${metadata_out}   --sequences-out ${sequences_out}  --base-dir ${work_dir} --wuhan-root  
+  else
+    python ${prepare_metadata_script} --metadata-out ${metadata_out}   --sequences-out ${sequences_out}  --base-dir ${work_dir}
+    sed -i "s/Wuhan\/WH01\/2019/${root//\//\\/}/g" /data/PROJETS/COVID_19/2020_07_06-full_pass_flag/Snakefile
+  fi
 }
 
 ExcludeSamples(){
@@ -134,9 +140,9 @@ if ! [ -f ${init_file} ]
   ExcludeSamples
 fi
 
-TransferConfigFiles
-TransferScripts
-CreateNewConfigFiles
+#TransferConfigFiles
+#TransferScripts
+#CreateNewConfigFiles
 PrepareMetadata
 
 
