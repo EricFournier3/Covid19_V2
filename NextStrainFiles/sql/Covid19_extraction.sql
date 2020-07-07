@@ -80,7 +80,7 @@ from
 		inner join ORDTASK ot on ot.ORDNO = o.ORDNO
         
 where 
-		ot.TESTCODE in (2685,2689,2167) and cr.DATE_RECEIVED > to_date('2020-01-01', 'YYYY-MM-DD') 
+		ot.TESTCODE in (2685,2689,2167) and cr.DATE_RECEIVED > to_date('2020-01-01', 'YYYY-MM-DD') and  cr.DATE_COLLECTED > to_date('2020-01-01', 'YYYY-MM-DD') 
         --and cr.PANEL_LIST like '2019-nCoV%' and rc.RASCLIENTID not in ('LSPQCEC','LSPQCIC','LSPQF','LSPQP','LSPQV') 
         and (cr.PANEL_LIST like '2019-nCoV%' or cr.PANEL_LIST like '%COVID-19 - Confirmation%' or cr.PANEL_LIST like '%COVID-19 - Soustraitant%') and rc.RASCLIENTID not in ('LSPQCEC','LSPQCIC','LSPQF','LSPQP','LSPQV') 
         
