@@ -1,0 +1,165 @@
+include: "Snakefile"
+
+ruleorder: subsample_regions > subsample
+ruleorder: adjust_metadata_regions > adjust_metadata
+
+# How to run: if no region is specified, it'll run a subsampled global build (120 per division)
+# If a region is selected, it'll do 280/division for that region, and 20/division in the rest of the world
+#       -- preferentially sequences near the focal sequences
+#
+# To run a regional build, be sure to update it to the list in Snakefile
+#
+# You can run all builds in parallel!
+#   snakemake -s Snakefile_Regions --cores 2 all_regions
+#
+# Or you can specify final or intermediate output files like so:
+#   snakemake -s Snakefile_Regions --cores 2 auspice/ncov_europe.json (subsampled regional focal)
+#   snakemake -s Snakefile_Regions --cores 2 auspice/ncov.json (subsampled global)
+#
+# To update ordering/lat_longs after AWS download:
+#   snakemake --touch --forceall -s Snakefile_Regions
+#   snakemake -s Snakefile_Regions clean_export_regions
+#   snakemake -s Snakefile_Regions export_all_regions
+# When done adjusting lat-longs & orders, remember to run
+#   snakemake -s Snakefile_Regions
+# to produce the final Auspice files!
+
+#EricF add
+sequences = config["sequences"],
+metadata = config["metadata"]
+
+
+rule all_regions:
+    input:
+        auspice_json = expand("auspice/ncov{region}.json", region=REGIONS),
+        tip_frequencies_json = expand("auspice/ncov{region}_tip-frequencies.json", region=REGIONS),
+        dated_auspice_json = expand("auspice/ncov{region}_{date}.json", date=get_todays_date(), region=REGIONS),
+        dated_tip_frequencies_json = expand("auspice/ncov{region}_{date}_tip-frequencies.json", date=get_todays_date(), region=REGIONS)
+
+# This cleans out files to allow re-run of 'normal' run (not ZH or GISAID)
+# with `export` to check lat-longs & orderings
+# However, *removes* the ZH & GISAID files so that when doing final run after all
+# errors are cleared, these builds will also be rebuilt!
+
+
+rule clean_export_regions:
+    message: "Removing export files: {params}"
+    params:
+        "results/ncov_with_accessions*.json",
+        "config/colors*.tsv"
+    shell:
+        "rm {params}"
+
+# Allows 'normal' run of export to be forced to correct lat-long & ordering
+# Just runs this, not ZH & GISAID, to speed up & reduce errors.
+rule export_all_regions:
+    message: "********************* IN EXPORT_ALL_REGIONS "
+    input:
+        colors_file = expand("config/colors{region}.tsv", region=REGIONS),
+        auspice_json = expand("results/ncov_with_accessions{region}.json", region=REGIONS),
+        lat_longs = files.lat_longs,
+        metadata = expand("results/metadata_adjusted{region}.tsv", region=REGIONS),
+        colors = expand("config/colors{region}.tsv", region=REGIONS),
+    shell:
+        """
+        python3 ./scripts/check_missing_locations.py \
+            --metadata {input.metadata} \
+            --colors {input.colors} \
+            --latlong {input.lat_longs} 
+        echo "*************** IN export_all_regions"
+        """
+
+
+rule subsample_focus:
+    message:
+        """
+        Subsample all sequences into a focal set
+        """
+    input:
+        sequences = rules.mask.output.alignment,
+        metadata = metadata,
+        include = files.include
+    output:
+        sequences = "results/subsample_focus{region}.fasta"
+    params:
+        group_by = "rta year month",
+        seq_per_group_global = 10000, # i.e. if not regional build
+        seq_per_group_regional = 10000,
+        max_dup_seq_per_group = 2
+    shell:
+        """
+        #Figure out what region being wanted
+        rgn="{wildcards.region}"
+
+        if [ "$rgn" = "_global" ]; then
+            seq_per_group={params.seq_per_group_global}
+            regionarg="--exclude-where division="
+            region="frog"   #I don't know! It wouldn't work without something!
+            echo "Filtering for a global run - $seq_per_group per rta"
+        else
+            seq_per_group={params.seq_per_group_regional}
+            region="${{rgn//[_y]/}}"
+            region="${{region//[-y]/ }}"
+            echo "Filtering for a focal run on $region - $seq_per_group per rta"
+            regionarg="--exclude-where division!="
+            echo "   This is passed to augur as $regionarg'$region'"
+        fi
+
+        augur filter \
+            --sequences {input.sequences} \
+            --metadata {input.metadata} \
+            --include {input.include} \
+            $regionarg"$region" \
+            --group-by {params.group_by} \
+            --sequences-per-group $seq_per_group \
+            --max-dup-per-group {params.max_dup_seq_per_group} \
+            --output {output.sequences} \
+
+        """
+
+
+rule subsample_regions:
+    message:
+        """
+        Combine and deduplicate FASTAs
+        """
+    input:
+        rules.subsample_focus.output.sequences
+    output:
+        alignment = "results/subsampled_alignment{region}.fasta"
+    shell:
+        """
+        python3 scripts/combine-and-dedup-fastas.py \
+            --input {input} \
+            --output {output.alignment}
+        """
+
+rule adjust_metadata_regions:
+    input:
+        metadata = metadata
+    output:
+        metadata = "results/metadata_adjusted{region}.tsv"
+    shell:
+        """
+        #Figure out what region being wanted
+        rgn="{wildcards.region}"
+
+        if [ "$rgn" = "_global" ]; then
+            echo "Global run - no metadata adjustment needed"
+            cp {input.metadata} {output.metadata}
+        else
+            region="${{rgn//[_y]/}}"
+            region="${{region//[-y]/ }}"
+             echo "Focal run for $region - adjusting metadata"
+
+            python3 scripts/adjust_regional_meta.py \
+                                    --region "$region" \
+                                    --metadata {input.metadata} \
+                                    --output {output.metadata}
+        fi
+        """
+
+
+
+
+
