@@ -3,6 +3,10 @@ Eric Fournier 2020-04-26
 
 """
 
+import pkg_resources
+pkg_resources.require("googletrans==2.4.0")
+
+
 import os
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
@@ -30,6 +34,13 @@ pd.set_option('display.max_columns', 20)
 
 translator = Translator()
 logging.basicConfig(level = logging.DEBUG)
+
+
+import googletrans as gt
+#2020-07-09
+#print("TRANSLATOR")
+#print(gt.__version__)
+translator.session.verify = False
 
 base_dir = args.base_dir
 rta_lat_long_file = os.path.join(base_dir,"config/rta_lat_long.tsv")
