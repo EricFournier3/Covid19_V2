@@ -256,6 +256,13 @@ def run(args):
         from treetime.utils import numeric_date
         from datetime import datetime
         dates = get_numerical_dates(meta_dict, fmt="%Y-%m-%d")
+        dates = {k:v for (k,v) in dates.items() if v is not None}
+        dates_2 = get_numerical_dates(meta_dict, fmt="%Y-%m")
+        dates_2 = {k:v for (k,v) in dates_2.items() if v is not None}
+        dates_3 = get_numerical_dates(meta_dict, fmt="%Y")
+        dates_3 = {k:v for (k,v) in dates_3.items() if v is not None}
+        dates.update(dates_2)
+        dates.update(dates_3)
         tmp = [s for s in seq_keep if dates[s] is not None]
 
         #print("NUM DATE IS ",str(numeric_date(datetime.strptime(args.max_date,"%Y-%m-%d"))))
@@ -268,6 +275,13 @@ def run(args):
             #EricF comment
             #tmp = [s for s in tmp if (np.isscalar(dates[s]) or all(dates[s])) and np.min(dates[s])<args.max_date]
             tmp = [s for s in tmp if (np.isscalar(dates[s]) or all(dates[s])) and np.min(dates[s])<my_max_date]
+            for s1 in set(seq_keep) - set(tmp):
+                #print(s1, " ", np.isscalar(dates[s1]), "  ", all(dates[s1]), "  ", np.min(dates[s1])<my_max_date) 
+                #print(s1, " ", np.isscalar(dates[s1]), "  ",dates[s1])
+                pass 
+            for s2 in set(tmp):
+                #print(s2, " ", np.isscalar(dates[s2]), "  ",dates[s2]) 
+                pass
             #print("TMP IS ", str(tmp))
         num_excluded_by_date = len(seq_keep) - len(tmp)
         #print("Filter by date ",str(set(seq_keep) - set(tmp)))
