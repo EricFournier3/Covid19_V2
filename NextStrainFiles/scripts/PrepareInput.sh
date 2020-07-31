@@ -87,7 +87,7 @@ TransferGisaidFiles(){
 
 TransferLspqFiles(){
    _dir="${nextstrain_files_base_dir}data/lspq/"
-   cp "${_dir}"{"sequences.fasta","sgil_extract.tsv"} ${lspq_dir}
+   cp "${_dir}"{"sequences.fasta","sequences_force_include.fasta","sgil_extract.tsv"} ${lspq_dir}
 }
 
 PrepareMetadata(){
@@ -119,12 +119,14 @@ ExcludeSamples(){
  fi
 
  seqtk sample -s $RANDOM "${non_canadian_seq}" ${nb_gisaid_seq_to_keep} >> ${gisaid_dir}"gisaid_all.fasta"
- seqtk sample -s $RANDOM ${lspq_dir}"sequences_temp.fasta" ${nb_lspq_seq_to_keep} > ${lspq_dir}"sequences.fasta"
+ seqtk sample -s $RANDOM ${lspq_dir}"sequences_temp.fasta" ${nb_lspq_seq_to_keep} > ${lspq_dir}"sequences_temp2.fasta"
+
+ cat ${lspq_dir}"sequences_temp2.fasta" ${lspq_dir}"sequences_force_include.fasta" > ${lspq_dir}"sequences.fasta"
 
  rm ${canadian_seq}
  rm ${non_canadian_seq}
  rm ${gisaid_dir}"gisaid_all_temp.fasta"
- rm ${lspq_dir}"sequences_temp.fasta"
+ rm ${lspq_dir}"sequences_temp.fasta" ${lspq_dir}"sequences_temp2.fasta"
 
 
 }
