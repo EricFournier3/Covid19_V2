@@ -42,7 +42,7 @@ nvl(to_char(cr.DATE_RECEIVED, 'YYYY-MM-DD'),'') AS DATE_RECEPTION,
 rc.COMPNAME AS CH,
 
 (
-select REPLACE(REPLACE(max(concat(concat(concat(concat(concat(adress,', '),city),', '),state),', Candada')),CHR(10),' '),CHR(13),' ') FROM RASCLIENTS where compname = rc.COMPNAME
+select REPLACE(REPLACE(max(concat(concat(concat(concat(concat(adress,', '),city),', '),state),', Canada')),CHR(10),' '),CHR(13),' ') FROM RASCLIENTS where compname = rc.COMPNAME
 group by compname)as ADDR_CH,
 
 case 
