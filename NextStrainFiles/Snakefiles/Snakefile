@@ -327,8 +327,7 @@ rule refine:
             --clock-std-dev {params.clock_std_dev} \
             --date-inference {params.date_inference} \
             --divergence-unit {params.divergence_unit} \
-            --no-covariance \
-            --clock-filter-iqd {params.clock_filter_iqd}
+            --no-covariance
         """
 
 rule ancestral:
