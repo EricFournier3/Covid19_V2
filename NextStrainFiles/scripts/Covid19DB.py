@@ -12,7 +12,7 @@ class MySQLcovid19:
     host = 'localhost'
     user = 'root'
     password = 'lspq2019'
-    database = 'TestCovid19v5'
+    database = 'TestCovid19v7'
     connection = None
 
     @classmethod

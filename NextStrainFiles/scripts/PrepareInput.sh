@@ -2,6 +2,10 @@
 
 #TODO wget au lieu de copy
 
+
+_debug="True"
+
+
 work_dir=$1"/"
 temp_dir=${work_dir}"temp/"
 config_dir=${work_dir}"config"/
@@ -86,8 +90,15 @@ TransferGisaidFiles(){
 }
 
 TransferLspqFiles(){
-   _dir="${nextstrain_files_base_dir}data/lspq/"
-   cp "${_dir}"{"sequences.fasta","sequences_force_include.fasta","sgil_extract.tsv"} ${lspq_dir}
+
+    if [ "$_debug" = "False" ]
+     then
+      _dir="${nextstrain_files_base_dir}data/lspq/"
+    else
+      _dir="${nextstrain_files_base_dir}data/lspq/debug/"
+    fi
+    
+    cp "${_dir}"{"sequences.fasta","sequences_force_include.fasta","sgil_extract.tsv"} ${lspq_dir}
 }
 
 PrepareMetadata(){

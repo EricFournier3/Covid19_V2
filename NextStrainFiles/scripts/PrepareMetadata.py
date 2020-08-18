@@ -19,8 +19,6 @@ import string
 from Covid19DB import MySQLcovid19,MySQLcovid19Selector
 import datetime
 
-_debug = True 
-
 parser = argparse.ArgumentParser(description='Create metadata.tsv and sequences.fasta')
 parser.add_argument('--base-dir', '-b', required=True, help="path to working directory")
 parser.add_argument('--metadata-out', '-m', required=True, help="path to resulting metadata.tsv")
@@ -50,14 +48,12 @@ country_lat_long_file = os.path.join(base_dir,"config/country_lat_long.tsv")
 ordering_file = os.path.join(base_dir,"config/ordering.tsv")
 
 gisaid_metadata = os.path.join(base_dir,"gisaid/metadata.tsv") 
-#lspq_sgil_extract = os.path.join(base_dir,"lspq/sgil_extract.tsv")
 
 gisaid_ref_sequences = os.path.join(base_dir,"gisaid/gisaid_wuhan_ref_20200425.fasta")
 gisaid_sequences = os.path.join(base_dir,"gisaid/gisaid_all.fasta")
 
 lspq_sequences = os.path.join(base_dir,"lspq/sequences.fasta")
 
-#df_lspq = pd.read_csv(lspq_sgil_extract,delimiter="\t",index_col=False)
 df_gisaid = pd.read_csv(gisaid_metadata,delimiter="\t",index_col=False)
 df_lat_long = pd.read_csv(lat_long_file,delimiter='\t',header=None)
 
@@ -174,8 +170,11 @@ qc_seq_id = []
 
 for rec in SeqIO.parse(lspq_sequences,'fasta'):
     #seqid = re.search(r'(^\S+)\/\S+\/\S+',rec.id).group(1)
-    seqid = re.search(r'(^Canada\/Qc-L\S+\/\S+)',rec.id).group(1)
-    qc_id = re.search(r'^Canada\/Qc-(L\S+)\/\S+',rec.id).group(1)
+    #seqid = re.search(r'(^Canada\/Qc-L\S+\/\S+)',rec.id).group(1)
+    #qc_id = re.search(r'^Canada\/Qc-(L\S+)\/\S+',rec.id).group(1)
+
+    seqid = re.search(r'(^Canada\/Qc-\S+\/\S+)',rec.id).group(1)
+    qc_id = re.search(r'^Canada\/Qc-(\S+)\/\S+',rec.id).group(1)
     
     rec_id_list.append(seqid)
     qc_seq_id.append(qc_id)
