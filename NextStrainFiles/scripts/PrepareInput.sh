@@ -132,12 +132,17 @@ ExcludeSamples(){
  seqtk sample -s $RANDOM "${non_canadian_seq}" ${nb_gisaid_seq_to_keep} >> ${gisaid_dir}"gisaid_all.fasta"
  seqtk sample -s $RANDOM ${lspq_dir}"sequences_temp.fasta" ${nb_lspq_seq_to_keep} > ${lspq_dir}"sequences_temp2.fasta"
 
- cat ${lspq_dir}"sequences_temp2.fasta" ${lspq_dir}"sequences_force_include.fasta" > ${lspq_dir}"sequences.fasta"
+ cat ${lspq_dir}"sequences_temp2.fasta" ${lspq_dir}"sequences_force_include.fasta" > ${lspq_dir}"sequences_temp3.fasta"
+ seqkit rmdup -n ${lspq_dir}"sequences_temp3.fasta" > ${lspq_dir}"sequences.fasta"
+
+ n_qc_lspq=$(grep ">" ${lspq_dir}"sequences.fasta" | wc -l)
+
+ echo "Number of Qc sequences from LSPQ is ${n_qc_lspq}"
 
  rm ${canadian_seq}
  rm ${non_canadian_seq}
  rm ${gisaid_dir}"gisaid_all_temp.fasta"
- rm ${lspq_dir}"sequences_temp.fasta" ${lspq_dir}"sequences_temp2.fasta"
+ rm ${lspq_dir}"sequences_temp.fasta" ${lspq_dir}"sequences_temp2.fasta"  ${lspq_dir}"sequences_temp3.fasta"
 
 
 }
