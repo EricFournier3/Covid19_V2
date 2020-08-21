@@ -34,7 +34,7 @@ pd.set_option('display.max_columns', 20)
 translator = Translator()
 logging.basicConfig(level = logging.DEBUG)
 
-
+print("TESTING")
 import googletrans as gt
 #2020-07-09
 #print("TRANSLATOR")
@@ -248,6 +248,8 @@ del subset_lspq_subcol['voyage']
 '''
 
 subset_gisaid_subcol = subset_gisaid.loc[:,('strain','virus','date','sex','age','country','division','country_exposure','division_exposure')]
+subset_gisaid_subcol['date'] = subset_gisaid_subcol['date'].str.replace('-XX-XX','')
+subset_gisaid_subcol['date'] = subset_gisaid_subcol['date'].str.replace('-XX','')
 subset_gisaid_subcol.insert(loc=7,column='rss',value='',allow_duplicates=True)
 subset_gisaid_subcol.insert(loc=8,column='rta',value='',allow_duplicates=True)
 subset_gisaid_subcol.insert(loc=11,column='rss_exposure',value='',allow_duplicates=True)
