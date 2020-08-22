@@ -256,15 +256,24 @@ def run(args):
         from treetime.utils import numeric_date
         from datetime import datetime
         dates = get_numerical_dates(meta_dict, fmt="%Y-%m-%d")
+        #print("******************************************* DATES ********************************")
+        #print(dates)
         dates = {k:v for (k,v) in dates.items() if v is not None}
+        #print(dates)
         dates_2 = get_numerical_dates(meta_dict, fmt="%Y-%m")
-        dates_2 = {k:v for (k,v) in dates_2.items() if v is not None}
+        #print("******************************************* DATES 2 ********************************")
+        #print(dates_2)
+        dates_2 = {k:None for (k,v) in dates_2.items() if v is not None}
+        #print(dates_2)
         dates_3 = get_numerical_dates(meta_dict, fmt="%Y")
-        dates_3 = {k:v for (k,v) in dates_3.items() if v is not None}
+        dates_3 = {k:None for (k,v) in dates_3.items() if v is not None}
+        #print("******************************************* DATES 3 ********************************")
+        #print(dates_3)
         dates.update(dates_2)
         dates.update(dates_3)
+        #print("FINAL DATE ",dates)
         tmp = [s for s in seq_keep if dates[s] is not None]
-
+        #print("TMP ",tmp)
         #print("NUM DATE IS ",str(numeric_date(datetime.strptime(args.max_date,"%Y-%m-%d"))))
 
         if args.min_date:
