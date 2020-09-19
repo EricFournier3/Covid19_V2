@@ -3,7 +3,7 @@
 #TODO wget au lieu de copy
 
 
-_debug="True"
+_debug="False"
 
 
 work_dir=$1"/"

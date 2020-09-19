@@ -86,7 +86,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     user_colors = args.user_colors
-    focal = False
+    focal = True
     color_handle = open(user_colors)
     color_yaml = yaml.load(color_handle)
     user_colors_dict = color_yaml['colors'][0] 
@@ -138,17 +138,17 @@ if __name__ == '__main__':
                 extra_trait_values = []
                 extra_color_values = []
 
-            trait_array = set(trait_array)
+            #trait_array = set(trait_array)
 
             extra_trait_values_set = set(extra_trait_values)
 
-            trait_array = list(trait_array - extra_trait_values_set)
+            trait_array = list(set(trait_array) - extra_trait_values_set)
 
             if len(trait_array)==0 and len(extra_trait_values)==0:
                 print(f"No traits found for {trait_name}")
                 continue
             try:
-                color_array = schemes[len(trait_array)]
+                color_array = schemes[len(trait_array)-1]
             except:
                 color_array = []
 
