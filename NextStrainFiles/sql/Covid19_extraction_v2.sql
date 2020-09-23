@@ -5,12 +5,12 @@
 --SELECT DISTINCT FINAL FROM RESULTS WHERE  testcode = 2689 and ANALYTE = '2019-nCoV ARN' ;
 --SELECT DISTINCT FINAL FROM RESULTS WHERE  testcode = 2704 and ANALYTE = 'SARS-CoV-2' ;
 
-select NUMERO_SGIL,DATE_NAISS,NOM,PRENOM,AGE_ANNEE,SEX,NAM,PID,RSS_PATIENT,AUCUN_VOYAGE,VOYAGE_PAYS_1,SAMPLED_DATE,CH_NAME,RSS_CH,
+select NUMERO_SGIL,DATE_NAISS,NOM,PRENOM,AGE_ANNEE,SEX,NAM,PID,RSS_PATIENT,AUCUN_VOYAGE,TRAVEL_HISTORY,SAMPLED_DATE,CH_NAME,RSS_CH,
 CASE WHEN nCoV_LNM2019_nCoV_ARN is NULL then 'NO RESULT' ELSE nCoV_LNM2019_nCoV_ARN END AS LNM_RESULT,
 case when nCoV_LSPQ2019_nCoV_ARN is null then 'NO RESULT' ELSE nCoV_LSPQ2019_nCoV_ARN END AS LSPQ_RESULT,
 case when geneXpertSARScov2 is null then 'NO RESULT' ELSE geneXpertSARScov2 END as GENEXPERT_RESULT,
 case when WGS_COVID is null then 'NO RESULT' ELSE WGS_COVID END as  WGS_COVID_RESULT,
-nCoV2019_nCoV_Ct,
+CT,
 CH_ADRESS,
 POSTAL_CODE
 
@@ -41,7 +41,7 @@ FROM (SELECT DISTINCT f.FOLDERNO as NUMERO_SGIL, to_char(cr.BIRTH_DATE, 'YYYY-MM
       when crm.FIELD45 is null
       then 'AUCUN_VOYAGE'
       else LOWER(crm.FIELD45)
-    end as VOYAGE_PAYS_1,
+    end as TRAVEL_HISTORY,
     
     nvl(to_char(cr.DATE_COLLECTED, 'YYYY-MM-DD'),'') AS SAMPLED_DATE,
     rc.COMPNAME AS CH_NAME,
@@ -87,7 +87,7 @@ FROM (SELECT DISTINCT f.FOLDERNO as NUMERO_SGIL, to_char(cr.BIRTH_DATE, 'YYYY-MM
        from RESULTS coroLSPQ
         where coroLSPQ.ORDNO = ot.ORDNO  AND coroLSPQ.TESTNO='2019-nCoV'  AND coroLSPQ.ANALYTE='CoVN (LSPQ) Ct'  
         and coroLSPQ.ORIGREC = ( select max(origrec) from results res2 where res2.ordno=coroLSPQ.ordno and res2.testno=coroLSPQ.testno AND res2.TESTNO='2019-nCoV' and res2.ANALYTE='CoVN (LSPQ) Ct' )
-     ) as nCoV2019_nCoV_Ct,
+     ) as CT,
      
      (
      select REPLACE(REPLACE(max(concat(concat(concat(concat(concat(adress,', '),city),', '),state),', Canada')),CHR(10),' '),CHR(13),' ') FROM RASCLIENTS where compname = rc.COMPNAME
