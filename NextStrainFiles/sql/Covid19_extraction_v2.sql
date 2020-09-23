@@ -1,4 +1,9 @@
---NAM, NUMERO_SGIL,SAMPLED_DATE,NOM,PRENOM,DATE_NAISS,PID,CH_ADRESS,CH_NAME
+--select FOLDERNO,FINAL,ANALYTE from results where testcode = 2685 and ANALYTE = '2019-nCoV ARN' order by folderno,analyte;
+--select FOLDERNO,FINAL,ANALYTE from results where testcode = 2689 and ANALYTE = '2019-nCoV ARN' order by folderno,analyte;
+
+--SELECT DISTINCT FINAL FROM RESULTS WHERE  testcode = 2685 and ANALYTE = '2019-nCoV ARN' ;
+--SELECT DISTINCT FINAL FROM RESULTS WHERE  testcode = 2689 and ANALYTE = '2019-nCoV ARN' ;
+--SELECT DISTINCT FINAL FROM RESULTS WHERE  testcode = 2704 and ANALYTE = 'SARS-CoV-2' ;
 
 select NUMERO_SGIL,DATE_NAISS,NOM,PRENOM,AGE_ANNEE,SEX,NAM,PID,RSS_PATIENT,AUCUN_VOYAGE,VOYAGE_PAYS_1,SAMPLED_DATE,CH_NAME,RSS_CH,
 CASE WHEN nCoV_LNM2019_nCoV_ARN is NULL then 'NO RESULT' ELSE nCoV_LNM2019_nCoV_ARN END AS LNM_RESULT,
@@ -41,13 +46,14 @@ FROM (SELECT DISTINCT f.FOLDERNO as NUMERO_SGIL, to_char(cr.BIRTH_DATE, 'YYYY-MM
     nvl(to_char(cr.DATE_COLLECTED, 'YYYY-MM-DD'),'') AS SAMPLED_DATE,
     rc.COMPNAME AS CH_NAME,
     rc.LSPQ_RSS AS RSS_CH,
-    
+    --LNM
     (SELECT coroLNM.FINAL
       FROM RESULTS coroLNM
        WHERE coroLNM.ORDNO = ot.ORDNO and  coroLNM.TESTNO = '2019-nCoV - LNM' and coroLNM.ANALYTE='2019-nCoV ARN' and coroLNM.REPORTABLE = 'Y'
        AND coroLNM.ORIGREC = ( select max(origrec) from results res2 where res2.ordno=coroLNM.ordno and res2.testno=coroLNM.testno AND res2.TESTNO='2019-nCoV - LNM' and res2.ANALYTE='2019-nCoV ARN')
      )AS nCoV_LNM2019_nCoV_ARN,
      
+     --LSPQ
     (SELECT 
       coroLSPQ.FINAL
       FROM RESULTS coroLSPQ
@@ -55,6 +61,7 @@ FROM (SELECT DISTINCT f.FOLDERNO as NUMERO_SGIL, to_char(cr.BIRTH_DATE, 'YYYY-MM
        AND coroLSPQ.ORIGREC = ( select max(origrec) from results res2 where res2.ordno=coroLSPQ.ordno and res2.testno=coroLSPQ.testno AND res2.TESTNO='2019-nCoV' and res2.ANALYTE='2019-nCoV ARN')
      )AS nCoV_LSPQ2019_nCoV_ARN,
      
+     --GENEXPERT
     (SELECT 
       geneXpert.FINAL
       FROM RESULTS geneXpert
@@ -62,11 +69,12 @@ FROM (SELECT DISTINCT f.FOLDERNO as NUMERO_SGIL, to_char(cr.BIRTH_DATE, 'YYYY-MM
        AND geneXpert.ORIGREC = ( select max(origrec) from results res2 where res2.ordno=geneXpert.ordno and res2.testno=geneXpert.testno AND res2.TESTNO='Xpert Xpress SARS-CoV-2' and res2.ANALYTE='SARS-CoV-2')
      )AS geneXpertSARScov2,
      
+     --WGS
      (SELECT 
       wgsCovid.FINAL
       FROM RESULTS wgsCovid
-      where wgsCovid.ORDNO = ot.ORDNO and wgsCovid.TESTNO = 'COVID-19 - Surveillance WGS' and wgsCovid.ANALYTE='Génotype' and wgsCovid.REPORTABLE = 'Y'
-      AND wgsCovid.ORIGREC = ( select max(origrec) from results res2 where res2.ordno=wgsCovid.ordno and res2.testno=wgsCovid.testno AND res2.TESTNO='COVID-19 - Surveillance WGS' and res2.ANALYTE='Génotype')
+      where wgsCovid.ORDNO = ot.ORDNO and wgsCovid.TESTNO = 'COVID-19 - Surveillance WGS' and wgsCovid.ANALYTE = 'Envoi' and wgsCovid.REPORTABLE = 'Y'
+      AND wgsCovid.ORIGREC = ( select max(origrec) from results res2 where res2.ordno=wgsCovid.ordno and res2.testno=wgsCovid.testno AND res2.TESTNO='COVID-19 - Surveillance WGS' and res2.ANALYTE = 'Envoi')
      ) AS WGS_COVID,
      
      ( select 
@@ -94,12 +102,12 @@ FROM (SELECT DISTINCT f.FOLDERNO as NUMERO_SGIL, to_char(cr.BIRTH_DATE, 'YYYY-MM
 		inner join ORDERS o on o.FOLDERNO = cr.EXTERNAL_ID 
 		inner join ORDTASK ot on ot.ORDNO = o.ORDNO 
         
-        where ot.TESTCODE IN (2685,2689,2704,2705) and cr.DATE_RECEIVED >= to_date('2020-01-20', 'YYYY-MM-DD') 
+        where ot.TESTCODE IN (2685,2689,2704,2705) and cr.DATE_RECEIVED >= to_date('2020-01-01', 'YYYY-MM-DD') 
         and ( cr.PANEL_LIST like '2019-nCoV%' OR cr.PANEL_LIST like '%Soustraitant%' or cr.PANEL_LIST like '%2019-nCoV - LNM' or cr.PANEL_LIST ='GeneXpert SARS-CoV-2' 
         or cr.PANEL_LIST like '%COVID-19 - Surveillance WGS%' or cr.PANEL_LIST like '%COVID-19 - Confirmation%')
 	and rc.RASCLIENTID not in ('LSPQCEC','LSPQCIC','LSPQF','LSPQP','LSPQV','LSPQ') 
         
-        --AND  f.FOLDERNO = 'L00202287' AND ROWNUM < 5 order by f.FOLDERNO 
+        --AND  f.FOLDERNO = 'L00266938' AND ROWNUM < 5 order by f.FOLDERNO 
         order by f.FOLDERNO 
 );
 
