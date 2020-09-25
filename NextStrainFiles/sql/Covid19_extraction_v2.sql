@@ -71,7 +71,7 @@ FROM (SELECT DISTINCT f.FOLDERNO as NUMERO_SGIL, to_char(cr.BIRTH_DATE, 'YYYY-MM
      
      --WGS
      (SELECT 
-      wgsCovid.FINAL
+      wgsCovid.ANALYTE
       FROM RESULTS wgsCovid
       where wgsCovid.ORDNO = ot.ORDNO and wgsCovid.TESTNO = 'COVID-19 - Surveillance WGS' and wgsCovid.ANALYTE = 'Envoi' and wgsCovid.REPORTABLE = 'Y'
       AND wgsCovid.ORIGREC = ( select max(origrec) from results res2 where res2.ordno=wgsCovid.ordno and res2.testno=wgsCovid.testno AND res2.TESTNO='COVID-19 - Surveillance WGS' and res2.ANALYTE = 'Envoi')
@@ -107,7 +107,7 @@ FROM (SELECT DISTINCT f.FOLDERNO as NUMERO_SGIL, to_char(cr.BIRTH_DATE, 'YYYY-MM
         or cr.PANEL_LIST like '%COVID-19 - Surveillance WGS%' or cr.PANEL_LIST like '%COVID-19 - Confirmation%')
 	and rc.RASCLIENTID not in ('LSPQCEC','LSPQCIC','LSPQF','LSPQP','LSPQV','LSPQ') 
         
-        --AND  f.FOLDERNO = 'L00266938' AND ROWNUM < 5 order by f.FOLDERNO 
+        --AND  f.FOLDERNO in ('L00275765','L00267093','L00254888','L00286589') AND ROWNUM < 15 order by f.FOLDERNO 
         order by f.FOLDERNO 
 );
 
