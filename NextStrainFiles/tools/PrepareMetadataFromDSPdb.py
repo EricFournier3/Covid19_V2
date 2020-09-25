@@ -29,11 +29,11 @@ TODO
 
 """
 Usage exemple:
-python PrepareMetadataFromDSPdb.py --dest LSPQ --debug (pour mode debug et metadata forat lspqo)
+python PrepareMetadataFromDSPdb.py --dest LSPQ --debug  -i AllSample.20200912.list (pour mode debug et metadata forat lspqo) 
 
-python PrepareMetadataFromDSPdb.py --dest GC  (pour mode production et metadata format Genome Center)
+python PrepareMetadataFromDSPdb.py --dest GC -i AllSample.20200912.list  (pour mode production et metadata format Genome Center)
 
-python PrepareMetadataFromDSPdb.py --dest LSPQ --debug --all (en mode debug, format lspq, extraire tous les samples de la base de donnees)
+python PrepareMetadataFromDSPdb.py --dest LSPQ --debug --all -i AllSample.20200912.list  (en mode debug, format lspq, extraire tous les samples de la base de donnees)
 """
 
 global base_dir
@@ -45,14 +45,22 @@ parser = argparse.ArgumentParser(description="Create metadata file")
 parser.add_argument('--dest', '-d', required=True,help="choose lspq (lspq) or genome center (gc)",choices=['LSPQ','GC'])
 parser.add_argument('--all',help='extract all samples in database',action='store_true')
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
+parser.add_argument('--input','-i',help="input file",required=True)
 args = parser.parse_args()
 
 _debug_ = args.debug
 metadata_destination = args.dest
 extract_all_samples = args.all
+in_file = args.input
+
 
 base_dir = "/home/foueri01@inspq.qc.ca/temp/20200924/" if  _debug_ else "/data/PROJETS/COVID-19_Beluga/Metadata"
 
+if os.path.isfile(os.path.join(base_dir,"IN",in_file)):
+    pass
+else:
+    logging.error("File missing : " + os.path.join(base_dir,"IN",in_file))
+    exit(1)
 
 def BuildSeqList(pd_seq_list):
 
@@ -99,18 +107,19 @@ class PdWriter:
     global today
     today = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    def __init__(self,destination):
+    def __init__(self,destination,in_file):
+        self.in_file = in_file
         self.destination = destination
         self.message_no_missing_samples = "************** No missing samples ***************"
 
     def WritePdToFile(self,pd_metadata):
 
-        self.metadata_out = os.path.join(base_dir,"OUT",self.destination,"metadata_out_{0}.tsv".format(today))
+        self.metadata_out = os.path.join(base_dir,"OUT",self.destination,"metadata_out_{0}_from_{1}.tsv".format(today,self.in_file))
         pd_metadata.to_csv(self.metadata_out,sep="\t",index=False)
 
 
     def WritePdMissingSamplesToFile(self,pd_missing_sample):
-        self.missing_spec_out = os.path.join(base_dir,"OUT",self.destination,"missing_samples_{0}.tsv".format(today))
+        self.missing_spec_out = os.path.join(base_dir,"OUT",self.destination,"missing_samples_{0}_from_{1}.tsv".format(today,self.in_file))
 
         if(pd_missing_sample.size == 0):
             pd_missing_sample[1] = self.message_no_missing_samples
@@ -122,18 +131,18 @@ class PdWriter:
 class PdBuilderFromFile:
     def __init__(self):
         pass
-    def ReadSeqFileList(self):
+    def ReadSeqFileList(self,in_file):
         
-        self.seq_file_list = os.path.join(base_dir,"IN","AllSample.20200912_small.list")
+        self.seq_file_list = os.path.join(base_dir,"IN",in_file)
         return pd.read_csv(self.seq_file_list,sep="\t",index_col=False)
 
 
 def Main():
     logging.info("In Main()")
     pd_builder_from_file = PdBuilderFromFile()
-    pd_seq_list = pd_builder_from_file.ReadSeqFileList()
+    pd_seq_list = pd_builder_from_file.ReadSeqFileList(in_file)
 
-    pd_writer =  PdWriter(metadata_destination)
+    pd_writer =  PdWriter(metadata_destination,os.path.basename(in_file))
     pd_metadata,pd_missing_spec =  CreateMetadata(pd_seq_list,metadata_destination,extract_all_samples)
 
     pd_writer.WritePdToFile(pd_metadata)
