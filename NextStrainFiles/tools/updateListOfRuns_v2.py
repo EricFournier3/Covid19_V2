@@ -54,24 +54,27 @@ def main() :
     global PROCESSING_DIR   # full_processing dir
     global TECHNO_LIST
     #Eric Fournier 2020-10-02 add here
+    global TRACE_DIR
     global verbose
     verbose = ARGS.verbose
 
     #Eric Fournier 2020-10-02 add here
     if not os.path.isdir(ARGS.repo):
         os.makedirs(ARGS.repo)
-
-    fjson   = open("runParam.json")
+ 
+    #Eric Fournier 2020-10-02 change here
+    fjson   = open("runParam_v2.json")
     pjson   = json.load( fjson )
     LRUNHEADER      = pjson[ 'LRUNHEADER' ] 
     LPLATEHEADER    = pjson[ 'LPLATEHEADER']
     TECHNO_LIST     = pjson[ 'TECHNO_LIST' ]
     PROCESSING_DIR  = ARGS.dir
+    TRACE_DIR = pjson['TRACE_DIR']
     fjson.close()
 
     cwd = os.getcwd()
     
-    logfile_path = os.path.join(cwd,"log",os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') +".log")
+    logfile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') +".log")
     logfile = open(logfile_path,'w')
 
     if verbose:
@@ -521,7 +524,8 @@ def readPlateFile( fplate ) :
         if len(lcol) < 3 :
             continue
 
-        if lcol[0].strip() == LPLATEHEADER[0] :
+        #Eric Fournier 2020-10-02 modif here, convert to str to avoid warning message
+        if str(lcol[0].strip()) == str(LPLATEHEADER[0]) :
             continue
 
         plate = lcol[2].strip()
@@ -571,8 +575,8 @@ def parseMetrics( fmetrics, samplename ) :
 def writeRunFile( drun ) :
     fn  = "listRuns_" + datetime.today().strftime('%Y%m%d') + ".tsv"
 
-    #Eric Fournier 2020-10-02 place fn in out directory
-    f   = open( os.path.join(os.getcwd(),'out',fn) , "w" )
+    #Eric Fournier 2020-10-02 change here
+    f   = open( os.path.join(TRACE_DIR,fn) , "w" )
 
     global LRUNHEADER
     f.write( "\t".join( LRUNHEADER ) + "\n" )
@@ -585,10 +589,10 @@ def writeRunFile( drun ) :
         drun[ p ][7]    = "%i"%(nbsamplerep)
         f.write( "\t".join( drun[ p ] ) + "\n" )
     
-    print "End : >>>>>>>   New list of run file in " + os.path.join(os.getcwd(),'out',fn) + "\n"
+    print "End : >>>>>>>   New list of run file in " + os.path.join(TRACE_DIR,fn) + "\n"
     
     if verbose:
-        logfile.write("\n   Save runs list to " + os.path.join(os.getcwd(),'out',fn) + "\n\n********************** End ********************\n")
+        logfile.write("\n   Save runs list to " + os.path.join(TRACE_DIR,fn) + "\n\n********************** End ********************\n")
 
     f.close()
 
