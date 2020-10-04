@@ -64,7 +64,7 @@ def main() :
         os.makedirs(ARGS.tracedir)
 
     # Load json param
-    fjson   = open("runParam.json")
+    fjson   = open("runParam_v2.json")
     pjson   = json.load( fjson )
     LPLATEHEADER     = pjson[ 'LPLATEHEADER']
     LSAMPLEHEADER    = pjson[ 'LSAMPLEHEADER' ]
@@ -73,7 +73,7 @@ def main() :
     cwd = os.getcwd()
 
     #Eric Fournier 2020-10-02 add here
-    logfile_path = os.path.join(cwd,"log",os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') +".log")
+    logfile_path = os.path.join(ARGS.tracedir,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') +".log")
     logfile = open(logfile_path,'w')
 
     # Read list of plates ; This list has to be provided by LSPQ
@@ -132,7 +132,9 @@ def updateTrace( dplate, repodir, tracedir ) :
                 lsamplerepovisit.append( samplerepo )
                 samplekey = os.path.basename( samplerepo )
                 if samplekey in dsample :
-                    print( samplekey + " already in trace file " )
+                    pass
+                    if verbose:
+                        logfile.write("\n              !!!!  samplekey " + samplekey + " already in trace file\n")
                 
                 # New sample not in trace file
                 else :
@@ -156,7 +158,6 @@ def updateTrace( dplate, repodir, tracedir ) :
     # if exist, read and create bckup file
     if len( glob.glob( samplepath ) ) :
         os.rename( samplepath , os.path.join( bckupdir , fsample ) )
-
 
     for platerepodir in lplaterepo :
         platerepo   = os.path.basename( platerepodir )
@@ -219,7 +220,8 @@ def readPlateFile( fplate ) :
         if len(lcol) < 3 :
             continue
 
-        if lcol[0].strip() == LPLATEHEADER[0] :
+        #Eric Fournier 2020-10-02 convert to str
+        if str(lcol[0].strip()) == str(LPLATEHEADER[0]) :
             continue
 
         plate = lcol[2].strip()
@@ -248,7 +250,8 @@ def readSampleFile( fsample ) :
         if len(lcol) < 9 :
             continue
 
-        if lcol[0].strip() == LSAMPLEHEADER[0] :
+        #Eric Fournier 2020-10-02 convert to str
+        if str(lcol[0].strip()) == str(LSAMPLEHEADER[0]) :
             continue
 
         samplekey = lcol[1].strip()
@@ -262,7 +265,7 @@ def readSampleFile( fsample ) :
 
 def writeSampleFile( fsample, dsample, ismess ) :
     #Eric Fournier 2020-10-03 add here
-    out_sample_file =  os.path.join(os.getcwd(),"out",fsample)
+    out_sample_file =  os.path.join(ARGS.tracedir,fsample)
 
     #Eric Fournier 2020-10-03 change here
     f   = open( out_sample_file , "w" ) 
@@ -289,7 +292,7 @@ def writeSampleStat( fstat, dsampleALL ) :
     dplate      = {}
 
     #Eric Fournier 2020-10-02 add here
-    out_stat_file =  os.path.join(os.getcwd(),"out",fstat)
+    out_stat_file =  os.path.join(ARGS.tracedir,fstat)
 
     if verbose:
         logfile.write("\n******************** in writeSampleStat **********************\n\n")
