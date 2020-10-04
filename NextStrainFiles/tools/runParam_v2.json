@@ -1,0 +1,9 @@
+{
+"PROCESSING_DIR":"COVID_full_processing",
+"TECHNO_LIST":[ "illumina", "mgi" , "nanopore" ],
+"LRUNHEADER":["Date[0]","Techno{illumina,nanopore,mgi}[1]","Folder[2]","BelugaPath[3]","Status{RAW,PROC,REP,ERR}[4]","Note[5]","Nb samples total[6]", "Nb samples in Repo[7]"],
+"LPLATEHEADER":["Sample","Code-barre","PlateOrSet"],
+"LSAMPLEHEADER":["Plate[0]", "SampleKEY[1]","Sample[2]" , "Techno[3]" , "RunDate[4]" , "QCStatus{PASS,FLAG,REJ}[5]" , "CurrationStatus{UNK,PASS,REJ}[6]", "AnalysisStatus{SKIP,KEEP}[7]", "REPOPATH[8]" ],
+"END":"fini",
+"TRACE_DIR":"/genfs/projects/COVID_LSPQ/TRACE_ERIC"
+}
