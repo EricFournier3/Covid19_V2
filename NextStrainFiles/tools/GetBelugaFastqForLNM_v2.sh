@@ -9,6 +9,8 @@
 today=$(echo $(date "+%Y%m%d"))
 hour=$(echo $(date "+%Y-%m-%d @ %H:%M$S"))
 
+base_dir_raw_data="/data/PROJETS/COVID-19_Beluga/RawData/"
+
 beluga_server="fournie1@beluga.computecanada.ca"
 mnt_beluga_repository="/mnt/BelugaEric/"
 
@@ -18,12 +20,12 @@ suffix="_${gisaid_dirs}_${subset}"
 
 spec_list_file="/data/PROJETS/COVID-19_Beluga/Gisaid/SamplesListPublished${suffix}.txt"
 missing_spec_list=()
-missing_spec_file="/data/PROJETS/COVID-19_Beluga/RawData/missing_spec_from_beluga_${today}${suffix}.txt"
-log_file="/data/PROJETS/COVID-19_Beluga/RawData/fastq_transfer_beluga_to_slbio00d_${today}${suffix}.log"
-space_file="/data/PROJETS/COVID-19_Beluga/RawData/amount_transfered_${today}${suffix}.txt"
+missing_spec_file="${base_dir_raw_data}missing_spec_from_beluga_${today}${suffix}.txt"
+log_file="${base_dir_raw_data}fastq_transfer_beluga_to_slbio00d_${today}${suffix}.log"
+space_file="${base_dir_raw_data}amount_transfered_${today}${suffix}.txt"
 
-illumina_out="/data/PROJETS/COVID-19_Beluga/RawData/illumina/fastq_dehosted/"
-mgi_out="/data/PROJETS/COVID-19_Beluga/RawData/mgi/fastq_dehosted/"
+illumina_out="${base_dir_raw_data}illumina/fastq_dehosted/"
+mgi_out="${base_dir_raw_data}mgi/fastq_dehosted/"
 
 echo "" > $missing_spec_file
 echo -e "Start : ${hour}\n" > $log_file
@@ -41,7 +43,7 @@ while read sample techno
 
   if  [[ "$techno" =~ (Illumina) ]]
     then
-    for fastq in $(ls /mnt/BelugaEric/release1_dehosted_raw_reads/illumina/*.fastq.gz):
+    for fastq in $(ls ${mnt_beluga_repository}release1_dehosted_raw_reads/illumina/*.fastq.gz):
       do
       if [[ "$fastq" =~ "$sample" ]]
         then
@@ -59,7 +61,7 @@ while read sample techno
 
   elif [[ "$techno" =~ (MGI) ]]
     then
-    for fastq in $(ls /mnt/BelugaEric/release1_dehosted_raw_reads/mgi/*.fastq.gz):
+    for fastq in $(ls ${mnt_beluga_repository}release1_dehosted_raw_reads/mgi/*.fastq.gz):
       do
       if [[ "$fastq" =~ "$sample" ]]
         then
