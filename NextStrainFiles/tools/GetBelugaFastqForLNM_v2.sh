@@ -20,6 +20,10 @@ spec_list_file="/data/PROJETS/COVID-19_Beluga/Gisaid/SamplesListPublished${suffi
 missing_spec_list=()
 missing_spec_file="/data/PROJETS/COVID-19_Beluga/RawData/missing_spec_from_beluga_${today}${suffix}.txt"
 log_file="/data/PROJETS/COVID-19_Beluga/RawData/fastq_transfer_beluga_to_slbio00d_${today}${suffix}.log"
+space_file="/data/PROJETS/COVID-19_Beluga/RawData/amount_transfered_${today}${suffix}.txt"
+
+illumina_out="/data/PROJETS/COVID-19_Beluga/RawData/illumina/fastq_dehosted/"
+mgi_out="/data/PROJETS/COVID-19_Beluga/RawData/mgi/fastq_dehosted/"
 
 echo "" > $missing_spec_file
 echo -e "Start : ${hour}\n" > $log_file
@@ -44,7 +48,7 @@ while read sample techno
         found="True"
         echo "********** Get Illumina fastq for ${sample} ${techno} ***************"
         echo -e "********** Get Illumina fastq for ${sample} ${techno} ***************\n" >> ${log_file}
-        cp $fastq /data/PROJETS/COVID-19_Beluga/RawData/illumina/fastq_dehosted
+        cp $fastq $illumina_out
       fi
     done
 
@@ -62,7 +66,7 @@ while read sample techno
         found="True"
          echo "********** Get MGI fastq for ${sample} ${techno} ***************"
          echo -e "********** Get MGI fastq for ${sample} ${techno} ***************\n" >> ${log_file}
-         cp $fastq /data/PROJETS/COVID-19_Beluga/RawData/mgi/fastq_dehosted
+         cp $fastq $mgi_out
       fi
     done
 
@@ -83,4 +87,6 @@ done
 hour=$(echo $(date "+%Y-%m-%d @ %H:%M$S"))
 echo -e "End : ${hour}\n" >> $log_file
 echo -e "End : ${hour}\n" 
+
+du -ch  -L ${illumina_out}*.fastq.gz ${mgi_out}*.fastq.gz > ${space_file}
 echo "Terminé"
