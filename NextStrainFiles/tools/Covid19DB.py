@@ -67,7 +67,7 @@ class MySQLcovid19Selector:
         if (metadata_destination == 'lspq'):
             PATIENTS_COLUMNS = ['RSS_LSPQ_CAS','DTNAISSINFO','SEXEINFO']
         else:
-            PATIENTS_COLUMNS = ['SEXEINFO']
+            PATIENTS_COLUMNS = ['SEXEINFO','RSS_LSPQ_CAS']
 
         PATIENTS_COLUMNS = [patients_alias + "." + col for col in PATIENTS_COLUMNS]
         PATIENTS_COLUMNS = ','.join(PATIENTS_COLUMNS)
