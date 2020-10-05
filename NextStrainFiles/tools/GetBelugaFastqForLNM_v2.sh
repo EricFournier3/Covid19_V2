@@ -7,17 +7,24 @@
 #############################################################################################
 
 today=$(echo $(date "+%Y%m%d"))
+hour=$(echo $(date "+%Y-%m-%d @ %H:%M$S"))
 
 beluga_server="fournie1@beluga.computecanada.ca"
 mnt_beluga_repository="/mnt/BelugaEric/"
 
-spec_list_file="/data/PROJETS/COVID-19_Beluga/Gisaid/SamplesListPublishedTEST_20200520_20200610_20200914.txt"
+subset="subset_1" #TODO to adjust accordingly
+gisaid_dirs="20200520_20200610_20200914" #TODO to adjust accordingly
+suffix="_${gisaid_dirs}_${subset}"
+
+spec_list_file="/data/PROJETS/COVID-19_Beluga/Gisaid/SamplesListPublished${suffix}.txt"
 missing_spec_list=()
-missing_spec_file="/data/PROJETS/COVID-19_Beluga/RawData/missing_spec_from_beluga_${today}.txt"
-log_file="/data/PROJETS/COVID-19_Beluga/RawData/fastq_transfer_beluga_to_slbio00d_${today}.log"
+missing_spec_file="/data/PROJETS/COVID-19_Beluga/RawData/missing_spec_from_beluga_${today}${suffix}.txt"
+log_file="/data/PROJETS/COVID-19_Beluga/RawData/fastq_transfer_beluga_to_slbio00d_${today}${suffix}.log"
 
 echo "" > $missing_spec_file
-echo "" > $log_file
+echo -e "Start : ${hour}\n" > $log_file
+
+echo -e "Start : ${hour}\n"
 
 sudo umount $mnt_beluga_repository
 sudo sshfs  -o allow_other -o follow_symlinks ${beluga_server}:/home/fournie1 $mnt_beluga_repository
@@ -37,7 +44,7 @@ while read sample techno
         found="True"
         echo "********** Get Illumina fastq for ${sample} ${techno} ***************"
         echo -e "********** Get Illumina fastq for ${sample} ${techno} ***************\n" >> ${log_file}
-        #cp $fastq /data/PROJETS/COVID-19_Beluga/RawData/illumina/fastq_dehosted
+        cp $fastq /data/PROJETS/COVID-19_Beluga/RawData/illumina/fastq_dehosted
       fi
     done
 
@@ -55,7 +62,7 @@ while read sample techno
         found="True"
          echo "********** Get MGI fastq for ${sample} ${techno} ***************"
          echo -e "********** Get MGI fastq for ${sample} ${techno} ***************\n" >> ${log_file}
-         #cp $fastq /data/PROJETS/COVID-19_Beluga/RawData/mgi/fastq_dehosted
+         cp $fastq /data/PROJETS/COVID-19_Beluga/RawData/mgi/fastq_dehosted
       fi
     done
 
@@ -70,7 +77,10 @@ done < ${spec_list_file}
 
 for spec in ${missing_spec_list[@]}
   do
-  echo -e "${spec}\n" >> $missing_spec_file
+  echo -e "${spec}" >> $missing_spec_file
 done
 
+hour=$(echo $(date "+%Y-%m-%d @ %H:%M$S"))
+echo -e "End : ${hour}\n" >> $log_file
+echo -e "End : ${hour}\n" 
 echo "Terminé"
