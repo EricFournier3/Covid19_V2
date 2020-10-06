@@ -50,7 +50,7 @@ while read sample techno
         found="True"
         echo "********** Get Illumina fastq for ${sample} ${techno} ***************"
         echo -e "********** Get Illumina fastq for ${sample} ${techno} ***************\n" >> ${log_file}
-        #cp $fastq $illumina_out
+        cp $fastq $illumina_out
       fi
     done
 
@@ -68,7 +68,7 @@ while read sample techno
         found="True"
          echo "********** Get MGI fastq for ${sample} ${techno} ***************"
          echo -e "********** Get MGI fastq for ${sample} ${techno} ***************\n" >> ${log_file}
-         #cp $fastq $mgi_out
+         cp $fastq $mgi_out
       fi
     done
 
