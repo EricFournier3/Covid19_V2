@@ -14,7 +14,7 @@ base_dir_raw_data="/data/PROJETS/COVID-19_Beluga/RawData/"
 beluga_server="fournie1@beluga.computecanada.ca"
 mnt_beluga_repository="/mnt/BelugaEric/"
 
-subset="subset_1" #TODO to adjust accordingly
+subset="subset_2" #TODO to adjust accordingly
 gisaid_dirs="20200520_20200610_20200914" #TODO to adjust accordingly
 suffix="_${gisaid_dirs}_${subset}"
 
@@ -24,8 +24,8 @@ missing_spec_file="${base_dir_raw_data}missing_spec_from_beluga_${today}${suffix
 log_file="${base_dir_raw_data}fastq_transfer_beluga_to_slbio00d_${today}${suffix}.log"
 space_file="${base_dir_raw_data}amount_transfered_${today}${suffix}.txt"
 
-illumina_out="${base_dir_raw_data}illumina/fastq_dehosted/"
-mgi_out="${base_dir_raw_data}mgi/fastq_dehosted/"
+illumina_out="${base_dir_raw_data}illumina/fastq_dehosted_${subset}/"
+mgi_out="${base_dir_raw_data}mgi/fastq_dehosted_${subset}/"
 
 echo "" > $missing_spec_file
 echo -e "Start : ${hour}\n" > $log_file
@@ -50,7 +50,7 @@ while read sample techno
         found="True"
         echo "********** Get Illumina fastq for ${sample} ${techno} ***************"
         echo -e "********** Get Illumina fastq for ${sample} ${techno} ***************\n" >> ${log_file}
-        cp $fastq $illumina_out
+        #cp $fastq $illumina_out
       fi
     done
 
@@ -68,7 +68,7 @@ while read sample techno
         found="True"
          echo "********** Get MGI fastq for ${sample} ${techno} ***************"
          echo -e "********** Get MGI fastq for ${sample} ${techno} ***************\n" >> ${log_file}
-         cp $fastq $mgi_out
+         #cp $fastq $mgi_out
       fi
     done
 
