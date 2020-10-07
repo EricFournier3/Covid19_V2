@@ -47,7 +47,61 @@ def MountBelugaServer():
     os.system("sudo umount " + mnt_beluga_server)
     os.system("sudo sshfs -o allow_other -o follow_symlinks {0} {1}".format(beluga_server,mnt_beluga_server))
 
-MountBelugaServer()
+#MountBelugaServer()
+
+class ComputeCanadaToLSPQManager:
+    def __init__(self,release):
+        self.release = release
+
+        if __debug__:
+            self.gisaid_sample_list_file = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Gisaid/FinalPublished/",self.release,"SampleListPublished_" + self.release + ".txt")
+            self.beluga_fastq_basedir = os.path.join(mnt_beluga_server,"test2",self.release)
+        else:
+            self.gisaid_sample_list_file = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Gisaid/FinalPublished/",self.release,"SampleListPublished_" + self.release + ".txt")
+            self.beluga_fastq_basedir = os.path.join(mnt_beluga_server,"test2",self.release)
+
+        self.gisaid_mgi_id_list = []
+        self.gisaid_illumina_id_list = []
+
+        self.missing_beluga_mgi = []
+        self.missing_beluga_illumina = []
+
+
+    def GetMissingBelugaSamples(self):
+        for sample in self.gisaid_mgi_id_list:
+            if not re.search(sample,self.beluga_mgi_fastq_basename_list):
+                self.missing_beluga_mgi.append(sample)
+
+        print(self.beluga_illumina_fastq_basename_list)
+        for sample in self.gisaid_illumina_id_list:
+            print("sample ",sample)
+            if not re.search(sample,self.beluga_illumina_fastq_basename_list):
+                self.missing_beluga_illumina.append(sample)
+
+        print(self.missing_beluga_mgi, " missing mgi")
+        print(self.missing_beluga_illumina, " missing illumina")
+
+    def BuildGisaidIdList(self):
+        line_pattern = re.compile("^Canada/Qc-(?P<id>\S+)/\d{4} seq_method:(?P<techno>\S+)\|assemb_method")
+
+        with open(self.gisaid_sample_list_file) as gisaid_id_file:
+            for line in gisaid_id_file:
+                match = line_pattern.search(line)
+                spec_id = match.group('id')
+                techno = match.group('techno')
+
+                if techno == "MGI" or techno == "MGI_CleanPlex":
+                    self.gisaid_mgi_id_list.append(spec_id)
+                elif techno == "Illumina_NexteraFlex":
+                    self.gisaid_illumina_id_list.append(spec_id)
+
+    def GetComputeCanadaFastqList(self):
+        self.beluga_mgi_fastq_list = glob.glob(os.path.join(self.beluga_fastq_basedir,"mgi") + "/*pair1.fastq.gz")
+        self.beluga_mgi_fastq_basename_list = "-".join([os.path.basename(x) for x in self.beluga_mgi_fastq_list])
+        self.beluga_illumina_fastq_list = glob.glob(os.path.join(self.beluga_fastq_basedir,"illumina") + "/*pair1.fastq.gz")
+        self.beluga_illumina_fastq_basename_list = "-".join([os.path.basename(x) for x in self.beluga_illumina_fastq_list])
+
+        self.GetMissingBelugaSamples()
 
 
 class GisaidFastaManager:
@@ -55,22 +109,20 @@ class GisaidFastaManager:
         self.release = release
 
         if __debug__:
-            self.beluga_sample_list_out = os.path.join(mnt_beluga_server,"test2","SampleListPublished_" + self.release + ".txt")
+            self.beluga_sample_list_out = os.path.join(mnt_beluga_server,"test2",self.release,"SampleListPublished_" + self.release + ".txt")
             self.basedir_gisaid = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Gisaid/FinalPublished/",release)
         else:
             self.beluga_sample_list_out = os.path.join(mnt_beluga_server,self.release + "_dehosted_raw_reads","SampleListPublished_" + self.release + ".txt")
             self.basedir_gisaid = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Gisaid/FinalPublished/",release)
 
-
         self.slbio_sample_list_out = os.path.join(self.basedir_gisaid,"SampleListPublished_" + self.release + ".txt")
-
         
         self.rec_list = []
 
     def WriteList(self):
         with open(self.slbio_sample_list_out,'w') as sample_file_out:
             for rec in self.rec_list:
-                sample_file_out.write(rec.id + "\t" + rec.description + "\n")
+                sample_file_out.write(rec.description + "\n")
     
         os.system("cp " +  self.slbio_sample_list_out + " " +  self.beluga_sample_list_out)
 
@@ -102,7 +154,9 @@ if str(task) == "1":
     gisaid_fasta_manager = GisaidFastaManager(release)    
     gisaid_fasta_manager.BuildList()
     gisaid_fasta_manager.WriteList()
-    gisaid_fasta_manager.CopyFastaToRawData()
+    #gisaid_fasta_manager.CopyFastaToRawData()
 elif str(task) == "2":
-    print("IN TASK 2")
-
+    logging.info("Get fastq from Beluga")
+    cc2lspq_manager = ComputeCanadaToLSPQManager(release)    
+    cc2lspq_manager.BuildGisaidIdList()
+    cc2lspq_manager.GetComputeCanadaFastqList()
