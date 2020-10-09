@@ -56,6 +56,7 @@ def main() :
     #Eric Fournier 2020-10-02 add here
     global verbose 
     global logfile
+    global missing_json_listfile
 
     verbose = ARGS.verbose
 
@@ -75,6 +76,8 @@ def main() :
     #Eric Fournier 2020-10-02 add here
     logfile_path = os.path.join(ARGS.tracedir,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') +".log")
     logfile = open(logfile_path,'w')
+    missing_json_listfile_path =  os.path.join(ARGS.tracedir,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') +"_missing_json.txt")
+    missing_json_listfile = open(missing_json_listfile_path,'w')
 
     # Read list of plates ; This list has to be provided by LSPQ
     dplate  = {}    # key : plate ; value : list of samples
@@ -170,7 +173,6 @@ def updateTrace( dplate, repodir, tracedir ) :
                 if not samplekey in dsampleALL :
                     # add line in trace file
                     addSampleToTrace( "NOTFOUND", samplekey , platerepodir , dsample, "Plate not in LSPQ" )
-    
     # Sample list with ALL
     dsampleALL.update( dsample )
     fALL    = "AllSample" +  "." + datetime.today().strftime('%Y%m%d') + ".list"
@@ -187,26 +189,29 @@ def addSampleToTrace( plate, samplekey , platerepodir , dsample, mess ):
 
     lsample[0]   = plate
     lsample[1]   = samplekey
-    
     samplerepodir   = os.path.join( platerepodir , samplekey  )
-    fjson           = glob.glob( os.path.join( samplerepodir , "*.json"   ))[0]
-    fjsonstr        = open( fjson )
-    djson           = json.load( fjsonstr )
+    #Eric Fournier 2020-10-08 add try except
+    try:
+        fjson           = glob.glob( os.path.join( samplerepodir , "*.json"   ))[0]
+        fjsonstr        = open( fjson )
+        djson           = json.load( fjsonstr )
     
-    lsample[2]   = djson['sample']
-    lsample[3]   = djson['techno']
-    lsample[4]   = djson['rundate']
-    lsample[5]   = djson["qcstatus"]
-    if djson["qcstatus"] == "PASS" :
-        lsample[6]  = "PASS"
-    else :
-        lsample[6]  = "UNK"
+        lsample[2]   = djson['sample']
+        lsample[3]   = djson['techno']
+        lsample[4]   = djson['rundate']
+        lsample[5]   = djson["qcstatus"]
+        if djson["qcstatus"] == "PASS" :
+            lsample[6]  = "PASS"
+        else :
+            lsample[6]  = "UNK"
 
-    lsample[7]  = ""
-    lsample[8]  = djson['sampledir']
-    lsample[9]  = mess
+        lsample[7]  = ""
+        lsample[8]  = djson['sampledir']
+        lsample[9]  = mess
 
-    dsample[ samplekey ] = lsample
+        dsample[ samplekey ] = lsample
+    except:
+        missing_json_listfile.write(samplekey + "\n")
 
 
 def readPlateFile( fplate ) :
