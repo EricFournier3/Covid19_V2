@@ -16,6 +16,8 @@ import logging
 import gc
 import argparse
 import time
+import glob
+from Bio import SeqIO
 from Covid19DB import MySQLcovid19,MySQLcovid19Selector
 
 
@@ -78,10 +80,11 @@ global beluga_server
 beluga_server = "fournie1@beluga.computecanada.ca:/home/fournie1"
 
 global mnt_beluga_server
-mnt_beluga_server = "/mnt/BelugaEric"
+mnt_beluga_server = "/mnt/BelugaEric/"
 
 global liste_envoi_genome_quebec
 global sgil_extract
+global fasta_outdir
 
 if _debug_:
     sgil_extract = "/home/foueri01@inspq.qc.ca/temp/20200924/extract_with_Covid19_extraction_v2_20200923_CovidPos.txt"
@@ -92,6 +95,9 @@ else:
     liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-08-28CORR.xlsx")
 
 base_dir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/" if  _debug_ else "/data/PROJETS/COVID-19_Beluga/Metadata"
+
+#TODO A MODIFIER
+fasta_outdir = os.path.join(base_dir,'FASTA') if _debug_ else os.path.join(base_dir,'FASTA') 
 
 
 if genome_center_file and (not os.path.isfile(os.path.join(base_dir,"IN",genome_center_file))):
@@ -209,13 +215,12 @@ class FastaGetter():
         self.pd_metadata = pd_metadata
         self.sample_with_complete_metadata = self.BuildSampleWithCompleteMetadata()
         self.pd_final_target_fasta_sample = self.GetFinalTargetFastaSample()
-        print(self.pd_final_target_fasta_sample)
+        self.fasta_rec = []
 
 
     def GetFinalTargetFastaSample(self):
         pd_temp = self.pd_seq_list.loc[(self.pd_seq_list['Sample[2]'].isin(self.sample_with_complete_metadata)) & (self.pd_seq_list['QCStatus{PASS,FLAG,REJ}[5]'].isin(fasta_qual_status_to_keep)),['Sample[2]','QCStatus{PASS,FLAG,REJ}[5]','REPOPATH[8]','RunDate[4]']]
 
-        #pd_temp = pd_temp.groupby('Sample[2]')['RunDate[4]'].max()
         idx = pd_temp.groupby('Sample[2]')['RunDate[4]'].transform(max) == pd_temp['RunDate[4]']
         pd_fasta_target = pd_temp[idx]
         return(pd_fasta_target)
@@ -223,6 +228,21 @@ class FastaGetter():
     def BuildSampleWithCompleteMetadata(self):
         #todo mettre les indetermine dans un fichier
         return list(self.pd_metadata.loc[self.pd_metadata['rss'] != 'INDETERMINE','sample'])
+
+    def GetFastaFromBeluga(self):
+        pass
+        for index, row in self.pd_final_target_fasta_sample.iterrows():
+            #print(index, " ____________ ", row[['Sample[2]','QCStatus{PASS,FLAG,REJ}[5]','REPOPATH[8]']])
+             print("SAMPLE : ", str(row['Sample[2]']), " ---- PATH ",str(row['REPOPATH[8]']))
+             fasta_path = re.sub(r'/genfs/projects/',mnt_beluga_server,str(row['REPOPATH[8]']))
+             #print(fasta_path)
+             fasta_list = glob.glob(fasta_path + "/*.fasta")
+             #print(fasta_list)
+             if len(fasta_list) > 0:
+                 self.fasta_rec.append(SeqIO.read(fasta_list[0],'fasta'))
+
+        #print(self.fasta_rec)
+        SeqIO.write(self.fasta_rec,os.path.join(fasta_outdir,"sequences.fasta"),'fasta')
 
 
 class PdBuilderFromFile:
@@ -248,7 +268,7 @@ def MountBelugaServer():
 def Main():
     logging.info("In Main()")
 
-    #MountBelugaServer()
+    MountBelugaServer()
 
     if extract_all_samples:
         pd_writer =  PdWriter(metadata_destination,None)
@@ -278,6 +298,7 @@ def Main():
     pd_writer.WritePdMissingSamplesToFile(pd_missing_spec)
 
     fasta_getter = FastaGetter(pd_seq_list,pd_metadata)
+    fasta_getter.GetFastaFromBeluga()
 
 if __name__ == '__main__':
     Main()
