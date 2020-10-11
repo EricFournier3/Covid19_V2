@@ -64,7 +64,7 @@ class MySQLcovid19Selector:
         PRELEVEMENTS_COLUMNS = [prelevements_alias + "." + col for col in PRELEVEMENTS_COLUMNS]
         PRELEVEMENTS_COLUMNS = ','.join(PRELEVEMENTS_COLUMNS)
 
-        if (metadata_destination == 'lspq'):
+        if (metadata_destination == 'LSPQ'):
             PATIENTS_COLUMNS = ['RSS_LSPQ_CAS','DTNAISSINFO','SEXEINFO']
         else:
             PATIENTS_COLUMNS = ['SEXEINFO','RSS_LSPQ_CAS']
@@ -77,7 +77,7 @@ class MySQLcovid19Selector:
         if(extract_all_samples):
             sql = "SELECT {0},{1}, {3} as COUNTRY, {4} as DIVISION FROM Prelevements pr inner join Patients p on  p.ID_PATIENT = pr.ID_PATIENT ".format(PRELEVEMENTS_COLUMNS,PATIENTS_COLUMNS,spec_list,COUNTRY,DIVISION)
         else:
-            sql = "SELECT {0},{1}, {3} as COUNTRY, {4} as DIVISION FROM Prelevements pr inner join Patients p on  p.ID_PATIENT = pr.ID_PATIENT WHERE pr.GENOME_QUEBEC_REQUETE REGEXP '{2}' ".format(PRELEVEMENTS_COLUMNS,PATIENTS_COLUMNS,spec_list,COUNTRY,DIVISION)
+            sql = "SELECT {0},{1}, {3} as COUNTRY, {4} as DIVISION, {5} as RTA FROM Prelevements pr inner join Patients p on  p.ID_PATIENT = pr.ID_PATIENT WHERE pr.GENOME_QUEBEC_REQUETE REGEXP '{2}' ".format(PRELEVEMENTS_COLUMNS,PATIENTS_COLUMNS,spec_list,COUNTRY,DIVISION,RTA)
 
         df = pd.read_sql(sql,con=conn)
         df = df.rename(columns=columns_renamed)

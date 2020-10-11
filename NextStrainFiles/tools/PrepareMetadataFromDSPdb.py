@@ -49,7 +49,7 @@ pd.options.display.max_columns = 100
 logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description="Create metadata file")
-parser.add_argument('--dest', '-d', required=True,help="choose lspq (lspq) or genome center (gc)",choices=['LSPQ','GC'])
+parser.add_argument('--dest', '-d', required=True,help="choose LSPQ (LSPQ) or Genome Center (GC)",choices=['LSPQ','GC'])
 parser.add_argument('--all',help='extract all samples in database',action='store_true')
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
 parser.add_argument('--input','-i',help="input file")
@@ -59,6 +59,7 @@ _debug_ = args.debug
 metadata_destination = args.dest
 extract_all_samples = args.all
 genome_center_file  = args.input
+
 
 
 if not genome_center_file and not extract_all_samples:

@@ -3,6 +3,8 @@
 """
 Eric Fournier 2020-10-06
 
+TODO LOGGIN TO FILE
+
 """
 
 import glob
@@ -49,6 +51,10 @@ def MountBelugaServer():
 
 #MountBelugaServer()
 
+
+class Logger:
+    pass
+
 class ComputeCanadaToLSPQManager:
     def __init__(self,release):
         self.release = release
@@ -56,9 +62,11 @@ class ComputeCanadaToLSPQManager:
         if __debug__:
             self.gisaid_sample_list_file = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Gisaid/FinalPublished/",self.release,"SampleListPublished_" + self.release + ".txt")
             self.beluga_fastq_basedir = os.path.join(mnt_beluga_server,"test2",self.release)
+            self.raw_data_base_dir = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Rawdata",self.release)
         else:
             self.gisaid_sample_list_file = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Gisaid/FinalPublished/",self.release,"SampleListPublished_" + self.release + ".txt")
             self.beluga_fastq_basedir = os.path.join(mnt_beluga_server,"test2",self.release)
+            self.raw_data_base_dir = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Rawdata",self.release)
 
         self.gisaid_mgi_id_list = []
         self.gisaid_illumina_id_list = []
@@ -72,14 +80,19 @@ class ComputeCanadaToLSPQManager:
             if not re.search(sample,self.beluga_mgi_fastq_basename_list):
                 self.missing_beluga_mgi.append(sample)
 
-        print(self.beluga_illumina_fastq_basename_list)
         for sample in self.gisaid_illumina_id_list:
-            print("sample ",sample)
             if not re.search(sample,self.beluga_illumina_fastq_basename_list):
                 self.missing_beluga_illumina.append(sample)
 
-        print(self.missing_beluga_mgi, " missing mgi")
-        print(self.missing_beluga_illumina, " missing illumina")
+    def SaveMissingBelugaSamples(self):
+        missing_beluga_sample_file = os.path.join(self.raw_data_base_dir,"MissingBelugaSamples.txt")
+
+        with open(missing_beluga_sample_file,'w') as out_file:
+            for spec in self.missing_beluga_mgi:
+                out_file.write(spec + "\t" + "MGI\n")
+            for spec in self.missing_beluga_illumina:
+                out_file.write(spec + "\t" + "Illumina\n")
+
 
     def BuildGisaidIdList(self):
         line_pattern = re.compile("^Canada/Qc-(?P<id>\S+)/\d{4} seq_method:(?P<techno>\S+)\|assemb_method")
@@ -95,13 +108,38 @@ class ComputeCanadaToLSPQManager:
                 elif techno == "Illumina_NexteraFlex":
                     self.gisaid_illumina_id_list.append(spec_id)
 
-    def GetComputeCanadaFastqList(self):
-        self.beluga_mgi_fastq_list = glob.glob(os.path.join(self.beluga_fastq_basedir,"mgi") + "/*pair1.fastq.gz")
-        self.beluga_mgi_fastq_basename_list = "-".join([os.path.basename(x) for x in self.beluga_mgi_fastq_list])
-        self.beluga_illumina_fastq_list = glob.glob(os.path.join(self.beluga_fastq_basedir,"illumina") + "/*pair1.fastq.gz")
-        self.beluga_illumina_fastq_basename_list = "-".join([os.path.basename(x) for x in self.beluga_illumina_fastq_list])
+    def GetComputeCanadaFastq(self):
+        #todo log transfer file et verbose
+        slbio_mgi_fastq_dir = os.path.join(self.raw_data_base_dir,"mgi")
+        slbio_illumina_fastq_dir = os.path.join(self.raw_data_base_dir,"illumina")
+        
+        #todo renommer les fastq
+   
+        print("***************  MGI  ********************")
+        for fastq in self.beluga_mgi_fastq_list:
+            print(fastq)
+            print(os.path.dirname(fastq), " ____ ",os.path.basename(fastq)) 
+            parsed_list = str(os.path.basename(fastq)).split('_')
+            if len(parsed_list) == 2:
+                spec_name = re.sub('\.host','',parsed_list[0])
+            elif len(parsed_list) > 2:
+                spec_name = parsed_list[0]
 
+            print("SAMPLE NAME ",spec_name)
+
+
+        print("***************  ILLUMINA  ********************")
+        for fastq in self.beluga_illumina_fastq_list:
+            print(fastq) 
+
+
+    def GetComputeCanadaFastqList(self):
+        self.beluga_mgi_fastq_list = glob.glob(os.path.join(self.beluga_fastq_basedir,"mgi") + "/*.fastq.gz")
+        self.beluga_mgi_fastq_basename_list = "-".join([os.path.basename(x) for x in self.beluga_mgi_fastq_list if re.search('pair1',x)])
+        self.beluga_illumina_fastq_list = glob.glob(os.path.join(self.beluga_fastq_basedir,"illumina") + "/*.fastq.gz")
+        self.beluga_illumina_fastq_basename_list = "-".join([os.path.basename(x) for x in self.beluga_illumina_fastq_list if re.search('pair1',x)])
         self.GetMissingBelugaSamples()
+        self.SaveMissingBelugaSamples()
 
 
 class GisaidFastaManager:
@@ -160,3 +198,4 @@ elif str(task) == "2":
     cc2lspq_manager = ComputeCanadaToLSPQManager(release)    
     cc2lspq_manager.BuildGisaidIdList()
     cc2lspq_manager.GetComputeCanadaFastqList()
+    cc2lspq_manager.GetComputeCanadaFastq()
