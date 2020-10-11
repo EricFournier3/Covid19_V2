@@ -54,7 +54,7 @@ class MySQLcovid19Selector:
         
         start = time.time()
 
-        columns_renamed = {'GENOME_QUEBEC_REQUETE':'sample','DATE_PRELEV_HOPITAL':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','RSS_LSPQ_CAS':'rss','SEXEINFO':'sex','COUNTRY':'country','DIVISION':'division','DTNAISSINFO':'date_naiss'}        
+        columns_renamed = {'RTA':'rta','GENOME_QUEBEC_REQUETE':'sample','DATE_PRELEV_HOPITAL':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','RSS_LSPQ_CAS':'rss','SEXEINFO':'sex','COUNTRY':'country','DIVISION':'division','DTNAISSINFO':'date_naiss'}        
 
         spec_list = '|'.join(spec_list)
         prelevements_alias = 'pr'
