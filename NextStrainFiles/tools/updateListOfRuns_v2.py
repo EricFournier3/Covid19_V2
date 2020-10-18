@@ -10,6 +10,7 @@ modified by Eric Fournier 2020-10-02
 @author: Eric Fournier
 '''
 
+import inspect
 import os , sys , argparse, re
 import glob
 import json
@@ -27,6 +28,7 @@ LPLATEHEADER    = []
     # RAW   = no processing (or no analysis)
     # PROC  = Processed but not referenced 
     # REF   = Processed and Referenced
+
 
 
 def parseoptions( ):
@@ -49,7 +51,12 @@ def main() :
     parseoptions( )
    
     global logfile
+    global runMessageFile
+    global missingConsensusLog
+    global consensusListFile
+    global missingConsPercNLog
     global LRUNHEADER
+    global ILLUMINA_OLD_RUNS
     global LPLATEHEADER
     global PROCESSING_DIR   # full_processing dir
     global TECHNO_LIST
@@ -70,18 +77,32 @@ def main() :
     TECHNO_LIST     = pjson[ 'TECHNO_LIST' ]
     PROCESSING_DIR  = ARGS.dir
     TRACE_DIR = pjson['TRACE_DIR']
+    ILLUMINA_OLD_RUNS = pjson['ILLUMINA_OLD_RUNS']
     fjson.close()
 
     cwd = os.getcwd()
     
     logfile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') +".log")
     logfile = open(logfile_path,'w')
+    
+    runMessageFile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_runMessage" +".txt") 
+    runMessageFile = open(runMessageFile_path,'w')
+
+    missingConsensusLog_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_MissingConsensus" +".txt")
+    missingConsensusLog = open(missingConsensusLog_path,'w')
+
+    consensusListFile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList" +".list")
+    consensusListFile = open(consensusListFile_path,'w')
+    consensusListFile.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\n")
+
+    missingConsPercNLog_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_MissingConsPercN" +".txt")
+    missingConsPercNLog = open(missingConsPercNLog_path,'w')
+
 
     if verbose:
         logfile.write("***************** in updateRunFile ********************\n")
         
     drun    = updateRunFile( )
-
     # Read list of plates ; This list has to be provided by LSPQ
     dplate  = {}    # key : plate ; value : list of samples
     if ARGS.fplate :
@@ -89,7 +110,6 @@ def main() :
             logfile.write("\n***************** in readPlateFile ********************\n")
 
         dplate = readPlateFile( ARGS.fplate )
-
     if verbose:
         logfile.write("\n***************** in updateRepo ********************\n")
 
@@ -106,7 +126,6 @@ def main() :
 
 def updateRepo( drun, dplate, repodir ) :
     cwd = os.getcwd()   
-
     # key : samplekey ; value : list of col
     dsample = {}
 
@@ -119,7 +138,6 @@ def updateRepo( drun, dplate, repodir ) :
         date    = lrun[0]
         run     = lrun[2]
         status  = lrun[4]
-        
         if verbose:
             logfile.write("\n     Update for:\n\t\t" + rundir + "\n\t\t" + date + "\n\t\t" + run + "\n\t\t" + run + "\n\t\t" + status + "\n")
 
@@ -144,8 +162,11 @@ def updateRepo( drun, dplate, repodir ) :
                     ld          = os.listdir( procdirtmp ) # Sometimes, more than one analysis dir
                 except : 
                     #print ("\tERR: permission denied for directory = " + procdirtmp )
-                    line[ 4 ] = "ERR"
-
+                    mess = "\tERR: permission denied for directory = " + procdirtmp
+                    #Eric Fournier 2020-10-15 desactive cat line b existe pas
+                    #line[ 4 ] = "ERR"
+                    lrun[5] += ";" + mess
+                    
                 else :
                     dtmp        = ld[0]     # By default, choose first one
                     if len(ld) > 1 :    # if more than one ...
@@ -156,7 +177,14 @@ def updateRepo( drun, dplate, repodir ) :
         
             # Illumina and mgi path
             else :
-                procdir = os.path.join( rundir , "alignment")
+                if techno == "illumina":
+                    if run  in ILLUMINA_OLD_RUNS:
+                        procdir = os.path.join( rundir , "alignment")
+                    else:
+                        procdir = os.path.join( rundir , "consensus")
+                else:
+                    procdir = os.path.join( rundir , "alignment")
+
             # Processing directory
             if len( procdir ) == 0 or not  os.path.isdir( procdir ) :
                 mess = "ERR: Processing directory not found"
@@ -185,7 +213,6 @@ def updateRepo( drun, dplate, repodir ) :
                         if os.path.isdir( f ) and not "multiqc" in f :
                             lsample.append( f )
                     lrun[7] = lsample
-
                     # Nb of samples in run
                     #print( "\t%i samples total, %i samples to process, %s" %(len(lsampletot), len(lsample), procdir))
                     s = 0
@@ -218,7 +245,6 @@ def updateRepo( drun, dplate, repodir ) :
 
                         # if repo for sample does not exist
                         sampledirdest   = os.path.join( platedirdest , samplekey ) 
-
                         # check if sampledir already exists
                         ltmp        = glob.glob( sampledirdest + "*" )
 
@@ -226,14 +252,32 @@ def updateRepo( drun, dplate, repodir ) :
                         if len( ltmp ) == 0 : 
                             # Create repository
                             os.mkdir( sampledirdest )
-                            
+                           
+                            consensus_access = ""
+                            save_consensus_path = False
                             # Link to consensus seq
                             if techno == "nanopore" :
                                 lconsensus  = glob.glob( os.path.join( sampledirsrc ,  "*consensus.nanopore.*.fasta" ) )
-                            else :
+                            elif techno == "mgi":
                                 lconsensus  = glob.glob( os.path.join( sampledirsrc ,  "*consensus.gisaid_renamed.fa" ) )
+                            else :
+                                if run  in ILLUMINA_OLD_RUNS:
+                                    lconsensus  = glob.glob( os.path.join( sampledirsrc ,  "*consensus.gisaid_renamed.fa" ) )
+                                else:
+                                    lconsensus  = glob.glob( os.path.join( sampledirsrc ,  "*.consensus.illumina.pass.fasta" ) )
+                                    if len(lconsensus) == 0:
+                                        lconsensus  = glob.glob( os.path.join( sampledirsrc ,  "*.consensus.illumina.flag.fasta" ) )
+                                        if len(lconsensus) == 0:
+                                            lconsensus  = glob.glob( os.path.join( sampledirsrc ,  "*.consensus.illumina.rej.fasta" ) )
                             if len( lconsensus ) > 0 :
+                                save_consensus_path = True
                                 os.symlink( lconsensus[0] , os.path.join( sampledirdest , sample + ".consensus.fasta" ) )
+                            else:
+                                if(os.access(sampledirsrc,os.R_OK)):
+                                    consensus_access = "ACCESS_TRUE"
+                                else:
+                                    consensus_access = "ACCESS_FALSE"
+                                missingConsensusLog.write("Missing consensus for " + sample + " in " + sampledirdest + " -> " + sampledirsrc + "  " + consensus_access +  "\n\n")
 
                             # Link to bam file (primer trimmed)
                             lbam        = glob.glob( os.path.join( sampledirsrc ,  "*primer*.bam" ) )
@@ -315,26 +359,37 @@ def updateRepo( drun, dplate, repodir ) :
                             dsamplejson[ "runpath"] = rundir
                             dsamplejson[ "sampledir"] = sampledirdest
                             for key, val in dmetrics.iteritems() :
+                                if key == "cons.per.N":
+                                    #Eric Fournier 2020-10-12 pour nanopore => cons.perc.N et pour illumina et MGI => cons.per.N
+                                    key = "cons.perc.N"
                                 dsamplejson[ key ] = val
                             setQCStatus( dsamplejson )
                             dsamplejson[ "qccuration"] = dsamplejson["qcstatus"]
                             dsamplejson[ "qccurationmess"] = ""
-                
                             with open( os.path.join( sampledirdest , sample + ".json" ) ,  'w') as outfile:
                                 json.dump( dsamplejson, outfile )
+
+                            if dsamplejson["qcstatus"] in ["MISSING_METRICS_HEADER","MISSING_CONS_PERC_N"]:
+                                missingConsPercNLog.write(sample + "\t" + sampledirsrc + "\t" + techno + "\t" + dsamplejson["qcstatus"] + "\n")
+
+                            if dsamplejson["qcstatus"] in ["PASS","FLAG","REJ"] and save_consensus_path:
+                                consensusListFile.write(str(sample).split('_')[0] + "\t" + dsamplejson["qcstatus"] + "\t" + lconsensus[0]  + "\t" + techno + "\t" + dsamplejson["cons.perc.N"] + "\n")
+
 
 def setQCStatus( dsamplejson ) :
     qc      = "PASS"
     lmess   = []
-
-    if not "cons.per.N" in dsamplejson and not "bam.perc.50x" in dsamplejson :
-        qc  = "NOTEVAL"
+   
+    if not "cons.perc.N" in dsamplejson and not "bam.perc.50x" in dsamplejson :
+        qc  = "MISSING_METRICS_HEADER"
         lmess.append( "No metrics to do QC" )
 
-    if "cons.per.N" in dsamplejson :
+    #TODO bug a corriger : car si on entre dans le except le qc demeure a PASS Eric Fournier 2020-10-12
+    if "cons.perc.N" in dsamplejson :
         try :
-            consperN = float( dsamplejson["cons.per.N"] )
+            consperN = float( dsamplejson["cons.perc.N"] )
         except :
+            qc = "MISSING_CONS_PERC_N"
             lmess.append( "No cons.per.N to do QC" )
         else :
             if consperN > 5.0 :
@@ -428,7 +483,6 @@ def updateRunFile(  ) :
         
         basedir = tech
         techdir = os.path.join( ARGS.dir , basedir )
-
         # Run name position
         i       = 0
         if tech == "nanopore" :
@@ -463,6 +517,7 @@ def updateRunFile(  ) :
                     try :
                         f = open(fsamplepath, "r")
                     except :
+
                         lmess.append( "ERR: csv file " + run + ".csv" +" with list of samples not found" )
 
                     else:
@@ -499,17 +554,17 @@ def updateRunFile(  ) :
                         # If processing folder not empty, => data analysed
                         if len( lproc ) > 0 :
                             line[ 4 ] = "PROC"  
-            # Report messages
             line[ 5 ] = ";".join( lmess )
-
             # Report messages
+            runMessageFile.write("        ###################### Message from " + inspect.stack()[0][3] + " ###################### \n")
             if len( lmess ) > 0 :
-                #print (path + " : \t")
+                runMessageFile.write(path + " : \t\n")
                 for m in lmess :
-                    pass
+                    runMessageFile.write("\t" + m + "\n")
             else:
                 pass
-                #print (path + " : OK")
+                runMessageFile.write(path + ": OK\n")
+            runMessageFile.write("\n\n")
     return drun
 
 def readPlateFile( fplate ) :
@@ -600,5 +655,9 @@ if __name__ == "__main__":
     try:
         main()
         logfile.close()
+        runMessageFile.close()
+        missingConsensusLog.close()
+        consensusListFile.close()
+        missingConsPercNLog.close()
     except KeyboardInterrupt:
         print  "Program canceled by user..."
