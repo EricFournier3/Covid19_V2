@@ -219,16 +219,13 @@ class FastaGetter():
         idx  = self.pd_selected_fasta.groupby(['SAMPLE'])['TECHNO'].transform(min) == self.pd_selected_fasta['TECHNO']
         self.pd_selected_fasta = self.pd_selected_fasta[idx]
 
-        #print(self.pd_selected_fasta)
 
     def GetFastaFromBeluga(self,beluga_fasta_file):
         for index, row in self.pd_selected_fasta.iterrows():
             fasta_path = str(row['PATH'])
             fasta_path = re.sub(r'/genfs/projects/',mnt_beluga_server,fasta_path)
-            #print(fasta_path)
-            print(fasta_outdir)
+            logging.info("Get " + fasta_path)
             rec = SeqIO.read(fasta_path,'fasta')
-            #rec.id = rec.id + fasta_path
             self.fasta_rec_list.append(rec)
 
         fasta_out = os.path.join(fasta_outdir,"temp.fasta")
@@ -286,34 +283,7 @@ def Main():
     fasta_getter.SelectFasta()
     fasta_getter.GetFastaFromBeluga(beluga_fasta_file)
 
-    exit(0)
 
-    pd_writer =  PdWriter(metadata_destination,os.path.basename(genome_center_file))
-    pd_builder_from_file = PdBuilderFromFile()
-    
-    pd_seq_list = pd_builder_from_file.ReadSeqFileList(genome_center_file)
-    #print(pd_seq_list.loc[pd_seq_list['RunDate[4]'].astype(str) == '200619',['Sample[2]','RunDate[4]']])
-    #il y a un typo dans la run /genfs/projects/COVID_full_processing/illumina/200619_M03555_0529_SeqWell_testing
-    #et dans /genfs/projects/COVID_full_processing/illumina/200904_M03555_0531_CoVSeQ_reinfection
-    pd_seq_list.loc[pd_seq_list['RunDate[4]'].astype(str) == '200619',['RunDate[4]']] = '20200619'
-    pd_seq_list.loc[pd_seq_list['RunDate[4]'].astype(str) == '200904',['RunDate[4]']] = '20200904'
-    #erreur de date dans /genfs/projects/COVID_LSPQ/REPOSITORY_ERIC/LSPQ_reinfection/LSPQ_reinfection.L00282997.nanopore.FAO11908-20201005
-    pd_seq_list.loc[pd_seq_list['RunDate[4]'].astype(str) == 'FAO11908-20201005',['RunDate[4]']] = '20201005'
-    pd_seq_list['RunDate[4]'] = pd.to_datetime(pd_seq_list['RunDate[4]'],format='%Y%m%d')
-
-    pd_envoi_qenome_quebec = None
-    pd_sgil_extract = None
-
-    pd_envoi_qenome_quebec =  pd_builder_from_file.ReadEnvoiGenomeQuebecFile(liste_envoi_genome_quebec)
-    pd_sgil_extract = pd_builder_from_file.ReadSgilExtract(sgil_extract)
-     
-    pd_metadata,pd_missing_spec =  CreateMetadata(pd_seq_list,metadata_destination,extract_all_samples,pd_envoi_qenome_quebec,pd_sgil_extract)
-
-    pd_writer.WritePdToFile(pd_metadata)
-    pd_writer.WritePdMissingSamplesToFile(pd_missing_spec)
-
-    #fasta_getter = FastaGetter(pd_seq_list,pd_metadata,pd_writer)
-    #fasta_getter.GetFastaFromBeluga()
 
 if __name__ == '__main__':
     Main()
