@@ -93,7 +93,7 @@ def main() :
 
     consensusListFile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList" +".list")
     consensusListFile = open(consensusListFile_path,'w')
-    consensusListFile.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\n")
+    consensusListFile.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\n")
 
     missingConsPercNLog_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_MissingConsPercN" +".txt")
     missingConsPercNLog = open(missingConsPercNLog_path,'w')
@@ -373,7 +373,7 @@ def updateRepo( drun, dplate, repodir ) :
                                 missingConsPercNLog.write(sample + "\t" + sampledirsrc + "\t" + techno + "\t" + dsamplejson["qcstatus"] + "\n")
 
                             if dsamplejson["qcstatus"] in ["PASS","FLAG","REJ"] and save_consensus_path:
-                                consensusListFile.write(str(sample).split('_')[0] + "\t" + dsamplejson["qcstatus"] + "\t" + lconsensus[0]  + "\t" + techno + "\t" + dsamplejson["cons.perc.N"] + "\n")
+                                consensusListFile.write(str(sample).split('_')[0] + "\t" + dsamplejson["qcstatus"] + "\t" + lconsensus[0]  + "\t" + techno + "\t" + dsamplejson["cons.perc.N"] + "\t"+ run + "\n")
 
 
 def setQCStatus( dsamplejson ) :
