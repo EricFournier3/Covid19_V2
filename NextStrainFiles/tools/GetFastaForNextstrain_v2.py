@@ -46,16 +46,33 @@ logging.basicConfig(level=logging.DEBUG)
 parser = argparse.ArgumentParser(description="Download Beluga consensus and Create metadata file")
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
 parser.add_argument('--input','-i',help="Beluga fasta list file",required=True)
-parser.add_argument('--keepflag',help="keep flag assemblies in fasta file",action='store_true')
+parser.add_argument('--onlymetadata',help="Only produce metadata",action='store_true')
+parser.add_argument('--maxsampledate',help="Maximum sampled date YYYY-MM-DD",required=True)
+parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['ALL','PASS','FLAG'],required=True)
 args = parser.parse_args()
 
 _debug_ = args.debug
 beluga_fasta_file  = args.input
-keep_flag_assemblies = args.keepflag
+only_metadata = args.onlymetadata
+max_sample_date = args.maxsampledate
+
+global qc_keep
+
+qc_keep = args.keep
+
+
+try:
+    max_sample_date = datetime.datetime.strptime(max_sample_date,"%Y-%m-%d")
+except:
+    logging.error("format de date incorrect : YYYY-MM-DD")
+    exit(1)
 
 global fasta_qual_status_to_keep
 
-if keep_flag_assemblies:
+
+if qc_keep == 'ALL':
+    fasta_qual_status_to_keep = ['PASS','FLAG','REJ','NA','MISSING_METRICS_HEADER','MISSING_CONS_PERC_N']
+elif qc_keep == 'FLAG':
     fasta_qual_status_to_keep = ['PASS','FLAG']
 else:
     fasta_qual_status_to_keep = ['PASS']
@@ -97,8 +114,9 @@ def MountBelugaServer():
     os.system("sudo sshfs -o allow_other -o follow_symlinks {0} {1}".format(beluga_server,mnt_beluga_server))
 
 class MetadataManager():
-    def __init__(self,samples_list):
+    def __init__(self,samples_list,pd_fasta_list):
         self.samples_list = samples_list
+        self.pd_fasta_list = pd_fasta_list
 
         self.pd_envoi_qenome_quebec = None
         self.pd_sgil_extract = None
@@ -145,23 +163,26 @@ class MetadataManager():
 
         return(res_df)
 
-    def CreateMetadata(self):
+    def CreateMetadata(self,max_sample_date):
         MySQLcovid19.SetConnection()
         self.pd_metadata = MySQLcovid19Selector.GetMetadataAsPdDataFrame(MySQLcovid19.GetConnection(),self.samples_list,'LSPQ',False)
+        #print(self.pd_metadata)
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
-
+        self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
         pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
 
         pd_missing_get_from_sgil_extract = self.AddMissingFromSgilExtract(pd_missing_samples,self.pd_sgil_extract,self.pd_metadata.columns)
         self.pd_metadata = pd.concat([self.pd_metadata,pd_missing_get_from_sgil_extract])
 
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
+        self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
         pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
 
         pd_missing_get_from_EnvoisGenomeQuebec = self.AddMissingFromEnvoisGenomeQuebec(pd_missing_samples,self.pd_envoi_qenome_quebec,self.pd_metadata.columns)
         self.pd_metadata = pd.concat([self.pd_metadata,pd_missing_get_from_EnvoisGenomeQuebec])
 
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
+        self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
         self.pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
 
         self.pd_metadata['sample_date'] = pd.to_datetime(self.pd_metadata.sample_date)
@@ -171,10 +192,24 @@ class MetadataManager():
 
         self.pd_samples_missing_rss = self.pd_metadata.loc[self.pd_metadata['rss'] == 'INDETERMINE',['sample']]
         self.pd_metadata = self.pd_metadata.loc[self.pd_metadata['rss'] != 'INDETERMINE',:]
+        self.pd_metadata.loc[self.pd_metadata['sample'].str.contains('HGA-'),'sample']= self.pd_metadata['sample'] + '2D'
         self.pd_metadata = self.pd_metadata.sort_values(by=['sample'])
 
+        self.pd_metadata['sample_date']= self.pd_metadata['sample_date'].astype('datetime64[ns]')
+        #print(self.pd_metadata.dtypes)
+
+        self.pd_metadata = self.pd_metadata.loc[self.pd_metadata['sample_date'] <= max_sample_date,:]
         #print(self.pd_metadata)
         #print(self.pd_samples_missing_rss)
+
+    def GetBelugaRunsWithTargetSamples(self):
+        self.pd_samples_with_run_name = pd.merge(self.pd_metadata,self.pd_fasta_list,left_on='sample',right_on='SAMPLE',how='left',indicator=True)
+        self.pd_samples_with_run_name = self.pd_samples_with_run_name[['sample','sample_date','STATUS','TECHNO','RUN_NAME']]
+        #print(self.pd_with_run_name)
+        #self.pd_run_list = pd.DataFrame({'RUN_NAME':self.pd_samples_with_run_name['RUN_NAME'].unique()})
+        self.pd_run_list = self.pd_samples_with_run_name.drop_duplicates(['RUN_NAME','TECHNO'])
+        self.pd_run_list = self.pd_run_list[['RUN_NAME','TECHNO']]
+        #print(self.pd_run_list)
 
     def GetPdMetadata(self):
         return self.pd_metadata
@@ -182,16 +217,27 @@ class MetadataManager():
     def GetPdMissingSamples(self):
         return self.pd_missing_samples
 
-    def WriteMetadata(self,beluga_fasta_file):
+    def WriteMetadata(self,beluga_fasta_file,max_sample_date):
+
+        if qc_keep  == 'FLAG':
+            qc_status_suffix = "PASS_FLAG"
+        else:
+            qc_status_suffix = qc_keep
+
+
         today = datetime.datetime.now().strftime("%Y-%m-%d")
 
         self.metadata_out = os.path.join(metadata_outdir,"metadata_{0}_from_{1}.tsv".format(today,os.path.basename(beluga_fasta_file)))
         self.missing_samples_out = os.path.join(metadata_outdir,"missing_samples_{0}_from_{1}.tsv".format(today,os.path.basename(beluga_fasta_file))) 
         self.samples_missing_rss_out = os.path.join(metadata_outdir,"samples_missing_rss_{0}_from_{1}.tsv".format(today,os.path.basename(beluga_fasta_file)))
+        self.sample_with_run_name_out = os.path.join(metadata_outdir,"Samples_{2}_maxSampleDate_{0}_from_{1}".format(str(max_sample_date),os.path.basename(beluga_fasta_file),qc_status_suffix))
+        self.runs_with_samples_max_sample_date_out = os.path.join(metadata_outdir,"Runs_with_samples_{2}_maxSampleDate_{0}_from_{1}".format(max_sample_date,os.path.basename(beluga_fasta_file),qc_status_suffix))
 
         self.pd_metadata.to_csv(self.metadata_out,sep="\t",index=False)
         self.pd_missing_samples.to_csv(self.missing_samples_out,sep="\t",index=False)
         self.pd_samples_missing_rss.to_csv(self.samples_missing_rss_out,sep="\t",index=False)
+        self.pd_samples_with_run_name.to_csv(self.sample_with_run_name_out,sep="\t",index=False)
+        self.pd_run_list.to_csv(self.runs_with_samples_max_sample_date_out,sep="\t",index=False)
 
 
 class FastaGetter():
@@ -250,7 +296,8 @@ class FastaListManager():
         self.BuildSamplesList()
 
     def GetPdFastaList(self):
-        return(pd.read_csv(self.fasta_list_file,sep="\t",index_col=False))
+        pd_df = pd.read_csv(self.fasta_list_file,sep="\t",index_col=False)
+        return(pd_df.loc[pd_df['STATUS'].isin(fasta_qual_status_to_keep),:])
 
     def GetSamplesList(self):
         return self.samples_list
@@ -258,9 +305,14 @@ class FastaListManager():
     def BuildSamplesList(self):
         start = time.time()
         self.samples_list = np.array([])
-              
         self.samples_list = self.pd_fasta_list.loc[self.pd_fasta_list['STATUS'].isin(fasta_qual_status_to_keep),'SAMPLE'].unique()
-        #print(self.samples_list)
+
+        i = 0
+        for sample in self.samples_list:
+            if sample.startswith('HGA-'):
+                self.samples_list[i] = re.sub(r'2D$','',sample)
+            i+=1
+
         end = time.time()
 
         print("In BuildSamplesList  for ",end - start, " seconds")
@@ -269,20 +321,18 @@ class FastaListManager():
 def Main():
     logging.info("In Main()")
 
-    MountBelugaServer()
+    #MountBelugaServer()
     fasta_list_manager = FastaListManager(os.path.join(in_dir,beluga_fasta_file))
     samples_list = fasta_list_manager.GetSamplesList()
-    
-    metadata_manager = MetadataManager(samples_list)
+    metadata_manager = MetadataManager(samples_list,fasta_list_manager.GetPdFastaList())
+    metadata_manager.CreateMetadata(max_sample_date)
+    metadata_manager.GetBelugaRunsWithTargetSamples()
+    metadata_manager.WriteMetadata(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"))
 
-    metadata_manager.CreateMetadata()
-    metadata_manager.WriteMetadata(beluga_fasta_file)
-
-    fasta_getter = FastaGetter(metadata_manager.GetPdMetadata(),fasta_list_manager.GetPdFastaList())
-
-    fasta_getter.SelectFasta()
-    fasta_getter.GetFastaFromBeluga(beluga_fasta_file)
-
+    if not only_metadata and qc_keep in ['PASS','FLAG']:
+        fasta_getter = FastaGetter(metadata_manager.GetPdMetadata(),fasta_list_manager.GetPdFastaList())
+        fasta_getter.SelectFasta()
+        fasta_getter.GetFastaFromBeluga(beluga_fasta_file)
 
 
 if __name__ == '__main__':
