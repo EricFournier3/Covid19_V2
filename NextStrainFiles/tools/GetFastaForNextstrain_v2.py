@@ -274,22 +274,30 @@ class FastaGetter():
 
 
     def GetFastaFromBeluga(self,beluga_fasta_file):
+
+        id_pattern = r'(^Canada/Qc-)(\S+)(/\d{4}$)'
+
         for index, row in self.pd_selected_fasta.iterrows():
             fasta_path = str(row['PATH'])
             fasta_path = re.sub(r'/genfs/projects/',mnt_beluga_server,fasta_path)
+            qc_status = str(row['STATUS'])
             logging.info("Get " + fasta_path)
             rec = SeqIO.read(fasta_path,'fasta')
+            id_short = re.search(id_pattern, rec.id).group(2)
+            rec.id = re.sub(id_pattern,r"\1" + str(id_short).upper() + r"\3",rec.id)
+            rec.description = rec.description + " " +  fasta_path + " " + qc_status
             self.fasta_rec_list.append(rec)
 
-        fasta_out = os.path.join(fasta_outdir,"temp.fasta")
-        SeqIO.write(self.fasta_rec_list,fasta_out,'fasta')
-        self.AddPathToHeader(fasta_out,os.path.basename(beluga_fasta_file),fasta_path)
-        os.remove(os.path.join(fasta_outdir,"temp.fasta"))
+        SeqIO.write(self.fasta_rec_list,os.path.join(fasta_outdir,"sequences_from_" + os.path.basename(beluga_fasta_file)),'fasta')
 
-    def AddPathToHeader(self,fasta_in,beluga_fasta_file,fasta_path):
+    def AddPathAndQcStatusToHeader(self):
+        pass
+
+
+    def AddPathAndQcStatusToHeaderOBSOLETE(self,fasta_in,beluga_fasta_file,fasta_path,qc_status):
         rec_list = []
         for rec in SeqIO.parse(fasta_in,'fasta'):
-            rec.description = rec.description + " " +  fasta_path
+            rec.description = rec.description + " " +  fasta_path + " " + qc_status
             rec_list.append(rec)
 
         SeqIO.write(rec_list,os.path.join(fasta_outdir,"sequences_from_" + beluga_fasta_file),'fasta')
@@ -330,7 +338,6 @@ class FastaListManager():
 def Main():
     logging.info("In Main()")
 
-    #MountBelugaServer()
     fasta_list_manager = FastaListManager(os.path.join(in_dir,beluga_fasta_file))
     samples_list = fasta_list_manager.GetSamplesList()
     metadata_manager = MetadataManager(samples_list,fasta_list_manager.GetPdFastaList())
@@ -339,6 +346,7 @@ def Main():
     metadata_manager.WriteMetadata(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"))
 
     if not only_metadata and qc_keep in ['PASS','FLAG']:
+        MountBelugaServer()
         fasta_getter = FastaGetter(metadata_manager.GetPdMetadata(),fasta_list_manager.GetPdFastaList())
         fasta_getter.SelectFasta()
         fasta_getter.GetFastaFromBeluga(beluga_fasta_file)
