@@ -55,6 +55,7 @@ def main() :
     global missingConsensusLog
     global consensusListFile
     global missingConsPercNLog
+    global hiddenSampleFile
     global LRUNHEADER
     global ILLUMINA_OLD_RUNS
     global LPLATEHEADER
@@ -82,6 +83,9 @@ def main() :
 
     cwd = os.getcwd()
     
+    hiddenSampleFile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_hiddenSamples.list")
+    hiddenSampleFile = open(hiddenSampleFile_path,'w')
+
     logfile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') +".log")
     logfile = open(logfile_path,'w')
     
@@ -346,35 +350,45 @@ def updateRepo( drun, dplate, repodir ) :
                             if len( lmetrics ) > 0 :
                                 os.symlink( lmetrics[0] , os.path.join( sampledirdest , sample + ".metrics.csv" ) )
                                 dmetrics    = parseMetrics( lmetrics[0], sname ) 
+                            
+                            hidden_sample = False
+                            if str(sample).startswith('.'):
+                                #print("Hidden sample " + sample)
+                                hidden_sample = True
+                                hiddenSampleFile.write(sample + "\t" + sampledirsrc + "\t" + techno + "\n")
+                            else:
+                                # Write JSON file
+                                dsamplejson = {}
+                                dsamplejson[ "key" ]    = samplekey 
+                                dsamplejson[ "sample"]  = sample
+                                dsamplejson[ "samplemcgill"]  = sname
+                                dsamplejson[ "plate"]   = plate
+                                dsamplejson[ "platemcgill"] = plateMcGill
+                                dsamplejson[ "techno"]  = techno 
+                                dsamplejson[ "rundate"] = date
+                                dsamplejson[ "runpath"] = rundir
+                                dsamplejson[ "sampledir"] = sampledirdest
+                                for key, val in dmetrics.iteritems() :
+                                    if key == "cons.per.N":
+                                        #Eric Fournier 2020-10-12 pour nanopore => cons.perc.N et pour illumina et MGI => cons.per.N
+                                        key = "cons.perc.N"
+                                    dsamplejson[ key ] = val
+                                setQCStatus( dsamplejson )
+                                dsamplejson[ "qccuration"] = dsamplejson["qcstatus"]
+                                dsamplejson[ "qccurationmess"] = ""
 
-                            # Write JSON file
-                            dsamplejson = {}
-                            dsamplejson[ "key" ]    = samplekey 
-                            dsamplejson[ "sample"]  = sample
-                            dsamplejson[ "samplemcgill"]  = sname
-                            dsamplejson[ "plate"]   = plate
-                            dsamplejson[ "platemcgill"] = plateMcGill
-                            dsamplejson[ "techno"]  = techno 
-                            dsamplejson[ "rundate"] = date
-                            dsamplejson[ "runpath"] = rundir
-                            dsamplejson[ "sampledir"] = sampledirdest
-                            for key, val in dmetrics.iteritems() :
-                                if key == "cons.per.N":
-                                    #Eric Fournier 2020-10-12 pour nanopore => cons.perc.N et pour illumina et MGI => cons.per.N
-                                    key = "cons.perc.N"
-                                dsamplejson[ key ] = val
-                            setQCStatus( dsamplejson )
-                            dsamplejson[ "qccuration"] = dsamplejson["qcstatus"]
-                            dsamplejson[ "qccurationmess"] = ""
-                            with open( os.path.join( sampledirdest , sample + ".json" ) ,  'w') as outfile:
-                                json.dump( dsamplejson, outfile )
+                                with open( os.path.join( sampledirdest , sample + ".json" ) ,  'w') as outfile:
+                                    json.dump( dsamplejson, outfile )
 
-                            if dsamplejson["qcstatus"] in ["MISSING_METRICS_HEADER","MISSING_CONS_PERC_N"]:
-                                missingConsPercNLog.write(sample + "\t" + sampledirsrc + "\t" + techno + "\t" + dsamplejson["qcstatus"] + "\n")
+                                if dsamplejson["qcstatus"] in ["MISSING_METRICS_HEADER","MISSING_CONS_PERC_N"] and save_consensus_path:
+                                    missingConsPercNLog.write(sample + "\t" + sampledirsrc + "\t" + techno + "\t" + dsamplejson["qcstatus"] + "\n")
+                                    consensusListFile.write(str(sample).split('_')[0] + "\t" + dsamplejson["qcstatus"] + "\t" + "NA"  + "\t" + techno + "\t" + "NA" + "\t"+ run + "\n")
 
-                            if dsamplejson["qcstatus"] in ["PASS","FLAG","REJ"] and save_consensus_path:
-                                consensusListFile.write(str(sample).split('_')[0] + "\t" + dsamplejson["qcstatus"] + "\t" + lconsensus[0]  + "\t" + techno + "\t" + dsamplejson["cons.perc.N"] + "\t"+ run + "\n")
+                                if dsamplejson["qcstatus"] in ["PASS","FLAG","REJ"] and save_consensus_path:
+                                    consensusListFile.write(str(sample).split('_')[0] + "\t" + dsamplejson["qcstatus"] + "\t" + lconsensus[0]  + "\t" + techno + "\t" + dsamplejson["cons.perc.N"] + "\t"+ run + "\n")
 
+                                if not save_consensus_path: 
+                                    consensusListFile.write(str(sample).split('_')[0] + "\t" + "NA" + "\t" + "NA"  + "\t" + techno + "\t" + "NA" + "\t"+ run + "\n")
 
 def setQCStatus( dsamplejson ) :
     qc      = "PASS"
@@ -659,5 +673,6 @@ if __name__ == "__main__":
         missingConsensusLog.close()
         consensusListFile.close()
         missingConsPercNLog.close()
+        hiddenSampleFile.close()
     except KeyboardInterrupt:
         print  "Program canceled by user..."
