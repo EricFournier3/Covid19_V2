@@ -165,23 +165,28 @@ class MetadataManager():
 
     def CreateMetadata(self,max_sample_date):
         MySQLcovid19.SetConnection()
+
+        year_2020 = datetime.datetime.strptime("2020","%Y")
+
         self.pd_metadata = MySQLcovid19Selector.GetMetadataAsPdDataFrame(MySQLcovid19.GetConnection(),self.samples_list,'LSPQ',False)
         #print(self.pd_metadata)
-        self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
+        #self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
+
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
+
         pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
 
         pd_missing_get_from_sgil_extract = self.AddMissingFromSgilExtract(pd_missing_samples,self.pd_sgil_extract,self.pd_metadata.columns)
         self.pd_metadata = pd.concat([self.pd_metadata,pd_missing_get_from_sgil_extract])
 
-        self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
+        #self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
         pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
 
         pd_missing_get_from_EnvoisGenomeQuebec = self.AddMissingFromEnvoisGenomeQuebec(pd_missing_samples,self.pd_envoi_qenome_quebec,self.pd_metadata.columns)
         self.pd_metadata = pd.concat([self.pd_metadata,pd_missing_get_from_EnvoisGenomeQuebec])
 
-        self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
+        #self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
         self.pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
 
@@ -198,13 +203,15 @@ class MetadataManager():
         self.pd_metadata['sample_date']= self.pd_metadata['sample_date'].astype('datetime64[ns]')
         #print(self.pd_metadata.dtypes)
 
-        self.pd_metadata = self.pd_metadata.loc[self.pd_metadata['sample_date'] <= max_sample_date,:]
+        self.pd_metadata = self.pd_metadata.loc[(self.pd_metadata['sample_date'] <= max_sample_date) & (self.pd_metadata['sample_date'] >= year_2020 ),:]
         #print(self.pd_metadata)
         #print(self.pd_samples_missing_rss)
 
     def GetBelugaRunsWithTargetSamples(self):
         self.pd_samples_with_run_name = pd.merge(self.pd_metadata,self.pd_fasta_list,left_on='sample',right_on='SAMPLE',how='left',indicator=True)
         self.pd_samples_with_run_name = self.pd_samples_with_run_name[['sample','sample_date','STATUS','TECHNO','RUN_NAME']]
+        self.pd_samples_with_run_name = self.pd_samples_with_run_name.sort_values(by=['sample_date'],ascending=True)
+        #self.pd_samples_with_run_name = self.pd_samples_with_run_name.sort_values(by=['RUN_NAME'],ascending=True)
         #print(self.pd_with_run_name)
         #self.pd_run_list = pd.DataFrame({'RUN_NAME':self.pd_samples_with_run_name['RUN_NAME'].unique()})
         self.pd_run_list = self.pd_samples_with_run_name.drop_duplicates(['RUN_NAME','TECHNO'])
@@ -244,7 +251,7 @@ class FastaGetter():
     def __init__(self,pd_metadata,pd_fasta_list):
         self.pd_metadata = pd_metadata
         self.pd_fasta_list = pd_fasta_list
-
+        #*************************** TODO ATTENTION J AI MIS UN UPPER CASE LES SAMPLEID => METTRE AUSSI LES ID HEADER FASTA EN UPPER SINON PAS DE MATCH DANS METADATA
         self.fasta_rec_list = []
 
         self.samples_to_keep = list(self.pd_metadata['sample'])
@@ -297,6 +304,7 @@ class FastaListManager():
 
     def GetPdFastaList(self):
         pd_df = pd.read_csv(self.fasta_list_file,sep="\t",index_col=False)
+        pd_df['SAMPLE'] = pd_df['SAMPLE'].str.upper()
         return(pd_df.loc[pd_df['STATUS'].isin(fasta_qual_status_to_keep),:])
 
     def GetSamplesList(self):
@@ -311,6 +319,7 @@ class FastaListManager():
         for sample in self.samples_list:
             if sample.startswith('HGA-'):
                 self.samples_list[i] = re.sub(r'2D$','',sample)
+            #self.samples_list[i] = re.sub(r'^\.','',sample)
             i+=1
 
         end = time.time()
