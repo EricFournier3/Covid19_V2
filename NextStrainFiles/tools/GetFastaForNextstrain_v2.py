@@ -251,7 +251,6 @@ class FastaGetter():
     def __init__(self,pd_metadata,pd_fasta_list):
         self.pd_metadata = pd_metadata
         self.pd_fasta_list = pd_fasta_list
-        #*************************** TODO ATTENTION J AI MIS UN UPPER CASE LES SAMPLEID => METTRE AUSSI LES ID HEADER FASTA EN UPPER SINON PAS DE MATCH DANS METADATA
         self.fasta_rec_list = []
 
         self.samples_to_keep = list(self.pd_metadata['sample'])
@@ -275,34 +274,27 @@ class FastaGetter():
 
     def GetFastaFromBeluga(self,beluga_fasta_file):
 
-        id_pattern = r'(^Canada/Qc-)(\S+)(/\d{4}$)'
+        id_pattern = r'(^Canada/Qc-)(\S+)(/\d{4})'
 
         for index, row in self.pd_selected_fasta.iterrows():
             fasta_path = str(row['PATH'])
+            sample = str(row['SAMPLE'])
+            sample_date = self.pd_metadata.loc[self.pd_metadata['sample'] == sample,'sample_date']
+            sample_date = sample_date.to_numpy()[0]
+            sample_date = np.datetime_as_string(sample_date,unit='D')
+            month = datetime.datetime.strptime(sample_date,'%Y-%m-%d').strftime("%B")
             fasta_path = re.sub(r'/genfs/projects/',mnt_beluga_server,fasta_path)
             qc_status = str(row['STATUS'])
             logging.info("Get " + fasta_path)
             rec = SeqIO.read(fasta_path,'fasta')
-            id_short = re.search(id_pattern, rec.id).group(2)
+            id_short = re.search(id_pattern, rec.description).group(2)
             rec.id = re.sub(id_pattern,r"\1" + str(id_short).upper() + r"\3",rec.id)
-            rec.description = rec.description + " " +  fasta_path + " " + qc_status
+            rec.description = re.sub(id_pattern,r"\1" + str(id_short).upper() + r"\3",rec.description)
+            rec.description = rec.description + " " +  fasta_path + " " + qc_status + " " + month
             self.fasta_rec_list.append(rec)
 
-        SeqIO.write(self.fasta_rec_list,os.path.join(fasta_outdir,"sequences_from_" + os.path.basename(beluga_fasta_file)),'fasta')
+        SeqIO.write(self.fasta_rec_list,os.path.join(fasta_outdir,"sequences_from_" + os.path.basename(beluga_fasta_file) + ".fasta"),'fasta')
 
-    def AddPathAndQcStatusToHeader(self):
-        pass
-
-
-    def AddPathAndQcStatusToHeaderOBSOLETE(self,fasta_in,beluga_fasta_file,fasta_path,qc_status):
-        rec_list = []
-        for rec in SeqIO.parse(fasta_in,'fasta'):
-            rec.description = rec.description + " " +  fasta_path + " " + qc_status
-            rec_list.append(rec)
-
-        SeqIO.write(rec_list,os.path.join(fasta_outdir,"sequences_from_" + beluga_fasta_file),'fasta')
-
-        
 
 class FastaListManager():
     def __init__(self,fasta_list_file):
