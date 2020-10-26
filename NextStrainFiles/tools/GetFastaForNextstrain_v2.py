@@ -30,8 +30,7 @@ TODO
 """
 Usage exemple:
 
-python GetFastaForNextstrain_v2.py -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_Dev_2020-10-17_consensusList_small2.list --debug --keepflag
-
+python GetFastaForNextstrain_v2.py -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_Dev_2020-10-20_consensusList_small.list --debug   --maxsampledate 2020-10-20  --keep 'FLAG'
 
 """
 
@@ -234,17 +233,20 @@ class MetadataManager():
 
         today = datetime.datetime.now().strftime("%Y-%m-%d")
 
-        self.metadata_out = os.path.join(metadata_outdir,"metadata_{0}_from_{1}.tsv".format(today,os.path.basename(beluga_fasta_file)))
-        self.missing_samples_out = os.path.join(metadata_outdir,"missing_samples_{0}_from_{1}.tsv".format(today,os.path.basename(beluga_fasta_file))) 
-        self.samples_missing_rss_out = os.path.join(metadata_outdir,"samples_missing_rss_{0}_from_{1}.tsv".format(today,os.path.basename(beluga_fasta_file)))
-        self.sample_with_run_name_out = os.path.join(metadata_outdir,"Samples_{2}_maxSampleDate_{0}_from_{1}".format(str(max_sample_date),os.path.basename(beluga_fasta_file),qc_status_suffix))
-        self.runs_with_samples_max_sample_date_out = os.path.join(metadata_outdir,"Runs_with_samples_{2}_maxSampleDate_{0}_from_{1}".format(max_sample_date,os.path.basename(beluga_fasta_file),qc_status_suffix))
+        file_out_suffix = "{0}_{1}_maxSampleDate_{2}".format(today,qc_status_suffix,max_sample_date)
+
+        self.metadata_out = os.path.join(metadata_outdir,"metadata_{0}.tsv".format(file_out_suffix))
+        self.missing_samples_out = os.path.join(metadata_outdir,"missing_samples_{0}.txt".format(file_out_suffix))
+        self.samples_missing_rss_out = os.path.join(metadata_outdir,"samples_missing_rss_{0}.txt".format(file_out_suffix))
+        self.samples_with_run_name_out = os.path.join(metadata_outdir,"samples_runs_{0}.txt".format(file_out_suffix))
+        self.runs_out = os.path.join(metadata_outdir,"runs_{0}.txt".format(file_out_suffix))
+
 
         self.pd_metadata.to_csv(self.metadata_out,sep="\t",index=False)
         self.pd_missing_samples.to_csv(self.missing_samples_out,sep="\t",index=False)
         self.pd_samples_missing_rss.to_csv(self.samples_missing_rss_out,sep="\t",index=False)
-        self.pd_samples_with_run_name.to_csv(self.sample_with_run_name_out,sep="\t",index=False)
-        self.pd_run_list.to_csv(self.runs_with_samples_max_sample_date_out,sep="\t",index=False)
+        self.pd_samples_with_run_name.to_csv(self.samples_with_run_name_out,sep="\t",index=False)
+        self.pd_run_list.to_csv(self.runs_out,sep="\t",index=False)
 
 
 class FastaGetter():
@@ -272,7 +274,7 @@ class FastaGetter():
         self.pd_selected_fasta = self.pd_selected_fasta[idx]
 
 
-    def GetFastaFromBeluga(self,beluga_fasta_file):
+    def GetFastaFromBeluga(self,beluga_fasta_file,max_sample_date):
 
         id_pattern = r'(^Canada/Qc-)(\S+)(/\d{4})'
 
@@ -293,7 +295,49 @@ class FastaGetter():
             rec.description = rec.description + " " +  fasta_path + " " + qc_status + " " + month
             self.fasta_rec_list.append(rec)
 
-        SeqIO.write(self.fasta_rec_list,os.path.join(fasta_outdir,"sequences_from_" + os.path.basename(beluga_fasta_file) + ".fasta"),'fasta')
+        if qc_keep  == 'FLAG':
+            qc_status_suffix = "PASS_FLAG"
+        else:
+            qc_status_suffix = qc_keep
+
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+
+        file_out_suffix = "{0}_{1}_maxSampleDate_{2}".format(today,qc_status_suffix,max_sample_date)
+        
+        out_fasta = os.path.join(fasta_outdir,"sequences_{0}_temp.fasta".format(file_out_suffix))
+        SeqIO.write(self.fasta_rec_list,out_fasta,'fasta')
+        
+        self.Dedup(out_fasta)
+
+    def Dedup(self,fasta_file):
+        
+        out_fasta = re.sub(r'_temp.fasta','.fasta',fasta_file)
+
+        final_rec_list= []
+        rec_dict_dedup = {}
+
+        for rec in SeqIO.parse(fasta_file,"fasta"):
+            rec_id = rec.id
+            rec_desc = rec.description
+            desc_pattern = r'^Canada/Qc-\S+/\d{4} seq_method:(\S+)\|assemb_method:\S+\|snv_call_method:\S+ \S+ (PASS|FLAG) \S+$'
+            seq_method = re.search(desc_pattern,rec_desc).group(1)
+            qc_status = re.search(desc_pattern,rec_desc).group(2)
+
+            if not rec_id  in rec_dict_dedup:
+                rec_dict_dedup[rec_id] = [qc_status,seq_method,rec]
+            else:
+                val_in = rec_dict_dedup[rec_id] 
+                current_val = [qc_status,seq_method,rec_desc]
+
+                if val_in[0] == "FLAG" and current_val[0] == "PASS":
+                    rec_dict_dedup[rec_id] = [qc_status,seq_method,rec]                 
+
+        for val in rec_dict_dedup.values():
+            final_rec_list.append(val[2])
+
+        SeqIO.write(final_rec_list,out_fasta,'fasta')
+        os.remove(fasta_file)
+
 
 
 class FastaListManager():
@@ -319,7 +363,6 @@ class FastaListManager():
         for sample in self.samples_list:
             if sample.startswith('HGA-'):
                 self.samples_list[i] = re.sub(r'2D$','',sample)
-            #self.samples_list[i] = re.sub(r'^\.','',sample)
             i+=1
 
         end = time.time()
@@ -341,7 +384,7 @@ def Main():
         MountBelugaServer()
         fasta_getter = FastaGetter(metadata_manager.GetPdMetadata(),fasta_list_manager.GetPdFastaList())
         fasta_getter.SelectFasta()
-        fasta_getter.GetFastaFromBeluga(beluga_fasta_file)
+        fasta_getter.GetFastaFromBeluga(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"))
 
 
 if __name__ == '__main__':

@@ -31,11 +31,11 @@ TODO
 
 """
 Usage exemple:
-python PrepareMetadataFromDSPdb.py --dest LSPQ --debug  -i AllSample.20200912.list (pour mode debug et metadata forat lspqo) 
+python GetFastaForNextstrain.py  --dest LSPQ --debug  -i AllSample.20200912.list (pour mode debug et metadata for LSPQ) 
 
-python PrepareMetadataFromDSPdb.py --dest GC -i AllSample.20200912.list  (pour mode production et metadata format Genome Center)
+python GetFastaForNextstrain.py  --dest GC -i AllSample.20200912.list  (pour mode production et metadata format Genome Center)
 
-python PrepareMetadataFromDSPdb.py --dest LSPQ --debug --all   (en mode debug, format lspq, extraire tous les samples de la base de donnees)
+python GetFastaForNextstrain.py --dest LSPQ --debug --all   (en mode debug, format lspq, extraire tous les samples de la base de donnees)
 
 
 Les fichiers AllSample.YYYYMMDD.list sont localise sur Compute Canada/Beluga dans /home/fournie1/COVID_LSPQ/TRACE et sont importe dans /data/PROJETS/COVID-19_Beluga/Metadata/IN
@@ -51,7 +51,7 @@ pd.options.display.max_columns = 100
 logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description="Create metadata file")
-parser.add_argument('--dest', '-d', required=True,help="choose lspq (lspq) or genome center (gc)",choices=['LSPQ','GC'])
+parser.add_argument('--dest', '-d', required=True,help="choose LSPQ or Genome Center (GC)",choices=['LSPQ','GC'])
 parser.add_argument('--all',help='extract all samples in database',action='store_true')
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
 parser.add_argument('--input','-i',help="input file")
@@ -99,6 +99,8 @@ base_dir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/" if  
 #TODO A MODIFIER
 fasta_outdir = os.path.join(base_dir,'FASTA') if _debug_ else os.path.join(base_dir,'FASTA') 
 
+print("BASE DIR ",base_dir)
+
 
 if genome_center_file and (not os.path.isfile(os.path.join(base_dir,"IN",genome_center_file))):
     logging.error("File missing : " + os.path.join(base_dir,"IN",genome_center_file))
@@ -132,8 +134,8 @@ def CheckMissingSpec(pd_found_spec,all_spec):
     return(missing_spec)
 
 def AddMissingFromEnvoisGenomeQuebec(pd_missing_spec,pd_envoi_genome_quebec,metadata_columns):
-    res_df = pd_envoi_genome_quebec.loc[pd_envoi_genome_quebec['# Requête'].isin(list(pd_missing_spec)),['# Requête','Date de prélèvement']].copy()
-    res_df = res_df.rename(columns={'# Requête':'sample','Date de prélèvement':'sample_date'})
+    res_df = pd_envoi_genome_quebec.loc[pd_envoi_genome_quebec['# Requête'].isin(list(pd_missing_spec)),['# Requête','Date de prélèvement','Date de naissance']].copy()
+    res_df = res_df.rename(columns={'# Requête':'sample','Date de prélèvement':'sample_date','Date de naissance':'date_naiss'})
     res_df['country'] = 'Canada'
     res_df['country_exposure'] = 'INDETERMINE'
     res_df['ct'] = '0'
@@ -146,8 +148,8 @@ def AddMissingFromEnvoisGenomeQuebec(pd_missing_spec,pd_envoi_genome_quebec,meta
 
 def AddMissingFromSgilExtract(pd_missing_spec,pd_sgil_extract,metadata_columns):
 
-    res_df = pd_sgil_extract.loc[pd_sgil_extract['NUMERO_SGIL'].isin(list(pd_missing_spec)),['NUMERO_SGIL','SAMPLED_DATE','TRAVEL_HISTORY','CT','SEX','RSS_PATIENT']].copy()
-    res_df = res_df.rename(columns={'NUMERO_SGIL':'sample','SAMPLED_DATE':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','SEX':'sex','RSS_PATIENT':'rss'})
+    res_df = pd_sgil_extract.loc[pd_sgil_extract['NUMERO_SGIL'].isin(list(pd_missing_spec)),['NUMERO_SGIL','SAMPLED_DATE','TRAVEL_HISTORY','CT','SEX','RSS_PATIENT','DATE_NAISS']].copy()
+    res_df = res_df.rename(columns={'NUMERO_SGIL':'sample','SAMPLED_DATE':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','SEX':'sex','RSS_PATIENT':'rss','DATE_NAISS':'date_naiss'})
     res_df['country'] = 'Canada'
     res_df['division'] = 'Quebec'
 
@@ -166,20 +168,26 @@ def CreateMetadata(pd_seq_list,metadata_destination,extract_all_samples,pd_envoi
     seq_list = BuildSeqList(pd_seq_list)
     pd_metadata = MySQLcovid19Selector.GetMetadataAsPdDataFrame(MySQLcovid19.GetConnection(),seq_list,metadata_destination,extract_all_samples)
     
+ 
+    pd_metadata['sample'] = pd_metadata['sample'].str.replace('LSPQ-','')
     pd_missing_spec = CheckMissingSpec(pd_metadata,seq_list)
 
-    if (extract_all_samples,pd_envoi_qenome_quebec is not None) and (pd_sgil_extract is not None):
+    if (pd_envoi_qenome_quebec is not None) and (pd_sgil_extract is not None):
         pd_missing_get_from_sgil_extract = AddMissingFromSgilExtract(pd_missing_spec,pd_sgil_extract,pd_metadata.columns)
+        print(pd_missing_get_from_sgil_extract)
         pd_metadata = pd.concat([pd_metadata,pd_missing_get_from_sgil_extract])
-
+        pd_metadata['sample'] = pd_metadata['sample'].str.replace('LSPQ-','')
         pd_missing_spec = CheckMissingSpec(pd_metadata,seq_list)
         pd_missing_get_from_EnvoisGenomeQuebec = AddMissingFromEnvoisGenomeQuebec(pd_missing_spec,pd_envoi_qenome_quebec,pd_metadata.columns)
-
         pd_metadata = pd.concat([pd_metadata,pd_missing_get_from_EnvoisGenomeQuebec])
+        pd_metadata['sample'] = pd_metadata['sample'].str.replace('LSPQ-','')
         pd_missing_spec = CheckMissingSpec(pd_metadata,seq_list)
 
     pd_metadata['sample_date'] = pd.to_datetime(pd_metadata.sample_date)
     pd_metadata['sample_date'] = pd_metadata['sample_date'].dt.strftime('%Y-%m-%d')
+
+    pd_metadata = pd_metadata.drop_duplicates(subset='sample',keep='first')
+    #print(pd_metadata)
     return([pd_metadata,pd_missing_spec])
 
 
@@ -209,32 +217,47 @@ class PdWriter:
             pd_missing_sample = pd_missing_sample.sort_values(ascending=True)
             pd_missing_sample.to_csv(self.missing_spec_out,header=["Missing_samples"],index=False)
 
+    def WriteSampleMissingRSS(self,pd_sample_missing_rss):
+        out_file = os.path.join(base_dir,"OUT",self.destination,"samples_missing_rss_{0}_from_{1}.tsv".format(today,self.in_file))
+        pd_sample_missing_rss.to_csv(out_file,index=False)
+
 class FastaGetter():
-    def __init__(self,pd_seq_list,pd_metadata):
+    def __init__(self,pd_seq_list,pd_metadata,pd_writer):
         self.pd_seq_list = pd_seq_list
         self.pd_metadata = pd_metadata
+        self.pd_writer = pd_writer
         self.sample_with_complete_metadata = self.BuildSampleWithCompleteMetadata()
         self.pd_final_target_fasta_sample = self.GetFinalTargetFastaSample()
         self.fasta_rec = []
 
 
     def GetFinalTargetFastaSample(self):
-        pd_temp = self.pd_seq_list.loc[(self.pd_seq_list['Sample[2]'].isin(self.sample_with_complete_metadata)) & (self.pd_seq_list['QCStatus{PASS,FLAG,REJ}[5]'].isin(fasta_qual_status_to_keep)),['Sample[2]','QCStatus{PASS,FLAG,REJ}[5]','REPOPATH[8]','RunDate[4]']]
+        pd_temp = self.pd_seq_list.loc[(self.pd_seq_list['Sample[2]'].isin(self.sample_with_complete_metadata)) & (self.pd_seq_list['QCStatus{PASS,FLAG,REJ}[5]'].isin(fasta_qual_status_to_keep)),['Sample[2]','QCStatus{PASS,FLAG,REJ}[5]','REPOPATH[8]','RunDate[4]','Techno[3]']]
 
-        idx = pd_temp.groupby('Sample[2]')['RunDate[4]'].transform(max) == pd_temp['RunDate[4]']
-        pd_fasta_target = pd_temp[idx]
+        #on groupe par sample/status et on garde la date la plus recente
+        idx = pd_temp.groupby(['Sample[2]','QCStatus{PASS,FLAG,REJ}[5]'])['RunDate[4]'].transform(max) == pd_temp['RunDate[4]']
+        pd_temp2 = pd_temp[idx]
+
+        #on groupe par sample et on garde les PASS
+        idx = pd_temp2.groupby(['Sample[2]'])['QCStatus{PASS,FLAG,REJ}[5]'].transform(max) == pd_temp2['QCStatus{PASS,FLAG,REJ}[5]']
+        pd_fasta_target = pd_temp2[idx]
+        
         return(pd_fasta_target)
 
     def BuildSampleWithCompleteMetadata(self):
-        #todo mettre les indetermine dans un fichier
+        self.pd_writer.WriteSampleMissingRSS(self.pd_metadata.loc[self.pd_metadata['rss'] == 'INDETERMINE',['sample']])
         return list(self.pd_metadata.loc[self.pd_metadata['rss'] != 'INDETERMINE','sample'])
 
     def GetFastaFromBeluga(self):
-        pass
         for index, row in self.pd_final_target_fasta_sample.iterrows():
             #print(index, " ____________ ", row[['Sample[2]','QCStatus{PASS,FLAG,REJ}[5]','REPOPATH[8]']])
-             print("SAMPLE : ", str(row['Sample[2]']), " ---- PATH ",str(row['REPOPATH[8]']))
+             #print("SAMPLE : ", str(row['Sample[2]']), " ---- PATH ",str(row['REPOPATH[8]']))
              fasta_path = re.sub(r'/genfs/projects/',mnt_beluga_server,str(row['REPOPATH[8]']))
+             tech = str(row['Techno[3]'])
+             date = str(row['RunDate[4]'])[:10]
+             status = str(row['QCStatus{PASS,FLAG,REJ}[5]']) 
+             sample = str(row['Sample[2]'])
+             #print(sample + " " + date + " " + tech + " " + status)
              #print(fasta_path)
              fasta_list = glob.glob(fasta_path + "/*.fasta")
              #print(fasta_list)
@@ -268,7 +291,7 @@ def MountBelugaServer():
 def Main():
     logging.info("In Main()")
 
-    MountBelugaServer()
+    #MountBelugaServer()
 
     if extract_all_samples:
         pd_writer =  PdWriter(metadata_destination,None)
@@ -282,23 +305,26 @@ def Main():
     pd_seq_list = pd_builder_from_file.ReadSeqFileList(genome_center_file)
     #print(pd_seq_list.loc[pd_seq_list['RunDate[4]'].astype(str) == '200619',['Sample[2]','RunDate[4]']])
     #il y a un typo dans la run /genfs/projects/COVID_full_processing/illumina/200619_M03555_0529_SeqWell_testing
+    #et dans /genfs/projects/COVID_full_processing/illumina/200904_M03555_0531_CoVSeQ_reinfection
     pd_seq_list.loc[pd_seq_list['RunDate[4]'].astype(str) == '200619',['RunDate[4]']] = '20200619'
+    pd_seq_list.loc[pd_seq_list['RunDate[4]'].astype(str) == '200904',['RunDate[4]']] = '20200904'
+    #erreur de date dans /genfs/projects/COVID_LSPQ/REPOSITORY_ERIC/LSPQ_reinfection/LSPQ_reinfection.L00282997.nanopore.FAO11908-20201005
+    pd_seq_list.loc[pd_seq_list['RunDate[4]'].astype(str) == 'FAO11908-20201005',['RunDate[4]']] = '20201005'
     pd_seq_list['RunDate[4]'] = pd.to_datetime(pd_seq_list['RunDate[4]'],format='%Y%m%d')
 
     pd_envoi_qenome_quebec = None
     pd_sgil_extract = None
 
-    if metadata_destination == 'GC':
-        pd_envoi_qenome_quebec =  pd_builder_from_file.ReadEnvoiGenomeQuebecFile(liste_envoi_genome_quebec)
-        pd_sgil_extract = pd_builder_from_file.ReadSgilExtract(sgil_extract)
+    pd_envoi_qenome_quebec =  pd_builder_from_file.ReadEnvoiGenomeQuebecFile(liste_envoi_genome_quebec)
+    pd_sgil_extract = pd_builder_from_file.ReadSgilExtract(sgil_extract)
      
     pd_metadata,pd_missing_spec =  CreateMetadata(pd_seq_list,metadata_destination,extract_all_samples,pd_envoi_qenome_quebec,pd_sgil_extract)
 
     pd_writer.WritePdToFile(pd_metadata)
     pd_writer.WritePdMissingSamplesToFile(pd_missing_spec)
 
-    fasta_getter = FastaGetter(pd_seq_list,pd_metadata)
-    fasta_getter.GetFastaFromBeluga()
+    #fasta_getter = FastaGetter(pd_seq_list,pd_metadata,pd_writer)
+    #fasta_getter.GetFastaFromBeluga()
 
 if __name__ == '__main__':
     Main()

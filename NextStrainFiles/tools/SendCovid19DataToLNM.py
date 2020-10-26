@@ -16,17 +16,17 @@ import argparse
 import logging
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
+import subprocess
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 parser = argparse.ArgumentParser(description="Prepare and send Covid-19 data to NML")
-parser.add_argument('--task','-t',required=True,help=" <1> Prepare sample list for Beluga server <2> Transfer fastq from Beluga server and prepare data <3> Send data to LNM",choices=['1','2','3'])
+parser.add_argument('--task','-t',required=True,help=" <1> Prepare sample list for Beluga server <2> Transfer fastq from Beluga server and prepare data <3> Send data to LNM <4> Check data amount to transfer",choices=['1','2','3','4'])
 parser.add_argument('-d','--debug',help='run in debug mode',action='store_true')
 parser.add_argument('--release','-r',help='data release',required=True,type=int)
 
 args = parser.parse_args()
-
 
 global beluga_server
 beluga_server = "fournie1@beluga.computecanada.ca:/home/fournie1"
@@ -45,15 +45,58 @@ raw_data_basedir = os.path.join("/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_L
 
 task = args.task
 
+
 def MountBelugaServer():
     os.system("sudo umount " + mnt_beluga_server)
     os.system("sudo sshfs -o allow_other -o follow_symlinks {0} {1}".format(beluga_server,mnt_beluga_server))
 
-#MountBelugaServer()
+MountBelugaServer()
 
+class SpaceManager:
+    def __init__(self,release,logger):
+        self.release = release
+        self.logger = logger
+
+        if __debug__:
+            self.nanopore_demux_file = "/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Rawdata/release1/nanopore/release1_ont_demux.txt"
+            self.out_file = "/home/foueri01@inspq.qc.ca/temp/20201013/nanopore_demux_release1.txt"
+        else:
+            self.nanopore_demux_file = "/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Rawdata/release1/nanopore/release1_ont_demux.txt"
+            self.out_file = "/home/foueri01@inspq.qc.ca/temp/20201013/nanopore_demux_release1.txt"
+
+    def CheckNanoporeSpace(self):
+        nanopore_space_writer = logger.GetNanoporeSpaceWriter()
+        
+        with open(self.nanopore_demux_file) as readf:
+            readf.readline()
+            for line in readf:
+                #print(line)
+                info_list = line.split('\t')
+                #print(info_list[3])
+                check_dir = re.sub('/genfs/projects/','',info_list[3])
+                check_dir = os.path.join(mnt_beluga_server,check_dir)
+                nanopore_space_writer.write(check_dir)
+                space = subprocess.check_output(["du", "-sh", check_dir.strip('\n')])
+                space = space.split()[0].decode('utf-8')
+                nanopore_space_writer.write(space)
+                nanopore_space_writer.write("\n")                
+                nanopore_space_writer.write("__________________________________________\n\n")                
+
+        nanopore_space_writer.close()
 
 class Logger:
-    pass
+    def __init__(self,release):
+        self.release = release
+        if __debug__:
+            self.nanopore_space_file_out = "/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Rawdata/release1/nanopore/space_release1_ont_demux.txt"
+        else:
+            self.nanopore_space_file_out = "/home/foueri01@inspq.qc.ca/temp/TEST_TRANSFER_LNM/Rawdata/release1/nanopore/space_release1_ont_demux.txt"
+
+    def GetNanoporeSpaceWriter(self):
+        pass
+        fh = open(self.nanopore_space_file_out,'w')
+        return(fh)
+
 
 class ComputeCanadaToLSPQManager:
     def __init__(self,release):
@@ -187,6 +230,8 @@ class GisaidFastaManager:
             SeqIO.write(rec,fasta_path,'fasta')
 
 
+logger = Logger(release)
+
 if str(task) == "1":
     logging.info("Prepare Sample list for Beluga server")
     gisaid_fasta_manager = GisaidFastaManager(release)    
@@ -199,3 +244,8 @@ elif str(task) == "2":
     cc2lspq_manager.BuildGisaidIdList()
     cc2lspq_manager.GetComputeCanadaFastqList()
     cc2lspq_manager.GetComputeCanadaFastq()
+elif str(task) == "3":
+    pass
+elif str(task) == "4":
+    space_manager = SpaceManager(release,logger)
+    space_manager.CheckNanoporeSpace()

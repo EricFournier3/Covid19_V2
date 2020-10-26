@@ -12,7 +12,7 @@ class MySQLcovid19:
     host = 'localhost'
     user = 'root'
     password = 'lspq2019'
-    database = 'TestCovid19_20200923'
+    database = 'TestCovid19_20201014'
     connection = None
 
     @classmethod
@@ -56,7 +56,8 @@ class MySQLcovid19Selector:
 
         columns_renamed = {'RTA':'rta','GENOME_QUEBEC_REQUETE':'sample','DATE_PRELEV_HOPITAL':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','RSS_LSPQ_CAS':'rss','SEXEINFO':'sex','COUNTRY':'country','DIVISION':'division','DTNAISSINFO':'date_naiss'}        
 
-        spec_list = '|'.join(spec_list)
+        #spec_list = '|'.join(spec_list)
+        #spec_list_format = ','.join(['%s'] * len(spec_list))
         prelevements_alias = 'pr'
         patients_alias = 'p'
 
@@ -77,8 +78,12 @@ class MySQLcovid19Selector:
         if(extract_all_samples):
             sql = "SELECT {0},{1}, {3} as COUNTRY, {4} as DIVISION FROM Prelevements pr inner join Patients p on  p.ID_PATIENT = pr.ID_PATIENT ".format(PRELEVEMENTS_COLUMNS,PATIENTS_COLUMNS,spec_list,COUNTRY,DIVISION)
         else:
-            sql = "SELECT {0},{1}, {3} as COUNTRY, {4} as DIVISION, {5} as RTA FROM Prelevements pr inner join Patients p on  p.ID_PATIENT = pr.ID_PATIENT WHERE pr.GENOME_QUEBEC_REQUETE REGEXP '{2}' ".format(PRELEVEMENTS_COLUMNS,PATIENTS_COLUMNS,spec_list,COUNTRY,DIVISION,RTA)
-
+            #sql = "SELECT {0},{1}, {3} as COUNTRY, {4} as DIVISION, {5} as RTA FROM Prelevements pr inner join Patients p on  p.ID_PATIENT = pr.ID_PATIENT WHERE pr.GENOME_QUEBEC_REQUETE REGEXP '{2}' ".format(PRELEVEMENTS_COLUMNS,PATIENTS_COLUMNS,spec_list,COUNTRY,DIVISION,RTA)
+            sql = "SELECT {0},{1}, {3} as COUNTRY, {4} as DIVISION, {5} as RTA FROM Prelevements pr inner join Patients p on  p.ID_PATIENT = pr.ID_PATIENT WHERE pr.GENOME_QUEBEC_REQUETE in  ".format(PRELEVEMENTS_COLUMNS,PATIENTS_COLUMNS,"",COUNTRY,DIVISION,RTA)
+            sql = sql + " %s" % str(tuple(spec_list))
+            myl = str(tuple(spec_list)).split(',')
+            #print(myl)
+            #print(sql)
         df = pd.read_sql(sql,con=conn)
         df = df.rename(columns=columns_renamed)
 
