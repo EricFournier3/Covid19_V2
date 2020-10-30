@@ -36,7 +36,7 @@ max_sample_date=$7
 minimum_qc_status=$8
 original_data_dir=$9
 in_data_version=${10}
-
+min_sample_date=${11}
 
 
 if [ ${minimum_qc_status} == "FLAG" ]
@@ -120,8 +120,8 @@ TransferLspqFiles(){
       nextstrain_lspq_data_dir="${nextstrain_files_base_dir}data/lspq/debug/"
     fi
 
-    original_metadata=${original_data_dir}"METADATA/metadata_${in_data_version}_${minimum_qc_status}_maxSampleDate_${max_sample_date}.tsv"
-    original_sequences=${original_data_dir}"FASTA/sequences_${in_data_version}_${minimum_qc_status}_maxSampleDate_${max_sample_date}.fasta"
+    original_metadata=${original_data_dir}"METADATA/metadata_${in_data_version}_${minimum_qc_status}_minmaxSampleDate_${min_sample_date}_${max_sample_date}.tsv"
+    original_sequences=${original_data_dir}"FASTA/sequences_${in_data_version}_${minimum_qc_status}_minmaxSampleDate_${min_sample_date}_${max_sample_date}.fasta"
  
     if ! [ -f ${original_metadata} ]
         then
@@ -147,6 +147,7 @@ TransferLspqFiles(){
     cp ${original_sequences} ${lspq_dir}"sequences.fasta"
     cp "${nextstrain_lspq_data_dir}""sequences_force_include.fasta" ${lspq_dir}
 
+    #ligne ci-dessous obsolete
     #cp "${nextstrain_lspq_data_dir}"{"sequences.fasta","sequences_force_include.fasta","sgil_extract.tsv"} ${lspq_dir}
 }
 

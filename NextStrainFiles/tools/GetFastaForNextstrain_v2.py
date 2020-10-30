@@ -117,8 +117,10 @@ if not os.path.isfile(os.path.join(in_dir,beluga_fasta_file)):
 
 ##################################################################################
 def MountBelugaServer():
+    logging.info("Try to mount Beluga")
     os.system("sudo umount " + mnt_beluga_server)
     os.system("sudo sshfs -o allow_other -o follow_symlinks {0} {1}".format(beluga_server,mnt_beluga_server))
+    logging.info("Beluga mounted")
 
 class MetadataManager():
     def __init__(self,samples_list,pd_fasta_list):

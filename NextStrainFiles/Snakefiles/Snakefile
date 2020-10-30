@@ -53,7 +53,7 @@ TRAIT_RESOLUTION = ["rss_exposure"]
 #nb_canadian_gisaid_seq_to_keep = "all"
 nb_canadian_gisaid_seq_to_keep = "0"
 nb_gisaid_seq_to_keep = "0"
-nb_lspq_seq_to_keep = "3150"
+nb_lspq_seq_to_keep = "50"
 #nb_lspq_seq_to_keep = "400"
 nextstrain_base_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/"
 original_data_dir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/OUT/"
@@ -66,7 +66,7 @@ yaml_config = os.path.join(nextstrain_base_dir,"config","Snakefile.yaml")
 root = "no_root"
 minimum_qc_status = "FLAG"
 
-in_data_version = "2020-10-24"
+in_data_version = "2020-10-30"
 
 if minimum_qc_status not in ["FLAG","PASS"]:
     print("Choisir entre FLAG et PASS pour le minimum QC status")
@@ -130,7 +130,8 @@ rule filter:
         min_length = 27500,
         exclude_where = "date='2015'",
         #group_by = "rss year month",
-        max_date = "2020-10-21"
+        max_date = "2020-10-21",
+        min_date = "2020-07-30"
         #sequences_per_group = 10000
     shell:
         """
@@ -141,6 +142,7 @@ rule filter:
             --exclude {input.exclude} \
             --min-length {params.min_length} \
             --max-date {params.max_date} \
+            --min-date {params.min_date} \
             --output {output.sequences}
         """
 
@@ -687,10 +689,15 @@ rule prepare_input:
     run:
         print("In prepare input")
         max_date = rules.filter.params.max_date
+        min_date = rules.filter.params.min_date
+
 
         try:
             max_sample_date = datetime.datetime.strptime(max_date,"%Y-%m-%d") - timedelta(days=1)
             max_sample_date = max_sample_date.strftime("%Y-%m-%d")
+
+            min_sample_date = datetime.datetime.strptime(min_date,"%Y-%m-%d") + timedelta(days=1)
+            min_sample_date = min_sample_date.strftime("%Y-%m-%d")
         except:
             print("ERREUR : format de sample date incorrect")
             exit(1)
@@ -705,6 +712,6 @@ rule prepare_input:
 
 	shutil.copyfile(yaml_config,os.path.join(config_dir,os.path.basename(yaml_config)))
 	os.chmod(os.path.join(config_dir,os.path.basename(yaml_config)),stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXG)
-	os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir + " " + nb_lspq_seq_to_keep + " " + nb_gisaid_seq_to_keep + " " + nb_canadian_gisaid_seq_to_keep + " " + root + " " + max_sample_date + " " + minimum_qc_status + " " + original_data_dir + " " + in_data_version) 
+	os.system("./scripts/PrepareInput.sh " + current_dir + " " + nextstrain_base_dir + " " + nb_lspq_seq_to_keep + " " + nb_gisaid_seq_to_keep + " " + nb_canadian_gisaid_seq_to_keep + " " + root + " " + max_sample_date + " " + minimum_qc_status + " " + original_data_dir + " " + in_data_version + " " + min_sample_date) 
 	
 

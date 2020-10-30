@@ -92,7 +92,11 @@ def read_priority_scores(fname):
 def register_arguments(parser):
     parser.add_argument('--sequences', '-s', required=True, help="sequences in fasta or VCF format")
     parser.add_argument('--metadata', required=True, help="metadata associated with sequences")
-    parser.add_argument('--min-date', type=float, help="minimal cutoff for numerical date")
+    #Eric Fournier 2020-10-30 comment
+    #parser.add_argument('--min-date', type=float, help="minimal cutoff for numerical date")
+
+    #Eric Fournier 2020-10-30 add
+    parser.add_argument('--min-date', type=str, help="minimal cutoff for numerical date")
 
     #EricF comment
     #parser.add_argument('--max-date', type=float, help="maximal cutoff for numerical date")
@@ -226,6 +230,7 @@ def run(args):
     # filter by sequence length
     num_excluded_by_length = 0
     if args.min_length:
+        #print("MIN LENGTH ", args.min_length)
         if is_vcf: #doesn't make sense for VCF, ignore.
             print("WARNING: Cannot use min_length for VCF files. Ignoring...")
         else:
@@ -235,6 +240,13 @@ def run(args):
             for seq_name in seq_keep:
                 sequence = seqs[seq_name].seq
                 length = sum(map(lambda x: sequence.count(x), ["a", "t", "g", "c", "A", "T", "G", "C"]))
+                #print(">>>>>>>>>>>>>>>>>>> " + str(seq_name) + " length : " + str(length))
+                '''
+                with open("/data/PROJETS/Covid19_NextStrainBuilds/Test20201022_2/temp/seq_length.txt",'a') as length_file:
+                    length_file.write(str(seq_name) + " : " + str(length) + "\n")
+                    pass
+                '''
+
                 if length >= args.min_length:
                     seq_keep_by_length.append(seq_name)
                     #print(">>>>>>>>>>>>>>>>>>> " + str(seq_name) + " keeped by length : " + str(length))
@@ -277,13 +289,28 @@ def run(args):
         #print("NUM DATE IS ",str(numeric_date(datetime.strptime(args.max_date,"%Y-%m-%d"))))
 
         if args.min_date:
-            tmp = [s for s in tmp if (np.isscalar(dates[s]) or all(dates[s])) and np.max(dates[s])>args.min_date]
+            #Eric Fournier 2020-10-30 comment
+            #tmp = [s for s in tmp if (np.isscalar(dates[s]) or all(dates[s])) and np.max(dates[s])>args.min_date]
+            #
+
+            #Eric Fournier 2020-10-30 add
+            my_min_date = numeric_date(datetime.strptime(args.min_date,"%Y-%m-%d"))
+            tmp = [s for s in tmp if (np.isscalar(dates[s]) or all(dates[s])) and np.max(dates[s])>my_min_date]
+
+            #print("TMP 1 ", tmp, "\n")
+
+            for s1 in set(seq_keep) - set(tmp):
+                pass
+            for s2 in set(tmp):
+                pass
+
         if args.max_date:
             my_max_date = numeric_date(datetime.strptime(args.max_date,"%Y-%m-%d"))
             #print("my_max_date ", str(my_max_date))
             #EricF comment
             #tmp = [s for s in tmp if (np.isscalar(dates[s]) or all(dates[s])) and np.min(dates[s])<args.max_date]
             tmp = [s for s in tmp if (np.isscalar(dates[s]) or all(dates[s])) and np.min(dates[s])<my_max_date]
+            #print("TMP 2 ", tmp)
             for s1 in set(seq_keep) - set(tmp):
                 #print(s1, " ", np.isscalar(dates[s1]), "  ", all(dates[s1]), "  ", np.min(dates[s1])<my_max_date) 
                 #print(s1, " ", np.isscalar(dates[s1]), "  ",dates[s1])
