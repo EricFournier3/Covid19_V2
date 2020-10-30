@@ -282,7 +282,7 @@ class FastaGetter():
         self.pd_selected_fasta = self.pd_selected_fasta[idx]
 
 
-    def GetFastaFromBeluga(self,beluga_fasta_file,max_sample_date):
+    def GetFastaFromBeluga(self,beluga_fasta_file,max_sample_date,min_sample_date):
 
         id_pattern = r'(^Canada/Qc-)(\S+)(/\d{4})'
 
@@ -310,7 +310,7 @@ class FastaGetter():
 
         today = datetime.datetime.now().strftime("%Y-%m-%d")
 
-        file_out_suffix = "{0}_{1}_maxSampleDate_{2}".format(today,qc_status_suffix,max_sample_date)
+        file_out_suffix = "{0}_{1}_minmaxSampleDate_{2}_{3}".format(today,qc_status_suffix,min_sample_date,max_sample_date)
         
         out_fasta = os.path.join(fasta_outdir,"sequences_{0}_temp.fasta".format(file_out_suffix))
         SeqIO.write(self.fasta_rec_list,out_fasta,'fasta')
