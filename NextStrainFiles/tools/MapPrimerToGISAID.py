@@ -21,8 +21,6 @@ from Bio.SeqRecord import SeqRecord
 import subprocess
 
 
-#rc = subprocess.call("/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/test.sh")
-#print(rc)
 
 gisaid_seq = "sequences_small.fasta"
 
@@ -97,6 +95,7 @@ seq_primer_dict = dict()
 
 
 for rec in SeqIO.parse(gisaid_seq,'fasta'):
+    print("Work on ",rec.id)
     rec_list = []
     rec_list.append(wuhan_rec)
     rec_list.append(rec)
@@ -107,6 +106,7 @@ for rec in SeqIO.parse(gisaid_seq,'fasta'):
     #print("Length %i" % my_align.get_alignment_length())
 
     for align_rec in my_align:
+        
         if align_rec.id != wuhan_rec.id:
             seq_primer_dict[align_rec.id] = dict()
 
@@ -154,10 +154,11 @@ CreateFastaPrimer()
 
 SeqIO.write(primer_rec_list,primer_fasta,'fasta')
 
+rc = subprocess.call("/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/MapPrimerToGISAID.sh")
+#print(rc)
+
 
 exit(0)
-
-
 
 
 
