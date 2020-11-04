@@ -22,7 +22,8 @@ import subprocess
 
 
 
-gisaid_seq = "sequences_small.fasta"
+#gisaid_seq = "sequences_small.fasta"
+gisaid_seq = "sequences_2020-10-12_07-17.fasta"
 
 wuhan_ref = str(SeqIO.read('/data/Users/Eric/Covid19/reference.gb','genbank').seq)
 wuhan_rec = SeqIO.read('/data/Users/Eric/Covid19/reference.gb','genbank')
