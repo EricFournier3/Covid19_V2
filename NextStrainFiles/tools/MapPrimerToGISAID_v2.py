@@ -20,7 +20,9 @@ from Bio import AlignIO
 from Bio.SeqRecord import SeqRecord
 import subprocess
 import sys
+import re
 
+          
 
 align_in = "/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/gisaid_qc_aligned.fasta"
 
@@ -137,7 +139,45 @@ CreateFastaPrimer()
 
 SeqIO.write(primer_rec_list,primer_fasta,'fasta')
 
-rc = subprocess.call("/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/MapPrimerToGISAID.sh")
+step = "1"
+rc = subprocess.check_call(["/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/MapPrimerToGISAID.sh", step])
+
+sam_file_in = "/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/primer_map_temp.sam"
+sam_file_out = "/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/primer_map.sam"
+
+
+with open(sam_file_out,'w') as wf:
+    with open(sam_file_in) as rf:
+        for line in rf:
+            l = line.split("\t")
+            try:
+                if re.search(r'E_Sarbeco_F1$',l[0]):
+                    l[3] = "69"
+                    l[5] = "26M"
+                elif re.search(r'E_Sarbeco_P1$',l[0]):
+                    l[3] = "132"
+                    l[5] = "26M"
+                elif re.search(r'E_Sarbeco_R2$',l[0]):
+                    l[3] = "160"
+                    l[5] = "22M"
+                elif re.search(r'WuhanCoVNf$',l[0]):
+                    l[3] = "52"
+                    l[5] = "22M"
+                elif re.search(r'CoVNp$',l[0]):
+                    l[3] = "79"
+                    l[5] = "31M"
+                elif re.search(r'WuhanCoVNr$',l[0]):
+                    l[3] = "113"
+                    l[5] = "24M"
+            except:
+                pass
+
+            l = "\t".join(l)
+            wf.write(l)
+
+step = "2"
+
+rc = subprocess.check_call(["/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/MapPrimerToGISAID.sh", step])
 
 exit(0)
 
