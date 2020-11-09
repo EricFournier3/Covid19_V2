@@ -71,6 +71,10 @@ seq_primer_dict = dict()
 
 nb_rec_treated = 0
 
+
+base_dir = "/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/"
+
+
 for rec in AlignIO.read(align_in,'fasta'):
     #print("Work on ",rec.id)
     #print("Length is ",len(rec.seq))
@@ -128,16 +132,76 @@ def CheckPrimerSeq(seq):
     else:
         return True
 
+out_check_mismatch_sarbeco_r = os.path.join(base_dir,"Mismatches_SarbecoR.fasta")
+out_check_mismatch_sarbeco_f = os.path.join(base_dir,"Mismatches_SarbecoF.fasta")
+out_check_mismatch_lspq_r = os.path.join(base_dir,"Mismatches_LspqR.fasta")
+out_check_mismatch_lspq_f = os.path.join(base_dir,"Mismatches_LspqF.fasta")
+
+mismatch_sarbeco_r = []
+mismatch_sarbeco_f = []
+mismatch_lspq_r = []
+mismatch_lspq_f = []
+
+def CheckMismatchSarbecoR(primer_rec):
+    #print("Sarbeco R ",primer_rec.id)
+    #rev_primer_sarbeco
+    first_nuc = str(primer_rec.seq)[0]    
+
+    if (rev_primer_sarbeco[0] != first_nuc) and (first_nuc in ['A','C','G','T','a','c','g','t']):
+        mismatch_sarbeco_r.append(primer_rec)
+
+def CheckMismatchSarbecoF(primer_rec):
+    #print("Sarbeco F ",primer_rec.id)
+    last_nuc = str(primer_rec.seq)[-1]   
+
+    if (forward_primer_sarbeco[-1] != last_nuc) and (last_nuc  in ['A','C','G','T','a','c','g','t']):
+        mismatch_sarbeco_f.append(primer_rec)
+
+def CheckMismatchLspqR(primer_rec):
+    #print("Lspq R ",primer_rec.id)
+    first_nuc = str(primer_rec.seq)[0]  
+
+    if (rev_primer_lspq[0] != first_nuc) and (first_nuc in ['A','C','G','T','a','c','g','t']):
+        mismatch_lspq_r.append(primer_rec)
+
+def CheckMismatchLspqF(primer_rec):
+    #print("Lspq F ",primer_rec.id)
+    last_nuc = str(primer_rec.seq)[-1]   
+
+    if (forward_primer_lspq[-1] != last_nuc) and (last_nuc  in ['A','C','G','T','a','c','g','t']):
+        mismatch_lspq_f.append(primer_rec)
+
 def CreateFastaPrimer():
     for seq_id,primer_dict in seq_primer_dict.items():
         for primer_name, primer_rec in primer_dict.items():
             if CheckPrimerSeq(str(primer_rec.seq)):
+                if re.search(r'E_Sarbeco_R2$',primer_rec.id):
+                    CheckMismatchSarbecoR(primer_rec)
+                elif re.search(r'E_Sarbeco_F1$',primer_rec.id):
+                    CheckMismatchSarbecoF(primer_rec)
+                elif re.search(r'WuhanCoVNf$',primer_rec.id):
+                    CheckMismatchLspqF(primer_rec)
+                elif re.search(r'WuhanCoVNr$',primer_rec.id):
+                    #print(primer_rec.id)
+                    CheckMismatchLspqR(primer_rec)
+
                 primer_rec_list.append(primer_rec)
 
 
 CreateFastaPrimer()
 
+SeqIO.write(mismatch_sarbeco_r,out_check_mismatch_sarbeco_r,'fasta')
+#print("UN ",mismatch_sarbeco_r)
+SeqIO.write(mismatch_sarbeco_f,out_check_mismatch_sarbeco_f,'fasta')
+#print("deux ",mismatch_sarbeco_f)
+SeqIO.write(mismatch_lspq_r,out_check_mismatch_lspq_r,'fasta')
+#print("trois ",mismatch_lspq_r)
+SeqIO.write(mismatch_lspq_f,out_check_mismatch_lspq_f,'fasta')
+#print("quatre ",mismatch_lspq_f)
+
+
 SeqIO.write(primer_rec_list,primer_fasta,'fasta')
+
 
 step = "1"
 rc = subprocess.check_call(["/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/MapPrimerToGISAID.sh", step])
@@ -178,6 +242,8 @@ with open(sam_file_out,'w') as wf:
 step = "2"
 
 rc = subprocess.check_call(["/data/PROJETS/Covid19_NextStrainBuilds/TestPrimerBind_20201102/MapPrimerToGISAID.sh", step])
+
+
 
 exit(0)
 
