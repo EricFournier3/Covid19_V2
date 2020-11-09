@@ -233,6 +233,7 @@ def updateRepo( drun, dplate, repodir ) :
                         #!!!!! SNAME : nom de l'echantillon utilise par McGill ; 
                         #!!!!! SAMPLE : echantillon selon nommage LSPQ
                         plate,sample       = plateForSample( sname, dplate )
+                        #print "PLATE " + plate + " sample " + sample
                         #print("%i dir=%s ; sample=%s ; "%(s, sample,sname) )
 
                         # On suppose que samplekey est unique
@@ -243,9 +244,14 @@ def updateRepo( drun, dplate, repodir ) :
 
                         #If dir for plate does not exist
                         platedirdest    = os.path.join( repodir , plate )
-                        ltmp            = glob.glob( platedirdest + "*" ) # Check if exists
-                        if len( ltmp ) == 0 :
-                            os.mkdir( platedirdest )
+                        #Eric Fournier 2020-11-09 on desactive les 3 lignes suivantes
+                        #ltmp            = glob.glob( platedirdest + "*" ) # Check if exists
+                        #if len( ltmp ) == 0 :
+                        #    os.mkdir( platedirdest )
+                        #Eric Fournier 2020-11-09 on ajoute
+                        if not os.path.isdir(platedirdest):
+                            os.mkdir(platedirdest)
+                        
 
                         # if repo for sample does not exist
                         sampledirdest   = os.path.join( platedirdest , samplekey ) 
@@ -460,7 +466,7 @@ def plateForSample( sname, dplate ) :
     
     # More than one plate
     elif len( lplateforsample ) > 1 :
-        print( "BIZARRE: More than one plate for sample = " + sample )
+        print( "**: More than one plate for sample = " + sample )
         return ','.join( lplateforsample ),sample
 
     # No plate found

@@ -35,7 +35,8 @@ def parseoptions( ):
 
         parser = argparse.ArgumentParser( description=" " )
         parser.add_argument( '-r',  '--repodir',  help="Path to Repository directory",   required=True )
-        parser.add_argument( '-p',  '--fplate', help="File with list of plates and samples" )
+        #Eric Fournier plus necessaire 2020-11-09
+        #parser.add_argument( '-p',  '--fplate', help="File with list of plates and samples" )
         parser.add_argument( '-t',  '--tracedir', help="Path to Trace output", required=True  )
 
         #Eric Fournier 2020-10-02 add here
@@ -81,10 +82,17 @@ def main() :
 
     # Read list of plates ; This list has to be provided by LSPQ
     dplate  = {}    # key : plate ; value : list of samples
+
+    #Eric Fournier 2020-11-09
+    dplate = GetPlate()
+
+    '''
+    Eric Fournier 2020-11-09 plus necessaire
     if ARGS.fplate :
         if verbose:
             logfile.write("******************** in readPlateFile ************************\n")
         dplate = readPlateFile( ARGS.fplate )
+    '''
 
     if verbose:
         logfile.write("\n******************** in updateTrace ************************\n")
@@ -96,6 +104,22 @@ def main() :
     dt = time()-t1
     print (" ---- time(s) = " + str(dt) + " // @SaM")
 
+
+#Eric Fournier 2020-11-09 ajout de cette fonction
+def GetPlate():
+    logfile.write("******************** in GetPlate ************************\n")
+    dplate2 = {}
+    for myplate in os.listdir(ARGS.repodir):
+        myplate_dir = os.path.join(os.path.dirname(ARGS.repodir),myplate)
+        if myplate != "NOTFOUND":
+            dplate2[myplate] = []
+
+        if myplate != "NOTFOUND":
+            for spec_dir in os.listdir(myplate_dir):
+                spec_id = re.search(myplate + r'\.(\S+)\.(illumina|mgi|nanopore)',spec_dir).group(1)
+                if spec_id not in dplate2[myplate]:
+                    dplate2[myplate].append(spec_id)
+    return dplate2
 
 def updateTrace( dplate, repodir, tracedir ) :
     cwd         = os.getcwd()   
