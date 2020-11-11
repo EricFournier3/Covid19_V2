@@ -96,13 +96,16 @@ global fasta_outdir
 global metadata_ourdir
 
 if _debug_:
-    sgil_extract = "/home/foueri01@inspq.qc.ca/temp/20200924/extract_with_Covid19_extraction_v2_20200923_CovidPos_small.txt"
+    #sgil_extract = "/home/foueri01@inspq.qc.ca/temp/20200924/extract_with_Covid19_extraction_v2_20200923_CovidPos_small.txt"
     #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"/home/foueri01@inspq.qc.ca/temp/20200924/ListeEnvoisGenomeQuebec_small6.xlsx")
-    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","EnvoiSmall.xlsx")
+    #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","EnvoiSmall.xlsx")
+    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201110_CovidPos.txt")
+    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-09-28_corrCG.xlsx")
 else:
-    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20200923_CovidPos.txt")
-    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-08-28CORR.xlsx")
+    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201110_CovidPos.txt")
+    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-09-28_corrCG.xlsx")
 
+#TODO CHANGER base_dir pour production
 base_dir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/" if  _debug_ else "/data/PROJETS/COVID-19_Beluga/Metadata"
 in_dir = os.path.join(base_dir,"IN")
 out_dir = os.path.join(base_dir,"OUT")
@@ -153,11 +156,13 @@ class MetadataManager():
         return(missing_spec)
 
     def AddMissingFromSgilExtract(self,pd_missing_samples,pd_sgil_extract,metadata_columns):
-        res_df = self.pd_sgil_extract.loc[self.pd_sgil_extract['NUMERO_SGIL'].isin(list(pd_missing_samples)),['NUMERO_SGIL','SAMPLED_DATE','TRAVEL_HISTORY','CT','SEX','RSS_PATIENT','DATE_NAISS']].copy()
-        res_df = res_df.rename(columns={'NUMERO_SGIL':'sample','SAMPLED_DATE':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','SEX':'sex','RSS_PATIENT':'rss','DATE_NAISS':'date_naiss'})
+        #print(list(pd_missing_samples))
+        res_df = self.pd_sgil_extract.loc[self.pd_sgil_extract['NUMERO_SGIL'].isin(list(pd_missing_samples)),['NUMERO_SGIL','SAMPLED_DATE','TRAVEL_HISTORY','CT','SEX','RSS_PATIENT','DATE_NAISS','POSTAL_CODE']].copy()
+        res_df = res_df.rename(columns={'NUMERO_SGIL':'sample','SAMPLED_DATE':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','SEX':'sex','RSS_PATIENT':'rss','DATE_NAISS':'date_naiss','POSTAL_CODE':'rta'})
         res_df['country'] = 'Canada'
         res_df['division'] = 'Quebec'
-
+        res_df['rta'] = res_df['rta'].str.slice(0,3)
+        #print(res_df)
         return(res_df)
 
     def AddMissingFromEnvoisGenomeQuebec(self,pd_missing_samples,pd_envoi_genome_quebec,metadata_columns):
@@ -169,6 +174,7 @@ class MetadataManager():
         res_df['rss'] = 'INDETERMINE'
         res_df['sex'] = 'INDETERMINE'
         res_df['division'] = 'Quebec'
+        res_df['rta'] = 'G8P'
 
         return(res_df)
 
@@ -187,7 +193,8 @@ class MetadataManager():
 
         pd_missing_get_from_sgil_extract = self.AddMissingFromSgilExtract(pd_missing_samples,self.pd_sgil_extract,self.pd_metadata.columns)
         self.pd_metadata = pd.concat([self.pd_metadata,pd_missing_get_from_sgil_extract])
-
+        
+        #self.pd_metadata.to_csv("/home/foueri01@inspq.qc.ca/temp/20201111/test.tsv",sep="\t",index=False)
         #self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
         pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
@@ -204,8 +211,12 @@ class MetadataManager():
 
         self.pd_metadata = self.pd_metadata.drop_duplicates(subset='sample',keep='first')
 
+        self.pd_metadata.reset_index(drop=True,inplace=True) 
+
         self.pd_samples_missing_rss = self.pd_metadata.loc[self.pd_metadata['rss'] == 'INDETERMINE',['sample']]
         self.pd_metadata = self.pd_metadata.loc[self.pd_metadata['rss'] != 'INDETERMINE',:]
+        #print(self.pd_metadata.index)
+        #print(self.pd_metadata[self.pd_metadata.index.duplicated()])
         self.pd_metadata.loc[self.pd_metadata['sample'].str.contains('HGA-'),'sample']= self.pd_metadata['sample'] + '2D'
         self.pd_metadata = self.pd_metadata.sort_values(by=['sample'])
 
