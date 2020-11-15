@@ -78,7 +78,7 @@ checkpoint partition_sequences:
         split_sequences = directory(os.path.join(align_out_dir,"split_sequences/pre/"))
     params:
         sequences_per_group = 50,
-        script_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/"
+        script_dir = script_dir
     shell:
         """
         python3 {params.script_dir}partition-sequences.py \
@@ -156,7 +156,7 @@ rule mask:
         mask_from_beginning = 100,
         mask_from_end = 50,
         mask_sites = "18529 29849 29851 29853",
-        script_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/"
+        script_dir = script_dir
     shell:
         """
         python3 {params.script_dir}mask-alignment.py \
@@ -177,7 +177,7 @@ rule print_seq_length:
     output: 
         out_file = os.path.join(base_dir,"seq_length.txt")
     params:
-        script_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/tools/"
+        script_dir = tool_dir
     shell:
         """
         python3 {params.script_dir}GetSeqLength.py \
