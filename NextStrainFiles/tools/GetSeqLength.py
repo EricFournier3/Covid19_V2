@@ -14,3 +14,4 @@ for rec in AlignIO.read(args.alignment,'fasta'):
     out_file_handle.write(rec.id + " : " + str(len(rec.seq)) + " bases\n")
     
 out_file_handle.close()
+
