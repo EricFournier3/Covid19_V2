@@ -50,6 +50,9 @@ script_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/"
 tool_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/tools/"
 align_out_dir = os.path.join(base_dir,"alignment_results")
 
+gisaid_fasta_all = os.path.join(base_dir,"sequences_2020-11-12_07-33_small.fasta")
+reference = os.path.join(base_dir,"reference.gb")
+gisaid_fasta_mink = os.path.join(base_dir,"gisaid_mink.fasta")
 metadata_all = os.path.join(base_dir,"metadata_2020-11-12_10-27.tsv")
 pd_metadata_all = pd.read_csv(metadata_all,sep="\t",index_col=False)
 pd_metadata_mink = pd_metadata_all.loc[pd_metadata_all['host'] == 'Neovison vison',:]
@@ -58,13 +61,13 @@ pd_metadata_mink = pd_metadata_all.loc[pd_metadata_all['host'] == 'Neovison viso
 for index,row in pd_metadata_mink.iterrows():
     strain = str(row['strain'])
     #print(strain)
-    subprocess.call(["seqkit","grep","-r","-p","^" + str(strain),os.path.join(base_dir,"sequences_2020-11-12_07-33_small.fasta")],stdout=open(os.path.join(base_dir,"gisaid_mink.fasta"),"a"))
+    subprocess.call(["seqkit","grep","-r","-p","^" + str(strain),gisaid_fasta_all],stdout=open(gisaid_fasta_mink,"a"))
 
 
 rule files: 
     params:
-        reference = os.path.join(base_dir,"reference.gb"),
-        to_align = os.path.join(base_dir,"gisaid_mink.fasta")
+        reference = reference,
+        to_align =  gisaid_fasta_mink
 
 files = rules.files.params
 
@@ -184,4 +187,3 @@ rule print_seq_length:
             --alignment {input.align_file} \
             --output {output.out_file}
         """ 
- 
