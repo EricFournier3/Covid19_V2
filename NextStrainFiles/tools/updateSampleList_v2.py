@@ -109,8 +109,10 @@ def main() :
 def GetPlate():
     logfile.write("******************** in GetPlate ************************\n")
     dplate2 = {}
+    #print "ARGS REPODIR " + ARGS.repodir
     for myplate in os.listdir(ARGS.repodir):
-        myplate_dir = os.path.join(os.path.dirname(ARGS.repodir),myplate)
+        #myplate_dir = os.path.join(os.path.dirname(ARGS.repodir),myplate)
+        myplate_dir = os.path.join(ARGS.repodir,myplate)
         if myplate != "NOTFOUND":
             dplate2[myplate] = []
 
