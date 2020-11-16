@@ -61,13 +61,17 @@ pd_metadata_all = pd.read_csv(metadata_all,sep="\t",index_col=False)
 
 pd_metadata_mink = pd_metadata_all.loc[pd_metadata_all['host'] == 'Neovison vison',:].copy()
 
-gisaid_mink_to_human = ['EPI_ISL_461190','EPI_ISL_461192','EPI_ISL_461200','EPI_ISL_461202','EPI_ISL_461203',
-'EPI_ISL_522987','EPI_ISL_523034','EPI_ISL_523040','EPI_ISL_523046','EPI_ISL_523068','EPI_ISL_523070','EPI_ISL_523072',
-'EPI_ISL_523073','EPI_ISL_523075','EPI_ISL_523085','EPI_ISL_523089','EPI_ISL_523120','EPI_ISL_523282','EPI_ISL_523286','EPI_ISL_523301',
-'EPI_ISL_523310','EPI_ISL_523312','EPI_ISL_523333','EPI_ISL_523493','EPI_ISL_523494']
 
+#from S:\Partage\LSPQ_Partage\DiagnosticMoleculaire\PROJETS\Covid19\4-Analyses\Vison\MinkToHumanpdf_Method.pdf Figures S1
+#EPI_ISL_461203   EPI_ISL_461202 EPI_ISL_461200 EPI_ISL_461192 EPI_ISL_461191 EPI_ISL_461190
 
-pd_metadata_mink_to_human = pd_metadata_all.loc[pd_metadata_all['gisaid_epi_isl'].isin(gisaid_mink_to_human),:].copy()
+#from S:\Partage\LSPQ_Partage\DiagnosticMoleculaire\PROJETS\Covid19\4-Analyses\Vison\RRA-SARS-CoV-2-in-mink-12-nov-2020.pdf
+#EPI_ISL_618040  EPI_ISL_616269 EPI_ISL_616695
+
+gisaid_mink_to_human = ['EPI_ISL_461203','EPI_ISL_461202', 'EPI_ISL_461200', 'EPI_ISL_461192', 'EPI_ISL_461191', 'EPI_ISL_461190', 'EPI_ISL_618040',  'EPI_ISL_616269', 'EPI_ISL_616695']
+
+#TODO ajouter la condition host human
+pd_metadata_mink_to_human = pd_metadata_all.loc[(pd_metadata_all['gisaid_epi_isl'].isin(gisaid_mink_to_human)) & (pd_metadata_all['host']=='Human'),:].copy()
 
 
 #TODO choose here 
@@ -186,23 +190,35 @@ rule mask:
             --output {output.alignment}
         """
 
-rule print_seq_length:
+rule get_seq_length:
     message:
         """
-        Print seq length
+        Get seq length
         """
     input :
         align_file = rules.mask.output.alignment,
         fasta_temp = gisaid_fasta_mink
     output: 
-        out_file = os.path.join(align_out_dir,"seq_length.txt")
+        out_seq_length = os.path.join(align_out_dir,"seq_length.txt")
     params:
         script_dir = tool_dir
     shell:
         """
         python3 {params.script_dir}GetSeqLength.py \
             --alignment {input.align_file} \
-            --output {output.out_file} \
-
+            --output-seq-length {output.out_seq_length} 
         rm {input.fasta_temp}
         """ 
+
+rule save_metadata:
+    message:
+        """
+        Save metadata
+        """
+    input:
+        trigger = rules.get_seq_length.output.out_seq_length
+    output:
+        metadata = os.path.join(align_out_dir,"metadata.tsv")
+    run:
+        pd_all.to_csv(output.metadata,sep="\t",index=False)
+

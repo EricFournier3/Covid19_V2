@@ -4,10 +4,10 @@ import argparse
 
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("--alignment",required=True,help="FASTA alignment")
-parser.add_argument("--output",required=True,help="output seq length file")
+parser.add_argument("--output-seq-length",required=True,help="output seq length file")
 args = parser.parse_args()
 
-out_file_handle = open(args.output,'w')
+out_file_handle = open(args.output_seq_length,'w')
 
 
 for rec in AlignIO.read(args.alignment,'fasta'):
