@@ -14,9 +14,13 @@ import os
 import pandas as pd
 import subprocess
 from Bio import AlignIO
+from Bio import SeqIO
 
 
 logging.basicConfig(level=logging.DEBUG)
+
+#TODO choose here
+only_human = True
 
 
 #
@@ -49,9 +53,11 @@ base_dir = "/data/PROJETS/COVID-19_Epidemio/Vison/"
 script_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/"
 tool_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/tools/"
 
-#TODO choose here
-#align_out_dir = os.path.join(base_dir,"alignment_results_mink_and_mink_to_human")
-align_out_dir = os.path.join(base_dir,"alignment_results_mink_to_human_only")
+if only_human:
+    align_out_dir = os.path.join(base_dir,"alignment_results_mink_and_mink_to_human")
+else:
+    #align_out_dir = os.path.join(base_dir,"alignment_results_mink_to_human_only")
+    align_out_dir = os.path.join(base_dir,"alignment_results_mink_to_human_only_V2")
 
 gisaid_fasta_all = os.path.join(base_dir,"sequences_2020-11-12_07-33.fasta")
 reference = os.path.join(base_dir,"reference.gb")
@@ -60,6 +66,17 @@ metadata_all = os.path.join(base_dir,"metadata_2020-11-12_10-27.tsv")
 pd_metadata_all = pd.read_csv(metadata_all,sep="\t",index_col=False)
 
 pd_metadata_mink = pd_metadata_all.loc[pd_metadata_all['host'] == 'Neovison vison',:].copy()
+
+#from S:\Partage\LSPQ_Partage\DiagnosticMoleculaire\PROJETS\Covid19\4-Analyses\Vison\Dutch mutations of mink-associated SARS-CoV-2 Nov2020.pdf
+gisaid_epi_dirk_eggink_paper = os.path.join(base_dir,"GISAID_DirkEggink.txt")
+gisaid_epi_dirk_eggink_list =  []
+
+with open(gisaid_epi_dirk_eggink_paper) as de_file:
+    for line in de_file:
+        epi = line.strip('\n').strip(' ')
+        gisaid_epi_dirk_eggink_list.append(epi)
+
+#print(gisaid_epi_dirk_eggink_list)
 
 
 #from S:\Partage\LSPQ_Partage\DiagnosticMoleculaire\PROJETS\Covid19\4-Analyses\Vison\MinkToHumanpdf_Method.pdf Figures S1
@@ -70,19 +87,41 @@ pd_metadata_mink = pd_metadata_all.loc[pd_metadata_all['host'] == 'Neovison viso
 
 gisaid_mink_to_human = ['EPI_ISL_461203','EPI_ISL_461202', 'EPI_ISL_461200', 'EPI_ISL_461192', 'EPI_ISL_461191', 'EPI_ISL_461190', 'EPI_ISL_618040',  'EPI_ISL_616269', 'EPI_ISL_616695']
 
-#TODO ajouter la condition host human
 pd_metadata_mink_to_human = pd_metadata_all.loc[(pd_metadata_all['gisaid_epi_isl'].isin(gisaid_mink_to_human)) & (pd_metadata_all['host']=='Human'),:].copy()
+pd_metadata_dirk_eggink = pd_metadata_all.loc[(pd_metadata_all['gisaid_epi_isl'].isin(gisaid_epi_dirk_eggink_list)) & (pd_metadata_all['host']=='Human'),:].copy()
 
 
-#TODO choose here 
-pd_all = pd.concat([pd_metadata_mink_to_human])
-#pd_all = pd.concat([pd_metadata_mink_to_human,pd_metadata_mink])
+if only_human:
+    pd_all = pd.concat([pd_metadata_mink_to_human,pd_metadata_dirk_eggink])
+else:
+    pd_all = pd.concat([pd_metadata_mink_to_human,pd_metadata_mink,pd_metadata_dirk_eggink])
 
+pd_all = pd_all.drop_duplicates('gisaid_epi_isl',keep='last')
 
+#print("Nb rows ",pd_all.shape[0])
+
+rec_to_keep = []
+strain_to_keep_from_metadata = list(pd_all['strain'])
+
+check = 0
+
+for rec in SeqIO.parse(gisaid_fasta_all,'fasta'):
+    check += 1
+    sys.stdout.write("Gisaid check >>> %d\r"%check)
+    sys.stdout.flush()
+    if str(rec.id) in strain_to_keep_from_metadata:
+        rec_to_keep.append(rec)
+
+SeqIO.write(rec_to_keep,gisaid_fasta_mink,'fasta')
+
+'''
+Desactive car temps d execution trop long
 for index,row in pd_all.iterrows():
     strain = str(row['strain'])
     #print(strain)
     subprocess.call(["seqkit","grep","-r","-p","^" + str(strain),gisaid_fasta_all],stdout=open(gisaid_fasta_mink,"a"))
+'''
+
 
 rule files: 
     params:
@@ -100,7 +139,7 @@ checkpoint partition_sequences:
     output:
         split_sequences = directory(os.path.join(align_out_dir,"split_sequences/pre/"))
     params:
-        sequences_per_group = 50,
+        sequences_per_group = 150,
         script_dir = script_dir
     shell:
         """
