@@ -53,7 +53,7 @@ base_dir = "/data/PROJETS/COVID-19_Epidemio/Vison/"
 script_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/"
 tool_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/tools/"
 
-if only_human:
+if not only_human:
     align_out_dir = os.path.join(base_dir,"alignment_results_mink_and_mink_to_human")
 else:
     #align_out_dir = os.path.join(base_dir,"alignment_results_mink_to_human_only")
