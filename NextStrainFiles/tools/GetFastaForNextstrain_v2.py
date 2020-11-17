@@ -30,7 +30,7 @@ TODO
 """
 Usage exemple:
 
-python GetFastaForNextstrain_v2.py -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_Dev_2020-10-20_consensusList_small.list --debug   --maxsampledate 2020-10-20  --minsampledate 2020-05-15 --keep 'FLAG'
+python GetFastaForNextstrain_v2.py -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_Dev_2020-10-20_consensusList_small.list --debug   --maxsampledate 2020-10-20  --minsampledate 2020-05-15 --keep 'FLAG' --pangolin
 
 """
 
@@ -46,6 +46,7 @@ parser = argparse.ArgumentParser(description="Download Beluga consensus and Crea
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
 parser.add_argument('--input','-i',help="Beluga fasta list file",required=True)
 parser.add_argument('--onlymetadata',help="Only produce metadata",action='store_true')
+parser.add_argument('--pangolin',help="Produce pangolin mapping file for LNM",action='store_true')
 parser.add_argument('--maxsampledate',help="Maximum sampled date YYYY-MM-DD",required=True)
 parser.add_argument('--minsampledate',help="Minimum sampled date YYYY-MM-DD",required=True)
 parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['ALL','PASS','FLAG'],required=True)
@@ -56,6 +57,8 @@ beluga_fasta_file  = args.input
 only_metadata = args.onlymetadata
 max_sample_date = args.maxsampledate
 min_sample_date = args.minsampledate
+pangolin = args.pangolin
+
 
 global qc_keep
 
@@ -94,16 +97,18 @@ global liste_envoi_genome_quebec
 global sgil_extract
 global fasta_outdir
 global metadata_ourdir
+global pangolin_outdir
+
 
 if _debug_:
     #sgil_extract = "/home/foueri01@inspq.qc.ca/temp/20200924/extract_with_Covid19_extraction_v2_20200923_CovidPos_small.txt"
     #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"/home/foueri01@inspq.qc.ca/temp/20200924/ListeEnvoisGenomeQuebec_small6.xlsx")
     #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","EnvoiSmall.xlsx")
     sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201110_CovidPos.txt")
-    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-09-28_corrCG.xlsx")
+    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-11-06.xlsx")
 else:
     sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201110_CovidPos.txt")
-    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-09-28_corrCG.xlsx")
+    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-11-06.xlsx")
 
 #TODO CHANGER base_dir pour production
 base_dir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/" if  _debug_ else "/data/PROJETS/COVID-19_Beluga/Metadata"
@@ -112,6 +117,8 @@ out_dir = os.path.join(base_dir,"OUT")
 
 fasta_outdir = os.path.join(out_dir,'FASTA')
 metadata_outdir = os.path.join(out_dir,'METADATA')
+pangolin_outdir = os.path.join(out_dir,'PANGOLIN')
+
 
 if not os.path.isfile(os.path.join(in_dir,beluga_fasta_file)):
     logging.error("File missing : " + os.path.join(in_dir,beluga_fasta_file))
@@ -391,6 +398,19 @@ class FastaListManager():
         print("In BuildSamplesList  for ",end - start, " seconds")
 
 
+class PangolinManager():
+    def __init__(self,min_sample_date,max_sample_date):
+        self.min_sample_date = min_sample_date
+        self.max_sample_date = max_sample_date
+        self.out_map = os.path.join(pangolin_outdir,"pangolin_map_minmaxSampleDate_" + self.min_sample_date + "_" + self.max_sample_date + ".tsv")
+
+    def CreatePangolinMapForLNM(self,pd_metadata):
+        self.pd_pangolin_map = pd.DataFrame()
+        self.pd_pangolin_map['taxon'] = "Canada/Qc-" +  pd_metadata['sample'] + "/" + pd_metadata['sample_date'].astype(str).str.slice(0,4)
+        self.pd_pangolin_map['SampleDate'] = pd_metadata['sample_date']
+        self.pd_pangolin_map.to_csv(self.out_map,sep="\t",index=False)
+
+
 def Main():
     logging.info("In Main()")
 
@@ -406,6 +426,10 @@ def Main():
         fasta_getter = FastaGetter(metadata_manager.GetPdMetadata(),fasta_list_manager.GetPdFastaList())
         fasta_getter.SelectFasta()
         fasta_getter.GetFastaFromBeluga(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"),min_sample_date.strftime("%Y-%m-%d"))
+
+    if pangolin:
+        pangolin_manager = PangolinManager(min_sample_date.strftime("%Y-%m-%d"),max_sample_date.strftime("%Y-%m-%d"))
+        pangolin_manager.CreatePangolinMapForLNM(metadata_manager.GetPdMetadata())
 
 
 if __name__ == '__main__':
