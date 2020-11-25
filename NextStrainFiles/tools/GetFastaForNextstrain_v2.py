@@ -38,7 +38,6 @@ base_dir_dsp_db = "/data/Databases/CovBanQ_Epi/"
 
 global base_dir
 
-
 pd.options.display.max_columns = 100
 logging.basicConfig(level=logging.DEBUG)
 
@@ -46,6 +45,7 @@ parser = argparse.ArgumentParser(description="Download Beluga consensus and Crea
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
 parser.add_argument('--input','-i',help="Beluga fasta list file",required=True)
 parser.add_argument('--onlymetadata',help="Only produce metadata",action='store_true')
+parser.add_argument('--laser-sub',help="Produce metadata for LaSER submission",action='store_true')
 parser.add_argument('--pangolin',help="Produce pangolin mapping file for LNM",action='store_true')
 parser.add_argument('--maxsampledate',help="Maximum sampled date YYYY-MM-DD",required=True)
 parser.add_argument('--minsampledate',help="Minimum sampled date YYYY-MM-DD",required=True)
@@ -58,7 +58,7 @@ only_metadata = args.onlymetadata
 max_sample_date = args.maxsampledate
 min_sample_date = args.minsampledate
 pangolin = args.pangolin
-
+laser_sub = args.laser_sub
 
 global qc_keep
 
@@ -104,10 +104,10 @@ if _debug_:
     #sgil_extract = "/home/foueri01@inspq.qc.ca/temp/20200924/extract_with_Covid19_extraction_v2_20200923_CovidPos_small.txt"
     #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"/home/foueri01@inspq.qc.ca/temp/20200924/ListeEnvoisGenomeQuebec_small6.xlsx")
     #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","EnvoiSmall.xlsx")
-    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201110_CovidPos.txt")
+    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201123_CovidPos.txt")
     liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-11-06.xlsx")
 else:
-    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201110_CovidPos.txt")
+    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201123_CovidPos.txt")
     liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-11-06.xlsx")
 
 #TODO CHANGER base_dir pour production
@@ -118,7 +118,7 @@ out_dir = os.path.join(base_dir,"OUT")
 fasta_outdir = os.path.join(out_dir,'FASTA')
 metadata_outdir = os.path.join(out_dir,'METADATA')
 pangolin_outdir = os.path.join(out_dir,'PANGOLIN')
-
+laser_outdir = os.path.join(metadata_outdir,'LASER')
 
 if not os.path.isfile(os.path.join(in_dir,beluga_fasta_file)):
     logging.error("File missing : " + os.path.join(in_dir,beluga_fasta_file))
@@ -185,16 +185,39 @@ class MetadataManager():
 
         return(res_df)
 
+    def GetSGILfoldernoFromOrdno(self,ordno):
+        folderno = re.sub(r'(^L0\d{7})00\d$',r'\1',ordno)
+        return folderno
+
+    def GetOrdnoFromSGILfolderno(self,folderno):
+        return(self.folderno_to_ordno[folderno])
+
+
+    def GetBelugaIdFromMySQLid(self,MySqlId):
+        return(self.mysqlId_to_belugalistId[str(MySqlId).upper()])
+
+    def GetUpperCorrectedSamplesList(self,sample_id):
+            return(str(sample_id.upper()))
+
     def CreateMetadata(self,max_sample_date):
         MySQLcovid19.SetConnection()
 
         year_2020 = datetime.datetime.strptime("2020","%Y")
 
-        self.pd_metadata = MySQLcovid19Selector.GetMetadataAsPdDataFrame(MySQLcovid19.GetConnection(),self.samples_list,'LSPQ',False)
-        #print(self.pd_metadata)
-        #self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
+        sgil_corrected_samples_list = list(map(self.GetSGILfoldernoFromOrdno,self.samples_list))
+        upper_corrected_samples_list = list(map(self.GetUpperCorrectedSamplesList,self.samples_list))    
+        zip_list = list(zip(upper_corrected_samples_list,self.samples_list))
+        zip_list.sort()
+        self.mysqlId_to_belugalistId = dict(zip_list) 
+        self.samples_list = [x[1] for x in zip_list]
+
+        self.pd_metadata = MySQLcovid19Selector.GetMetadataAsPdDataFrame(MySQLcovid19.GetConnection(),upper_corrected_samples_list,'LSPQ',False)
+        #self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','') pas necessaire
 
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
+        self.pd_metadata['temp'] = self.pd_metadata['sample'].apply(self.GetBelugaIdFromMySQLid)
+        self.pd_metadata['sample'] = self.pd_metadata['temp'] 
+        self.pd_metadata = self.pd_metadata.drop(columns=['temp'])
 
         pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
 
@@ -209,7 +232,7 @@ class MetadataManager():
         pd_missing_get_from_EnvoisGenomeQuebec = self.AddMissingFromEnvoisGenomeQuebec(pd_missing_samples,self.pd_envoi_qenome_quebec,self.pd_metadata.columns)
         self.pd_metadata = pd.concat([self.pd_metadata,pd_missing_get_from_EnvoisGenomeQuebec])
 
-        #self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','')
+        #self.pd_metadata['sample'] = self.pd_metadata['sample'].str.replace('LSPQ-','') pas necessaire
         self.pd_metadata['sample'] = self.pd_metadata['sample'].str.strip(' ')
         self.pd_missing_samples = self.CheckMissingSpec(self.pd_metadata,self.samples_list)
 
@@ -235,6 +258,71 @@ class MetadataManager():
         #print(self.pd_metadata)
         #print(self.pd_samples_missing_rss)
 
+        self.pd_metadata.loc[self.pd_metadata['OUTBREAK'].isnull(),['OUTBREAK']] = 'NoOutbreakRelated'
+
+    def CreatePdMetadataWithOldLaSERSub(self):
+        old_laser_file_list = glob.glob(laser_outdir + "/*.csv")
+        
+        pd_old_laser_list = []        
+
+        for old_laser_file in old_laser_file_list:
+            pd_laser = pd.read_csv(old_laser_file,sep=",",index_col=False)
+            pd_old_laser_list.append(pd_laser.copy())
+
+        self.all_pd_old_laser = pd.concat(pd_old_laser_list)
+
+
+    def CreateLaSERMetadata(self):
+        self.pd_metadata_laser = pd.DataFrame()
+        self.pd_metadata_laser['specimen collector sample ID'] =  "Canada/Qc-" +  self.pd_metadata['sample'] + "/" + self.pd_metadata['sample_date'].astype(str).str.slice(0,4)
+        self.pd_metadata_laser['sample collected by'] = "S C B"
+        self.pd_metadata_laser['sequence submitted by'] = "Laboratoire de santé publique du Québec (LSPQ)"
+        self.pd_metadata_laser['sample collection date'] = self.pd_metadata['sample_date'] 
+        self.pd_metadata_laser['geo_loc_name (country)'] = self.pd_metadata['country'] 
+        self.pd_metadata_laser['geo_loc_name (province/territory)'] = self.pd_metadata['division'] 
+        self.pd_metadata_laser['organism'] = "Severe acute respiratory syndrome coronavirus 2" 
+        self.pd_metadata_laser['isolate'] = "My Isolate" 
+        self.pd_metadata_laser['purpose of sampling'] = "Surveillance testing" 
+        self.pd_metadata_laser['purpose of sampling details'] = "P O S D" 
+        self.pd_metadata_laser['anatomical material'] = "Not Provided" 
+        self.pd_metadata_laser['anatomical part'] = "Not Provided"
+        self.pd_metadata_laser['body product'] = "Not Provided"
+        self.pd_metadata_laser['environmental material'] = "Not Provided"
+        self.pd_metadata_laser['environmental site'] = "Not Provided"
+        self.pd_metadata_laser['collection device'] = "Not Provided"
+        self.pd_metadata_laser['collection method'] = "Not Provided"
+        self.pd_metadata_laser['host (scientific name)'] = "Homo sapiens" 
+        self.pd_metadata_laser['host disease'] = "Not Provided"
+        self.pd_metadata_laser['host age'] = self.pd_metadata['date_naiss']
+        self.pd_metadata_laser['host age'] = pd.to_datetime(self.pd_metadata['date_naiss'])
+        self.pd_metadata_laser['host age'] = self.pd_metadata_laser['host age'].apply(lambda x: self.GetAgeFromDateNaiss(x))
+        self.pd_metadata_laser['host age unit'] = "year"
+        self.pd_metadata_laser['host age bin'] = "" # est calcule automatiquement par le LaSER_DataHarmonizer
+        self.pd_metadata_laser['host gender'] = self.pd_metadata['sex'] # TODO mettre Male or Female 
+        #self.pd_metadata_laser['host gender'] = "Male" # TODO mettre Male or Female 
+        self.pd_metadata_laser['host gender'] = self.pd_metadata_laser['host gender'].apply(lambda x : self.GetGenderFromLetter(x))
+        self.pd_metadata_laser['purpose of sequencing'] = "Surveillance testing"
+        self.pd_metadata_laser['purpose of sequencing details'] = "Not Provided"
+        self.pd_metadata_laser['sequencing instrument'] = "ILLUMINA" # IL FAUT ALLER VOIR DANS LE FASTA GISAID ou aller voir dans Submitted
+        self.pd_metadata_laser['consensus sequence method'] = "IVAR" # IL FAUT ALLER VOIR DANS LE FASTA GISAID ou aller voir dans Submitted
+        self.pd_metadata_laser['GISAID accession'] = "MY EPI_ISL" # IL FAUT ALLER VOIR DANS LE FASTA GISAID
+        #TODO a voir si besoin d ajouter d autres champs parmis les champs non obligatoires
+        #conserver seulement ceux pour lesquel on a un gisaid et qui n ont pas deja ete soumis dans LaSER donc il faut obtenir les id deja soumis dans laser
+
+        self.pd_metadata_laser = pd.concat([self.all_pd_old_laser,self.pd_metadata_laser]).drop_duplicates(keep=False)
+
+    def GetAgeFromDateNaiss(self,date_naiss):
+        today = datetime.date.today()
+        return today.year - date_naiss.year - ((today.month, today.day) < (date_naiss.month, date_naiss.day))
+
+    def GetGenderFromLetter(self,letter):
+        if str(letter).upper() == 'M':
+            return 'Male'
+        elif str(letter).upper() == 'F':
+            return 'Female'
+        else:
+            return 'Not Provided'
+
     def GetBelugaRunsWithTargetSamples(self):
         self.pd_samples_with_run_name = pd.merge(self.pd_metadata,self.pd_fasta_list,left_on='sample',right_on='SAMPLE',how='left',indicator=True)
         self.pd_samples_with_run_name = self.pd_samples_with_run_name[['sample','sample_date','STATUS','TECHNO','RUN_NAME']]
@@ -252,7 +340,7 @@ class MetadataManager():
     def GetPdMissingSamples(self):
         return self.pd_missing_samples
 
-    def WriteMetadata(self,beluga_fasta_file,max_sample_date,min_sample_date):
+    def WriteMetadata(self,beluga_fasta_file,max_sample_date,min_sample_date,laser_sub):
 
         if qc_keep  == 'FLAG':
             qc_status_suffix = "PASS_FLAG"
@@ -275,6 +363,10 @@ class MetadataManager():
         self.pd_samples_missing_rss.to_csv(self.samples_missing_rss_out,sep="\t",index=False)
         self.pd_samples_with_run_name.to_csv(self.samples_with_run_name_out,sep="\t",index=False)
         self.pd_run_list.to_csv(self.runs_out,sep="\t",index=False)
+        
+        if laser_sub:
+            self.metadata_laser_out = os.path.join(laser_outdir,"metadata_laser_{0}.csv".format(file_out_suffix))
+            self.pd_metadata_laser.to_csv(self.metadata_laser_out,sep=",",index=False,encoding='utf-8-sig') #TODO en UTF-8
 
 
 class FastaGetter():
@@ -318,8 +410,10 @@ class FastaGetter():
             logging.info("Get " + fasta_path)
             rec = SeqIO.read(fasta_path,'fasta')
             id_short = re.search(id_pattern, rec.description).group(2)
-            rec.id = re.sub(id_pattern,r"\1" + str(id_short).upper() + r"\3",rec.id)
-            rec.description = re.sub(id_pattern,r"\1" + str(id_short).upper() + r"\3",rec.description)
+            #rec.id = re.sub(id_pattern,r"\1" + str(id_short).upper() + r"\3",rec.id) # pas necessaire
+            #rec.description = re.sub(id_pattern,r"\1" + str(id_short).upper() + r"\3",rec.description) # pas necessaire
+            rec.id = re.sub(id_pattern,r"\1" + str(id_short) + r"\3",rec.id)
+            rec.description = re.sub(id_pattern,r"\1" + str(id_short) + r"\3",rec.description)
             rec.description = rec.description + " " +  fasta_path + " " + qc_status + " " + month
             self.fasta_rec_list.append(rec)
 
@@ -373,10 +467,12 @@ class FastaListManager():
         self.fasta_list_file = fasta_list_file
         self.pd_fasta_list = self.GetPdFastaList()
         self.BuildSamplesList()
+        #print(self.samples_list)
+
 
     def GetPdFastaList(self):
         pd_df = pd.read_csv(self.fasta_list_file,sep="\t",index_col=False)
-        pd_df['SAMPLE'] = pd_df['SAMPLE'].str.upper()
+        #pd_df['SAMPLE'] = pd_df['SAMPLE'].str.upper() # pas necessaire
         return(pd_df.loc[pd_df['STATUS'].isin(fasta_qual_status_to_keep),:])
 
     def GetSamplesList(self):
@@ -419,7 +515,6 @@ def Main():
     metadata_manager = MetadataManager(samples_list,fasta_list_manager.GetPdFastaList())
     metadata_manager.CreateMetadata(max_sample_date)
     metadata_manager.GetBelugaRunsWithTargetSamples()
-    metadata_manager.WriteMetadata(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"),min_sample_date.strftime("%Y-%m-%d"))
 
     if not only_metadata and qc_keep in ['PASS','FLAG']:
         MountBelugaServer()
@@ -427,10 +522,17 @@ def Main():
         fasta_getter.SelectFasta()
         fasta_getter.GetFastaFromBeluga(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"),min_sample_date.strftime("%Y-%m-%d"))
 
+    '''
     if pangolin:
         pangolin_manager = PangolinManager(min_sample_date.strftime("%Y-%m-%d"),max_sample_date.strftime("%Y-%m-%d"))
         pangolin_manager.CreatePangolinMapForLNM(metadata_manager.GetPdMetadata())
 
+    if laser_sub:
+        metadata_manager.CreatePdMetadataWithOldLaSERSub()
+        metadata_manager.CreateLaSERMetadata()
+    '''
+
+    metadata_manager.WriteMetadata(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"),min_sample_date.strftime("%Y-%m-%d"),laser_sub)
 
 if __name__ == '__main__':
     Main()
