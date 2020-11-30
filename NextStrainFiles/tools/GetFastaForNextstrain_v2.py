@@ -23,7 +23,7 @@ from Covid19DB import MySQLcovid19,MySQLcovid19Selector
 
 """
 TODO
-
+verifier si on peut resoumettre un numero; par exemple a la deuxieme soumission il a son numero GISAID alors qu a la premiere il etait manquant 
 """
 
 
@@ -32,6 +32,11 @@ Usage exemple:
 
 python GetFastaForNextstrain_v2.py -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_Dev_2020-10-20_consensusList_small.list --debug   --maxsampledate 2020-10-20  --minsampledate 2020-05-15 --keep 'FLAG' --pangolin
 
+Exemple pour un laser submission
+python GetFastaForNextstrain_v2_Dev.py  -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_2020-11-23_consensusList_small.list  --debug --maxsampledate 2020-12-01  --minsampledate 2020-02-01 --keep 'PASS' --laser-sub
+
+Exemple pour laser submission freeze1
+python GetFastaForNextstrain_v2_Dev.py  -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_2020-11-23_consensusList.list  --debug --maxsampledate 2020-05-01  --minsampledate 2020-02-01 --keep 'FLAG' --laser-sub-freeze1 --onlymetadata
 """
 
 base_dir_dsp_db = "/data/Databases/CovBanQ_Epi/"
@@ -43,6 +48,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description="Download Beluga consensus and Create metadata file")
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
+parser.add_argument('--laser-sub-freeze1',help="run in debug mode",action='store_true')
 parser.add_argument('--input','-i',help="Beluga fasta list file",required=True)
 parser.add_argument('--onlymetadata',help="Only produce metadata",action='store_true')
 parser.add_argument('--laser-sub',help="Produce metadata for LaSER submission",action='store_true')
@@ -59,6 +65,9 @@ max_sample_date = args.maxsampledate
 min_sample_date = args.minsampledate
 pangolin = args.pangolin
 laser_sub = args.laser_sub
+laser_sub_freeze1 = args.laser_sub_freeze1
+
+
 
 global qc_keep
 
@@ -93,11 +102,16 @@ beluga_server = "fournie1@beluga.computecanada.ca:/home/fournie1"
 global mnt_beluga_server
 mnt_beluga_server = "/mnt/BelugaEric/"
 
+global gisaid_sub_basedir  
+gisaid_sub_basedir = "/data/PROJETS/COVID-19_Beluga/Gisaid/FinalPublished/release1/"
+
+
 global liste_envoi_genome_quebec
 global sgil_extract
 global fasta_outdir
 global metadata_ourdir
 global pangolin_outdir
+global gisaid_metadata
 
 
 if _debug_:
@@ -106,9 +120,12 @@ if _debug_:
     #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","EnvoiSmall.xlsx")
     sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201123_CovidPos.txt")
     liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-11-06.xlsx")
+    #gisaid_metadata = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/metadata_2020-10-12_07-15_small.tsv"
+    gisaid_metadata = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/metadata_2020-10-12_07-15.tsv"
 else:
     sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201123_CovidPos.txt")
     liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-11-06.xlsx")
+    gisaid_metadata = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/metadata_2020-10-12_07-15.tsv"
 
 #TODO CHANGER base_dir pour production
 base_dir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/" if  _debug_ else "/data/PROJETS/COVID-19_Beluga/Metadata"
@@ -269,12 +286,61 @@ class MetadataManager():
             pd_laser = pd.read_csv(old_laser_file,sep=",",index_col=False)
             pd_old_laser_list.append(pd_laser.copy())
 
-        self.all_pd_old_laser = pd.concat(pd_old_laser_list)
+        if len(pd_old_laser_list) > 0:
+            self.all_pd_old_laser = pd.concat(pd_old_laser_list)
+        else:
+            self.all_pd_old_laser = pd.DataFrame()
+        #print("OLD\n",self.all_pd_old_laser)
+
+    def GetGISAID_EPI_ISL(self,strain):
+        res = self.pd_metadata_gisaid.loc[self.pd_metadata_gisaid['strain'] == strain,'gisaid_epi_isl']
+
+        if len(res) == 1:
+            return(list(res)[0])
+        else:
+            return("Missing")
+
+    def BuildTechnoDir(self):
+        pass
 
 
-    def CreateLaSERMetadata(self):
+
+    def GetSequencingInstrument(self,strain):
+        try:
+            seq_instrum = self.techno_dir[strain]['seq_method']
+        except:
+            seq_instrum =  "Missing"
+
+        if re.search(r'illumina',seq_instrum,re.IGNORECASE):
+            seq_instrum = 'ILLUMINA'
+        elif re.search(r'mgi',seq_instrum,re.IGNORECASE):
+            seq_instrum = 'MGI'
+        elif re.search(r'ONT_ARTIC',seq_instrum,re.IGNORECASE):
+            seq_instrum = "Oxford Nanopore"
+        
+        return(seq_instrum)
+
+    def GetConsensusSequenceMethod(self,strain):
+        try:
+            consensus_method = self.techno_dir[strain]["assemb_method"]
+        except:
+            consensus_method = "Missing"
+
+        return(consensus_method)
+      
+
+    def CreateLaSERMetadata(self,freeze1=False,techno_dir=None):
+        self.pd_metadata_gisaid = pd.read_csv(gisaid_metadata,sep="\t",index_col=False,usecols=['strain','gisaid_epi_isl'])
+        #print(self.pd_metadata_gisaid)
+        
         self.pd_metadata_laser = pd.DataFrame()
         self.pd_metadata_laser['specimen collector sample ID'] =  "Canada/Qc-" +  self.pd_metadata['sample'] + "/" + self.pd_metadata['sample_date'].astype(str).str.slice(0,4)
+
+        self.techno_dir = techno_dir
+
+        if freeze1:
+            self.pd_metadata_laser = self.pd_metadata_laser.loc[self.pd_metadata_laser['specimen collector sample ID'].isin(self.techno_dir.keys()),:]
+
         self.pd_metadata_laser['sample collected by'] = "S C B"
         self.pd_metadata_laser['sequence submitted by'] = "Laboratoire de santé publique du Québec (LSPQ)"
         self.pd_metadata_laser['sample collection date'] = self.pd_metadata['sample_date'] 
@@ -303,13 +369,31 @@ class MetadataManager():
         self.pd_metadata_laser['host gender'] = self.pd_metadata_laser['host gender'].apply(lambda x : self.GetGenderFromLetter(x))
         self.pd_metadata_laser['purpose of sequencing'] = "Surveillance testing"
         self.pd_metadata_laser['purpose of sequencing details'] = "Not Provided"
-        self.pd_metadata_laser['sequencing instrument'] = "ILLUMINA" # IL FAUT ALLER VOIR DANS LE FASTA GISAID ou aller voir dans Submitted
-        self.pd_metadata_laser['consensus sequence method'] = "IVAR" # IL FAUT ALLER VOIR DANS LE FASTA GISAID ou aller voir dans Submitted
-        self.pd_metadata_laser['GISAID accession'] = "MY EPI_ISL" # IL FAUT ALLER VOIR DANS LE FASTA GISAID
+        self.pd_metadata_laser['sequencing instrument'] = self.pd_metadata_laser['specimen collector sample ID'].apply(self.GetSequencingInstrument)
+        self.pd_metadata_laser['consensus sequence method'] = self.pd_metadata_laser['specimen collector sample ID'].apply(self.GetConsensusSequenceMethod)
         #TODO a voir si besoin d ajouter d autres champs parmis les champs non obligatoires
         #conserver seulement ceux pour lesquel on a un gisaid et qui n ont pas deja ete soumis dans LaSER donc il faut obtenir les id deja soumis dans laser
+        
 
-        self.pd_metadata_laser = pd.concat([self.all_pd_old_laser,self.pd_metadata_laser]).drop_duplicates(keep=False)
+        if not freeze1:
+            self.pd_metadata_laser = pd.concat([self.all_pd_old_laser,self.pd_metadata_laser]).drop_duplicates(['specimen collector sample ID'],keep=False) 
+              
+        self.pd_metadata_laser['GISAID accession'] =  self.pd_metadata_laser['specimen collector sample ID'].apply(self.GetGISAID_EPI_ISL)
+
+        #pour obtenir les techno on peut les obtenir du fasta obtenu dans la fonction GetFastaFromBeluga
+
+        if freeze1:
+            self.CheckMissingStrainForFreeze1Laser()
+
+        #print(self.pd_metadata_laser)
+
+    def CheckMissingStrainForFreeze1Laser(self):
+        freeze1_id_set = set(self.techno_dir.keys())
+        print("LEN FREEZE 1",len(freeze1_id_set))
+        laser_id_set = set(self.pd_metadata_laser['specimen collector sample ID'])
+        print("LEN LASER ",len(laser_id_set))
+        print("Missing for freeze1 Laser submission ", freeze1_id_set - laser_id_set)
+
 
     def GetAgeFromDateNaiss(self,date_naiss):
         today = datetime.date.today()
@@ -361,12 +445,17 @@ class MetadataManager():
         self.pd_metadata.to_csv(self.metadata_out,sep="\t",index=False)
         self.pd_missing_samples.to_csv(self.missing_samples_out,sep="\t",index=False)
         self.pd_samples_missing_rss.to_csv(self.samples_missing_rss_out,sep="\t",index=False)
-        self.pd_samples_with_run_name.to_csv(self.samples_with_run_name_out,sep="\t",index=False)
-        self.pd_run_list.to_csv(self.runs_out,sep="\t",index=False)
+
+        if not laser_sub_freeze1:
+            self.pd_samples_with_run_name.to_csv(self.samples_with_run_name_out,sep="\t",index=False)
+            self.pd_run_list.to_csv(self.runs_out,sep="\t",index=False)
         
         if laser_sub:
             self.metadata_laser_out = os.path.join(laser_outdir,"metadata_laser_{0}.csv".format(file_out_suffix))
-            self.pd_metadata_laser.to_csv(self.metadata_laser_out,sep=",",index=False,encoding='utf-8-sig') #TODO en UTF-8
+            self.pd_metadata_laser.to_csv(self.metadata_laser_out,sep=",",index=False,encoding='utf-8-sig')
+        elif laser_sub_freeze1:
+            self.metadata_laser_out = os.path.join(laser_outdir,"metadata_laser_{0}_freeze1.csv".format(file_out_suffix))
+            self.pd_metadata_laser.to_csv(self.metadata_laser_out,sep=",",index=False,encoding='utf-8-sig') 
 
 
 class FastaGetter():
@@ -431,9 +520,12 @@ class FastaGetter():
         
         self.Dedup(out_fasta)
 
+    def GetFinalFasta(self):
+        return(self.out_fasta)
+
     def Dedup(self,fasta_file):
         
-        out_fasta = re.sub(r'_temp.fasta','.fasta',fasta_file)
+        self.out_fasta = re.sub(r'_temp.fasta','.fasta',fasta_file)
 
         final_rec_list= []
         rec_dict_dedup = {}
@@ -457,7 +549,7 @@ class FastaGetter():
         for val in rec_dict_dedup.values():
             final_rec_list.append(val[2])
 
-        SeqIO.write(final_rec_list,out_fasta,'fasta')
+        SeqIO.write(final_rec_list,self.out_fasta,'fasta')
         os.remove(fasta_file)
 
 
@@ -506,31 +598,69 @@ class PangolinManager():
         self.pd_pangolin_map['SampleDate'] = pd_metadata['sample_date']
         self.pd_pangolin_map.to_csv(self.out_map,sep="\t",index=False)
 
+def GetFreeze1SampleList():
+    techno_dir = {}
+    samples_list = []
+    for fasta in glob.glob(gisaid_sub_basedir + "*/*.fasta"):
+         if os.path.basename(fasta) != "all_sequences.fasta":
+             rec = SeqIO.read(fasta,'fasta')
+             desc = rec.description
+             search_obj = re.search(r'^Canada/Qc-(\S+)/\d{4} seq_method:(\S+)\|assemb_method:(\S+)\|snv_call_method:(\S+)$',desc)
+             
+             sample,seq_method,assemb_method,snv_call_method = (search_obj.group(1),search_obj.group(2),search_obj.group(3),search_obj.group(4))
+             techno_dir[rec.id] = {"seq_method":seq_method,"assemb_method":assemb_method,"snv_call_method":snv_call_method}
+             samples_list.append(sample)
+    return((samples_list,techno_dir))
+
+
+def GetTechno(fasta):
+
+    my_techno_dir = {}
+
+    for rec in SeqIO.parse(fasta,'fasta'):
+        desc = rec.description
+        search_obj = re.search(r'^Canada/Qc-(\S+)/\d{4} seq_method:(\S+)\|assemb_method:(\S+)\|snv_call_method:(\S+)',desc)
+        sample,seq_method,assemb_method,snv_call_method = (search_obj.group(1),search_obj.group(2),search_obj.group(3),search_obj.group(4))
+        my_techno_dir[rec.id] = {"seq_method":seq_method,"assemb_method":assemb_method,"snv_call_method":snv_call_method}
+    return(my_techno_dir)
 
 def Main():
     logging.info("In Main()")
 
     fasta_list_manager = FastaListManager(os.path.join(in_dir,beluga_fasta_file))
-    samples_list = fasta_list_manager.GetSamplesList()
-    metadata_manager = MetadataManager(samples_list,fasta_list_manager.GetPdFastaList())
-    metadata_manager.CreateMetadata(max_sample_date)
-    metadata_manager.GetBelugaRunsWithTargetSamples()
+
+    techno_dir = {}
+
+    if laser_sub_freeze1 and only_metadata:
+        samples_list,techno_dir = GetFreeze1SampleList()
+        metadata_manager = MetadataManager(samples_list,None)
+        metadata_manager.CreateMetadata(max_sample_date)
+    else:
+        samples_list = fasta_list_manager.GetSamplesList()
+
+        metadata_manager = MetadataManager(samples_list,fasta_list_manager.GetPdFastaList())
+
+        metadata_manager.CreateMetadata(max_sample_date)
+        metadata_manager.GetBelugaRunsWithTargetSamples()
+
 
     if not only_metadata and qc_keep in ['PASS','FLAG']:
         MountBelugaServer()
         fasta_getter = FastaGetter(metadata_manager.GetPdMetadata(),fasta_list_manager.GetPdFastaList())
         fasta_getter.SelectFasta()
         fasta_getter.GetFastaFromBeluga(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"),min_sample_date.strftime("%Y-%m-%d"))
+        if laser_sub and qc_keep in ['PASS']:
+            techno_dir = GetTechno(fasta_getter.GetFinalFasta())
 
-    '''
     if pangolin:
         pangolin_manager = PangolinManager(min_sample_date.strftime("%Y-%m-%d"),max_sample_date.strftime("%Y-%m-%d"))
         pangolin_manager.CreatePangolinMapForLNM(metadata_manager.GetPdMetadata())
 
-    if laser_sub:
+    if laser_sub_freeze1 and only_metadata:
+        metadata_manager.CreateLaSERMetadata(freeze1=True,techno_dir=techno_dir)
+    elif laser_sub and (not only_metadata) and qc_keep in ['PASS']: 
         metadata_manager.CreatePdMetadataWithOldLaSERSub()
-        metadata_manager.CreateLaSERMetadata()
-    '''
+        metadata_manager.CreateLaSERMetadata(freeze1=False,techno_dir=techno_dir)
 
     metadata_manager.WriteMetadata(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"),min_sample_date.strftime("%Y-%m-%d"),laser_sub)
 
