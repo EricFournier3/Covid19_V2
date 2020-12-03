@@ -8,8 +8,12 @@ Eric Fournier 2020-12-02
 import os
 import re
 import sys
+import pandas as pd
+
 
 vcf_file = "/data/PROJETS/COVID-19_Beluga/VCF/JUS-V5290618.sorted.filtered.primerTrim.annotateTEST.vcf"
+out_test = "/data/PROJETS/COVID-19_Beluga/VCF/variant_test.xlsx"
+
 
 header_read = False
 is_header = False
@@ -48,9 +52,23 @@ with open(vcf_file) as vcff:
                 nuc_mut_type = aa_change_annotation_split[1]
                 if (len(aa_change_annotation_split[15]) == 0):
                     if (nuc_mut_type == 'missense_variant') :
-                        aa_change = aa_change_annotation_split[3] + " => " + aa_change_annotation_split[10][2:]
+                        aa_change = aa_change_annotation_split[3] + ":" + aa_change_annotation_split[10][2:]
                     else:
                         aa_change = nuc_mut_type
                     aa_change_set.add(aa_change)
-            
-print(mut)
+    
+nuc_mut_string = ""
+aa_mut_string = ""
+        
+for nuc_mut in mut.keys():
+    nuc_mut_string = nuc_mut_string + nuc_mut + "|"
+    for aa_mut in mut[nuc_mut]:
+        print(aa_mut)  
+        aa_mut_string = aa_mut_string + aa_mut + ","
+    
+    aa_mut_string = aa_mut_string.strip(',')
+    aa_mut_string = aa_mut_string + "|"
+
+pd_df = pd.DataFrame({"NUC_VARIANT":[nuc_mut_string],"AA_VARIANT":[aa_mut_string]})
+pd_df.to_excel(out_test,sheet_name='Sheet1',index=False)
+
