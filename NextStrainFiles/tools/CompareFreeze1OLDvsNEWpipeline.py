@@ -17,6 +17,10 @@ import argparse
 import time
 import glob
 from Bio import SeqIO
+import shutil
+
+
+logging.basicConfig(level=logging.INFO)
 
 beluga_server = "fournie1@beluga.computecanada.ca:/home/fournie1"
 mnt_beluga_server = "/mnt/BelugaEric/"
@@ -27,7 +31,7 @@ def MountBelugaServer():
     os.system("sudo sshfs -o allow_other -o follow_symlinks {0} {1}".format(beluga_server,mnt_beluga_server))
     logging.info("Beluga mounted")
 
-#MountBelugaServer()
+MountBelugaServer()
 
 
 compare_outdir = "/data/PROJETS/COVID-19_Beluga/Consensus/CompareFreeze1_OLDvsNEW_pipeline/"
@@ -56,13 +60,10 @@ excel_gisaid_metadata_sub_1_df = pd.read_excel(excel_gisaid_metadata_sub_1,sheet
 excel_gisaid_metadata_sub_2_df = pd.read_excel(excel_gisaid_metadata_sub_2,sheet_name=0)
 excel_gisaid_metadata_sub_3_df = pd.read_excel(excel_gisaid_metadata_sub_3,sheet_name=0)
 
-
 excel_gisaid_metadata_all_df_all = pd.concat([excel_gisaid_metadata_sub_1_df,excel_gisaid_metadata_sub_2_df,excel_gisaid_metadata_sub_3_df])
 excel_gisaid_metadata_all_df_all =  excel_gisaid_metadata_all_df_all.drop(excel_gisaid_metadata_all_df_all.index[0])
-#excel_gisaid_metadata_all_df_all covv_seq_technology
 excel_gisaid_metadata_all_df_all = excel_gisaid_metadata_all_df_all[['covv_virus_name','covv_seq_technology']]
 excel_gisaid_metadata_all_df_all =    excel_gisaid_metadata_all_df_all.reset_index(drop=True)
-#print(excel_gisaid_metadata_all_df_all)
 
 fasta_gisaid_sequence_sub_1 = os.path.join(base_dir_gisaid_sub_1,"all_sequences.fasta")
 fasta_gisaid_sequence_sub_2 = os.path.join(base_dir_gisaid_sub_2,"all_sequences.fasta")
@@ -74,16 +75,14 @@ gisaid_rec_dict = {}
 
 def GetTechno(seq_id):
     techno = excel_gisaid_metadata_all_df_all.loc[excel_gisaid_metadata_all_df_all['covv_virus_name'] == seq_id,'covv_seq_technology']
-    #print("TECHNO IS ",(list(techno)[0]))
     return(list(techno)[0])
-
 
 for gisaid_fasta in [fasta_gisaid_sequence_sub_1,fasta_gisaid_sequence_sub_2,fasta_gisaid_sequence_sub_3]:
     for rec in SeqIO.parse(gisaid_fasta,'fasta'):
         techno = GetTechno(rec.id)
         gisaid_rec_dict[rec.id] = techno
 
-print("len(gisaid_rec_dict) : ",len(gisaid_rec_dict))
+print("len(gisaid_rec_dict) : ",len(gisaid_rec_dict)) # len(gisaid_rec_dict) :  734
 
 new_rej_consensus = []
 new_multiple_consensus = []
@@ -93,6 +92,13 @@ gisaid_consensus_not_found_in_new = []
 nb_gisaid_nanapore_consensus = 0
 
 for seq_id in  gisaid_rec_dict.keys():
+
+    keeped_path = ""
+    path = ""
+    path_list = [] 
+    beluga_seq_id = ""
+    techno = ""   
+
     beluga_seq_id = re.search(r'^hCoV-19/Canada/Qc-(\S+)/\d{4}',seq_id).group(1)
     techno = gisaid_rec_dict[seq_id]
     if techno == "Illumina_NexteraFlex":
@@ -126,10 +132,34 @@ for seq_id in  gisaid_rec_dict.keys():
         continue
 
     keeped_path = re.sub(r'/home/fournie1/',r'/mnt/BelugaEric/',keeped_path)
-    #print(path)
-    new_keeped_consensus_list.append(keeped_path)    
-        
-print("len(new_keeped_consensus_list) : ", len(new_keeped_consensus_list))
-print("nb_gisaid_nanapore_consensus  : ",nb_gisaid_nanapore_consensus)
-print("gisaid_consensus_not_found_in_new : ", gisaid_consensus_not_found_in_new)
-print("new_rej_consensus.append : ",new_rej_consensus.append)
+    if len(keeped_path) > 0:
+        new_keeped_consensus_list.append(keeped_path)   
+
+
+duplicated_path = []
+
+def FindDuplicatedPath():
+    temp = []
+    for p in new_keeped_consensus_list:
+        if p in temp:
+            duplicated_path.append(p)
+        temp.append(p)
+   
+FindDuplicatedPath()
+ 
+new_keeped_consensus_set = set(new_keeped_consensus_list)
+print("len(new_keeped_consensus_set)", len(new_keeped_consensus_set)) # len(new_keeped_consensus_set) 517
+print("duplicated_path ", duplicated_path) # duplicated_path  []
+print("len(duplicated_path)",len(duplicated_path)) # len(duplicated_path) 0
+
+
+for fasta in new_keeped_consensus_list:
+    pass
+    #logging.info("Get " + keeped_path)
+    #shutil.copy2(fasta,new_consensus_outdir) 
+           
+
+print("len(new_keeped_consensus_list) : ", len(new_keeped_consensus_list)) #len(new_keeped_consensus_list) :  517
+print("nb_gisaid_nanapore_consensus  : ",nb_gisaid_nanapore_consensus) # nb_gisaid_nanapore_consensus  :  210
+print("gisaid_consensus_not_found_in_new : ", gisaid_consensus_not_found_in_new) # gisaid_consensus_not_found_in_new :  []
+print("new_rej_consensus.append : ",new_rej_consensus) # new_rej_consensus.append :  ['/home/fournie1/COVID_full_processing/mgi_reprocess/20200424_mgi_LSPQPlate09_V300035341/consensus/L00241242/L00241242.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/illumina_reprocess/20200609_illumina_LSPQPlate06_HM2CTDRXX/consensus/L00235085/L00235085.consensus.illumina.rej.fasta', '/home/fournie1/COVID_full_processing/illumina_reprocess/20200616_illumina_LSPQPlate11_HM275DRXX/consensus/L00243973/L00243973.consensus.illumina.rej.fasta']
