@@ -91,8 +91,17 @@ new_keeped_consensus_list = []
 gisaid_consensus_not_found_in_new = []
 nb_gisaid_nanapore_consensus = 0
 
-for seq_id in  gisaid_rec_dict.keys():
+check = 0
 
+check2 = 0
+check3 = 0
+check4 = 0
+check5 = 0
+check5a = 0
+check6 = 0
+
+for seq_id in  gisaid_rec_dict.keys():
+    check += 1
     keeped_path = ""
     path = ""
     path_list = [] 
@@ -111,29 +120,51 @@ for seq_id in  gisaid_rec_dict.keys():
 
     path_list = list(path)
 
-   
     if len(path_list) == 0:
+        check2 += 1
         gisaid_consensus_not_found_in_new += 1
+        continue
     elif len(path_list) > 1:
+        check3 += 1
         new_multiple_consensus.append(path_list)
+        #print("PATH LIST ",path_list)
+        pass_list = []
+        flag_list = []
+        rej_list = []
+
         for i in path_list:
             if re.search(r'pass',os.path.basename(i)):
-                keeped_path = i
-                break
+                pass_list.append(i)                
             elif re.search(r'flag',os.path.basename(i)):
-                keeped_path = i
-                break
+                flag_list.append(i)
+            elif re.search(r'rej',os.path.basename(i)):
+                rej_list.append(i)
+
+        if len(pass_list) > 0:
+            keeped_path = pass_list[0]
+        elif len(flag_list) > 0:
+            keeped_path = flag_list[0]       
+        elif len(rej_list) > 0:
+            #print("REJ LIST ",rej_list)
+            new_rej_consensus.append(rej_list)
+            continue 
     else:
+        check3 += 1
         keeped_path = path_list[0]
 
     if re.search(r'rej',os.path.basename(keeped_path)):
-        print("REJ FOR ",keeped_path)
+        check5 += 1
+        #print("REJ FOR ",keeped_path)
         new_rej_consensus.append(keeped_path)
         continue
 
+    check5a += 1
     keeped_path = re.sub(r'/home/fournie1/',r'/mnt/BelugaEric/',keeped_path)
     if len(keeped_path) > 0:
-        new_keeped_consensus_list.append(keeped_path)   
+        check6 += 1
+        new_keeped_consensus_list.append(keeped_path)  
+    else:
+        print("STRANGE PATH for ", beluga_seq_id, " ", techno ) 
 
 
 duplicated_path = []
@@ -153,13 +184,16 @@ print("duplicated_path ", duplicated_path) # duplicated_path  []
 print("len(duplicated_path)",len(duplicated_path)) # len(duplicated_path) 0
 
 
+print("Check ",check, " check2 ",check2," check3 ",check3, " check4 ",check4," check5 ",check5, " check5a ",check5a, " check6 ",check6)
+
 for fasta in new_keeped_consensus_list:
     pass
-    #logging.info("Get " + keeped_path)
-    #shutil.copy2(fasta,new_consensus_outdir) 
+    logging.info("Get " + fasta)
+    shutil.copy2(fasta,new_consensus_outdir) 
            
-
+print("len(new_multiple_consensus) ", len(new_multiple_consensus)) # len(new_multiple_consensus)  67
 print("len(new_keeped_consensus_list) : ", len(new_keeped_consensus_list)) #len(new_keeped_consensus_list) :  517
 print("nb_gisaid_nanapore_consensus  : ",nb_gisaid_nanapore_consensus) # nb_gisaid_nanapore_consensus  :  210
 print("gisaid_consensus_not_found_in_new : ", gisaid_consensus_not_found_in_new) # gisaid_consensus_not_found_in_new :  []
-print("new_rej_consensus.append : ",new_rej_consensus) # new_rej_consensus.append :  ['/home/fournie1/COVID_full_processing/mgi_reprocess/20200424_mgi_LSPQPlate09_V300035341/consensus/L00241242/L00241242.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/illumina_reprocess/20200609_illumina_LSPQPlate06_HM2CTDRXX/consensus/L00235085/L00235085.consensus.illumina.rej.fasta', '/home/fournie1/COVID_full_processing/illumina_reprocess/20200616_illumina_LSPQPlate11_HM275DRXX/consensus/L00243973/L00243973.consensus.illumina.rej.fasta']
+print("new_rej_consensus : ",new_rej_consensus) # [['/home/fournie1/COVID_full_processing/mgi_reprocess/20200605_mgi_LSPQPlate03_V300063030/consensus/L00227094/L00227094.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/mgi_reprocess/20200608/consensus/L00227094/L00227094.consensus.MGI.rej.fasta'], ['/home/fournie1/COVID_full_processing/mgi_reprocess/20200605_mgi_LSPQPlate03_V300063030/consensus/L00227481/L00227481.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/mgi_reprocess/20200608/consensus/L00227481/L00227481.consensus.MGI.rej.fasta'], ['/home/fournie1/COVID_full_processing/mgi_reprocess/20200605_mgi_LSPQPlate05_V300063030/consensus/L00232614/L00232614.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/mgi_reprocess/20200608/consensus/L00232614/L00232614.consensus.MGI.rej.fasta'], ['/home/fournie1/COVID_full_processing/mgi_reprocess/20200605_mgi_LSPQPlate05_V300063030/consensus/L00232813/L00232813.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/mgi_reprocess/20200608/consensus/L00232813/L00232813.consensus.MGI.rej.fasta'], '/home/fournie1/COVID_full_processing/mgi_reprocess/20200424_mgi_LSPQPlate09_V300035341/consensus/L00241242/L00241242.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/illumina_reprocess/20200609_illumina_LSPQPlate06_HM2CTDRXX/consensus/L00235085/L00235085.consensus.illumina.rej.fasta', '/home/fournie1/COVID_full_processing/illumina_reprocess/20200616_illumina_LSPQPlate11_HM275DRXX/consensus/L00243973/L00243973.consensus.illumina.rej.fasta']
+print("len(new_rej_consensus) ",len(new_rej_consensus)) # 7
