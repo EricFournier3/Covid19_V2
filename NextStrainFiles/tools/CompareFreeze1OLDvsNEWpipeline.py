@@ -39,11 +39,13 @@ def MountBelugaServer():
 
 
 compare_outdir = "/data/PROJETS/COVID-19_Beluga/Consensus/CompareFreeze1_OLDvsNEW_pipeline/"
-new_consensus_outdir = os.path.join(compare_outdir,"NewConsensus") #TODO CHANGE TO NewConsensus
+new_consensus_outdir = os.path.join(compare_outdir,"NewConsensus") 
 temp_dir = os.path.join(compare_outdir,"temp")
 align_dir = os.path.join(compare_outdir,"Aligned")
 nuc_diff_df_out = os.path.join(align_dir,"Freeze1_ConsensusDiff.xlsx")
 nuc_diff_df_out_no_N = os.path.join(align_dir,"Freeze1_ConsensusDiff_no_N.xlsx")
+no_diff_out = os.path.join(align_dir,"NoDiffSpecList.txt")
+no_diff_out_handle = open(no_diff_out,'a')
 
 illumina_reprocess_path_file = os.path.join(compare_outdir,"illumina_reprocess_path.txt")
 mgi_reprocess_path_file = os.path.join(compare_outdir,"mgi_reprocess_path.txt")
@@ -92,7 +94,7 @@ for gisaid_fasta in [fasta_gisaid_sequence_sub_1,fasta_gisaid_sequence_sub_2,fas
         gisaid_rec_dict[rec.id] = techno
         gisaid_rec_dict_2[re.sub(r'hCoV-19/','',rec.id)] = rec
 
-print("len(gisaid_rec_dict) : ",len(gisaid_rec_dict)) # len(gisaid_rec_dict) :  734
+#print("len(gisaid_rec_dict) : ",len(gisaid_rec_dict)) # len(gisaid_rec_dict) :  734
 
 new_rej_consensus = []
 new_multiple_consensus = []
@@ -110,6 +112,8 @@ check5 = 0
 check5a = 0
 check6 = 0
 
+
+#Get new consensus from Beluga
 for seq_id in  gisaid_rec_dict.keys():
     check += 1
     keeped_path = ""
@@ -137,7 +141,6 @@ for seq_id in  gisaid_rec_dict.keys():
     elif len(path_list) > 1:
         check3 += 1
         new_multiple_consensus.append(path_list)
-        #print("PATH LIST ",path_list)
         pass_list = []
         flag_list = []
         rej_list = []
@@ -155,7 +158,6 @@ for seq_id in  gisaid_rec_dict.keys():
         elif len(flag_list) > 0:
             keeped_path = flag_list[0]       
         elif len(rej_list) > 0:
-            #print("REJ LIST ",rej_list)
             new_rej_consensus.append(rej_list)
             continue 
     else:
@@ -164,7 +166,6 @@ for seq_id in  gisaid_rec_dict.keys():
 
     if re.search(r'rej',os.path.basename(keeped_path)):
         check5 += 1
-        #print("REJ FOR ",keeped_path)
         new_rej_consensus.append(keeped_path)
         continue
 
@@ -216,7 +217,7 @@ def RunCmd(cmd):
     try:
         subprocess.check_output(shellexec + shargs,shell = False, stderr = subprocess.STDOUT,env = env)
     except subprocess.CalledProcessError as error:
-        print("BUG")
+        logging.error("Bug in RunCmd")
         print(cmd)
         return False
     else:
@@ -228,21 +229,22 @@ new_fasta_consensus = glob.glob(new_consensus_outdir + "/*.fasta")
 nuc_diff_df_list = []
 nuc_diff_df_no_N_list = []
 
-
+#Check differences between old and new consensus
 def CheckSnp(fasta_align,spec_id):
-    logging.info("Work on " + spec_id) # voir /data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/priorities.py
+    logging.info("Work on " + spec_id) 
     
     fh = open(fasta_align, 'rt')
     
     generator = SimpleFastaParser(fh)
 
+    new = next(generator)
+    new_s = new[1]
+    new_np_s = np.array(list(new_s))
+
     old = next(generator)
     old_s = old[1]
     old_np_s = np.array(list(old_s))
 
-    new = next(generator)
-    new_s = new[1]
-    new_np_s = np.array(list(new_s))
 
     old_np  = np.frombuffer(old_s.lower().encode('utf-8'), dtype=np.int8).copy()
     new_np  = np.frombuffer(new_s.lower().encode('utf-8'), dtype=np.int8).copy()
@@ -262,23 +264,26 @@ def CheckSnp(fasta_align,spec_id):
     id_np = np.full((len(snps_np_pos),1),spec_id)
 
     final_np = np.array(list(zip(snps_np_pos,new_snps_np_s,old_snps_np_s)))
-    final_np = np.append(final_np,id_np,axis=1)
+    try:
+        final_np = np.append(final_np,id_np,axis=1)
 
-    df = pd.DataFrame(final_np,columns=['POS','NEW_NUC','OLD_NUC','ID'])
-    df_no_N = df.loc[(df['NEW_NUC'] != 'N') & (df['OLD_NUC'] != 'N'),:]
-    nuc_diff_df_list.append(df)
-    nuc_diff_df_no_N_list.append(df_no_N)
+        df = pd.DataFrame(final_np,columns=['POS','NEW_NUC','OLD_NUC','ID'])
+        df_no_N = df.loc[(df['NEW_NUC'] != 'N') & (df['OLD_NUC'] != 'N'),:]
+        nuc_diff_df_list.append(df)
+        nuc_diff_df_no_N_list.append(df_no_N)
+
+    except:
+        print(">>>>>>>>>>>>>>>>>>>>> No difference for  ", spec_id)
+        print(id_np)
+        print("---------")
+        print(final_np)
+        no_diff_out_handle.write(spec_id + "\n")
 
     fh.close()
 
-
-
 for fasta in new_fasta_consensus:
-    #print(fasta)
     rec_new = SeqIO.read(fasta,'fasta')
-    #print(rec.id) 
     spec_id = re.search(r'Canada/Qc-(\S+)/\d{4}',rec_new.id).group(1)
-    #print(gisaid_rec_dict_2[rec.id])
     rec_list = []
     rec_list.extend([rec_new,gisaid_rec_dict_2[rec_new.id]])
     
@@ -296,114 +301,8 @@ nuc_diff_df.to_excel(nuc_diff_df_out,sheet_name='Sheet1',index=False)
 
 nuc_diff_df_no_N = pd.concat(nuc_diff_df_no_N_list)
 nuc_diff_df_no_N.to_excel(nuc_diff_df_out_no_N,sheet_name='Sheet1',index=False)
+
+no_diff_out_handle.close()
+
 exit(0)
 
-# *******************************************   TEST   **************************************
-'''
-global nuc_diff_df
-nuc_diff_df = pd.DataFrame(columns=['POS','NEW','OLD','ID'])
-
-
-def CheckSnpTest(fastafile,spec_id,final_df):
-    logging.info("Work on " + spec_id)
-    #voir /data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/priorities.py
-    fh = open(fastafile, 'rt')
-   
-    print(nuc_diff_df)
- 
-    gen = SimpleFastaParser(fh)
-    
-    old = next(gen)
-    old_s = old[1]
-    print("OLD ",old_s) # aagaatttatgaacgt
-    old_np_s = np.array(list(old_s))        
-
-    new = next(gen)
-    new_s = new[1]
-    print("NEW ",new_s) # aaaaatttgtgaacgt
-    new_np_s = np.array(list(new_s))
-
-    print("old_np_s ",old_np_s) # ['a' 'a' 'g' 'a' 'a' 't' 't' 't' 'a' 't' 'g' 'a' 'a' 'c' 'g' 't']
-    print("new_np_s ",new_np_s) # ['a' 'a' 'a' 'a' 'a' 't' 't' 't' 'g' 't' 'g' 'a' 'a' 'c' 'g' 't']
-
-    old_np  = np.frombuffer(old_s.lower().encode('utf-8'), dtype=np.int8).copy()
-    #old_np[(old_np!=97) & (old_np!=99) & (old_np!=103) & (old_np!=116)] = 97 PAS BESOIN DE CA
-    print(old_np) # [ 97  97 103  97  97 116 116 116  97 116 103  97  97  99 103 116]
-
-    new_np  = np.frombuffer(new_s.lower().encode('utf-8'), dtype=np.int8).copy()
-    #new_np[(new_np!=97) & (new_np!=99) & (new_np!=103) & (new_np!=116)] = 97  PAS BESOIN DE CA
-    print(new_np) # [ 97  97  97  97  97 116 116 116 103 116 103  97  97  99 103 116]
-
-
-    snps_np_bool = new_np!=old_np
-    print("snps_np_bool", snps_np_bool) # [False False  True False False False False False  True False False False False False False False]
-    
-    new_snps_np = new_np[snps_np_bool]
-    print("new_snps_np ",new_snps_np) # [ 97 103]
-
-    old_snps_np = old_np[snps_np_bool]
-    print("old_snps_np ",old_snps_np) #  [103  97] 
-
-    print(" ******* ")    
-
-    new_snps_np_s = new_np_s[snps_np_bool]
-    print("new_snp_np_s ",new_snps_np_s) # ['a' 'g']
-
-    old_snps_np_s = old_np_s[snps_np_bool]
-    print("old_snp_np_s ",old_snps_np_s) # ['g' 'a']
-
-    snps_np_pos = np.nonzero(snps_np_bool)[0]
-    print("snp_np_pos ",snps_np_pos) # [2 8]
-
-    id_np = np.full((len(snps_np_pos),1),spec_id)
-    print("id_np ",id_np)
-
-    final_np = np.array(list(zip(snps_np_pos,new_snps_np_s,old_snps_np_s)))
-    final_np = np.append(final_np,id_np,axis=1)
-    print("Final np \n",final_np) # [['2' 'a' 'g' 'L00241115Old'] ['8' 'g' 'a' 'L00241115Old']] 
-    
-
-    df = pd.DataFrame(final_np,columns=['POS','NEW','OLD','ID'])
-    
-    final_df = pd.concat([final_df,df])
-    
-    #print("final_df \n ",final_df)
-    # POS NEW OLD ID
-    # 2    a  g  L00241115
-    # 8    g  a  L00241115
-
-    #mettre dans un pd.dataframe et ensuite dans excel voir tableau dans cahier
-    #TODO sauvegarde des alignements
-    fh.close()
-
-
-rec_list = []
-rec1 = SeqIO.read(os.path.join(temp_dir,'fasta1Old.fasta'),'fasta')
-print("ID ",rec1.id)
-spec_id = re.search(r'Canada/Qc-(\S+)/\d{4}',rec1.id).group(1)
-rec2 = SeqIO.read(os.path.join(temp_dir,'fasta1New.fasta'),'fasta')
-rec_list.extend([rec1,rec2])
-not_align = os.path.join(temp_dir,'not_align.fasta')
-align = os.path.join(temp_dir,spec_id + '_aligned.fasta')
-SeqIO.write(rec_list,not_align,'fasta')
-align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
-success = RunCmd(align_cmd)
-
-CheckSnpTest(align,spec_id,nuc_diff_df)
-
-rec_list = []
-rec1 = SeqIO.read(os.path.join(temp_dir,'fasta2Old.fasta'),'fasta')
-print("ID ",rec1.id)
-spec_id = re.search(r'Canada/Qc-(\S+)/\d{4}',rec1.id).group(1)
-rec2 = SeqIO.read(os.path.join(temp_dir,'fasta2New.fasta'),'fasta')
-rec_list.extend([rec1,rec2])
-not_align = os.path.join(temp_dir,'not_align.fasta')
-align = os.path.join(temp_dir,spec_id + '_aligned.fasta')
-SeqIO.write(rec_list,not_align,'fasta')
-align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
-success = RunCmd(align_cmd)
-
-CheckSnpTest(align,spec_id,nuc_diff_df)
-print("nuc_diff_df ",nuc_diff_df)
-exit(0)
-'''
