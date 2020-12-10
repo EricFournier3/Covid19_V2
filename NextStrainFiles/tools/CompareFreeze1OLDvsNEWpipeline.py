@@ -41,6 +41,8 @@ def MountBelugaServer():
 compare_outdir = "/data/PROJETS/COVID-19_Beluga/Consensus/CompareFreeze1_OLDvsNEW_pipeline/"
 new_consensus_outdir = os.path.join(compare_outdir,"NewConsensus")
 temp_dir = os.path.join(compare_outdir,"temp")
+align_dir = os.path.join(compare_outdir,"Aligned")
+
 
 illumina_reprocess_path_file = os.path.join(compare_outdir,"illumina_reprocess_path.txt")
 mgi_reprocess_path_file = os.path.join(compare_outdir,"mgi_reprocess_path.txt")
@@ -242,153 +244,100 @@ def RunCmd(cmd):
 
 fasta_test = glob.glob(new_consensus_outdir + "/*.fasta")[0:3]
 
-INITIALISATION_LENGTH = 15
+#INITIALISATION_LENGTH = 15
+
+nuc_diff_df = pd.DataFrame(columns=['POS','NEW','OLD','ID'])
+print(nuc_diff_df)
 
 
-def CheckSnp(fastafile):
-
+def CheckSnp(fastafile,spec_id):
+    #voir /data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/priorities.py
     fh = open(fastafile, 'rt')
     
     gen = SimpleFastaParser(fh)
+    
     old = next(gen)
     old_s = old[1]
-    print("OLD ",old_s)
-    
+    print("OLD ",old_s) # aagaatttatgaacgt
+    old_np_s = np.array(list(old_s))        
+
     new = next(gen)
     new_s = new[1]
-    print("NEW ",new_s)
+    print("NEW ",new_s) # aaaaatttgtgaacgt
     new_np_s = np.array(list(new_s))
-    #print(old)
-    #print(new)
+
+    print("old_np_s ",old_np_s) # ['a' 'a' 'g' 'a' 'a' 't' 't' 't' 'a' 't' 'g' 'a' 'a' 'c' 'g' 't']
+    print("new_np_s ",new_np_s) # ['a' 'a' 'a' 'a' 'a' 't' 't' 't' 'g' 't' 'g' 'a' 'a' 'c' 'g' 't']
 
     old_np  = np.frombuffer(old_s.lower().encode('utf-8'), dtype=np.int8).copy()
-    old_np[(old_np!=97) & (old_np!=99) & (old_np!=103) & (old_np!=116)] = 97
-    #print(old_np)
+    #old_np[(old_np!=97) & (old_np!=99) & (old_np!=103) & (old_np!=116)] = 97 PAS BESOIN DE CA
+    print(old_np) # [ 97  97 103  97  97 116 116 116  97 116 103  97  97  99 103 116]
 
     new_np  = np.frombuffer(new_s.lower().encode('utf-8'), dtype=np.int8).copy()
-    new_np[(new_np!=97) & (new_np!=99) & (new_np!=103) & (new_np!=116)] = 97
-    #print(new_np)
+    #new_np[(new_np!=97) & (new_np!=99) & (new_np!=103) & (new_np!=116)] = 97  PAS BESOIN DE CA
+    print(new_np) # [ 97  97  97  97  97 116 116 116 103 116 103  97  97  99 103 116]
 
 
     snps_np_bool = new_np!=old_np
-    print("snps_np_bool", snps_np_bool)
+    print("snps_np_bool", snps_np_bool) # [False False  True False False False False False  True False False False False False False False]
     
-    snps_np = new_np[snps_np_bool]
-    print("snps_np ",snps_np)
+    new_snps_np = new_np[snps_np_bool]
+    print("new_snps_np ",new_snps_np) # [ 97 103]
 
-    snps_np_s = new_np_s[snps_np_bool]
-    print(snps_np_s)
+    old_snps_np = old_np[snps_np_bool]
+    print("old_snps_np ",old_snps_np) #  [103  97] 
+
+    print(" ******* ")    
+
+    new_snps_np_s = new_np_s[snps_np_bool]
+    print("new_snp_np_s ",new_snps_np_s) # ['a' 'g']
+
+    old_snps_np_s = old_np_s[snps_np_bool]
+    print("old_snp_np_s ",old_snps_np_s) # ['g' 'a']
 
     snps_np_pos = np.nonzero(snps_np_bool)[0]
-    print(snps_np_pos)
+    print("snp_np_pos ",snps_np_pos) # [2 8]
 
-    final_np = np.array(list(zip(snps_np_pos,snps_np_s)))
-    print("FINAL ",final_np)
-    #mettre dans un pd.dataframe et ensuite dans excel
+    id_np = np.full((len(snps_np_pos),1),spec_id)
+    print("id_np ",id_np)
+
+    final_np = np.array(list(zip(snps_np_pos,new_snps_np_s,old_snps_np_s)))
+    final_np = np.append(final_np,id_np,axis=1)
+    print("Final np \n",final_np) # [['2' 'a' 'g' 'L00241115Old'] ['8' 'g' 'a' 'L00241115Old']] 
+    
+
+    df = pd.DataFrame(final_np,columns=['POS','NEW','OLD','ID'])
+    
+    print("Final pd \n ",df)
+    # POS NEW OLD ID
+    # 2    a  g  L00241115
+    # 8    g  a  L00241115
+
+    #mettre dans un pd.dataframe et ensuite dans excel voir tableau dans cahier
+    #TODO sauvegarde des alignements
     fh.close()
 
-def CheckSnpTEST(fastafile):
-    consensus = None
-    row = np.empty(INITIALISATION_LENGTH)
-    col = np.empty(INITIALISATION_LENGTH, dtype=np.int64)
-    val = np.empty(INITIALISATION_LENGTH, dtype=np.int8)
-
-    #print("ROW ",row)
-    #print("COL ",col)
-    #print("VAL ",val)
-
-    r = 0
-    n_snps = 0
-    nseqs = 0
-    seq_names = []
-    current_length = INITIALISATION_LENGTH
-    fh = open(fastafile, 'rt')
-
-    with fh as fasta:
-        for h,s in SimpleFastaParser(fasta):
-            #print("H : ",h, "S : ",s)
-            if consensus is None:
-                align_length = len(s)
-                # Take consensus as first sequence
-                consensus = np.frombuffer(s.lower().encode('utf-8'), dtype=np.int8).copy()
-                test = "".join([chr(item) for item in consensus])
-                print("TEST ",test)
-                test2 = np.array(list(test))
-                print(test2)
-                #print(consensus)
-                consensus[(consensus!=97) & (consensus!=99) & (consensus!=103) & (consensus!=116)] = 97
-
-            nseqs +=1
-            seq_names.append(h)
-
-            if(len(s)!=align_length):
-                raise ValueError('Fasta file appears to have sequences of different lengths!')
-
-            s = np.frombuffer(s.lower().encode('utf-8'), dtype=np.int8).copy()
-            #print("S : ",s)
-            s[(s!=97) & (s!=99) & (s!=103) & (s!=116)] = 110
-
-            snps = consensus!=s
-
-            #print("SNPS ",snps) # [False False  True False False False False False  True False False False False False False False]
-
-            print("S ",s[snps])
-            print("CONS ",consensus[snps])
-
-            #print(s[snps]) # [ 97 103]
-            #print("SUMS ",np.sum(snps))
-            right = n_snps + np.sum(snps)
-            #print("RIGHT ",right)
-
-            '''
-            if right >= (current_length/2):
-                current_length = current_length + INITIALISATION_LENGTH
-                row.resize(current_length)
-                col.resize(current_length)
-                val.resize(current_length)
-            '''
-            
-            #print("R ",r)
-            #print("BEFORE ",row)
-            row[n_snps:right] = r
-            #print("AFTER ",row)
-            col[n_snps:right] = np.flatnonzero(snps)
-            val[n_snps:right] = s[snps]
-
-            r += 1
-            n_snps = right            
-    fh.close()
-
-    row = row[0:right]
-    col = col[0:right]
-    val = val[0:right]
-
-    #print("ROW ",row)
-    #print("COL ",col)
-    #print("VAL ",val)
-
-    sparse_snps = sparse.csc_matrix((val, (row, col)), shape=(nseqs, align_length))
-
-    #print({'snps': sparse_snps, 'consensus': consensus, 'names': seq_names})
 
 rec_list = []
-rec1 = SeqIO.read(os.path.join(temp_dir,'fasta1.fasta'),'fasta')
-rec2 = SeqIO.read(os.path.join(temp_dir,'fasta2.fasta'),'fasta')
+rec1 = SeqIO.read(os.path.join(temp_dir,'fasta1Old.fasta'),'fasta')
+print("ID ",rec1.id)
+spec_id = re.search(r'Canada/Qc-(\S+)/\d{4}',rec1.id).group(1)
+rec2 = SeqIO.read(os.path.join(temp_dir,'fasta1New.fasta'),'fasta')
 rec_list.extend([rec1,rec2])
 not_align = os.path.join(temp_dir,'not_align.fasta')
-align = os.path.join(temp_dir,'align.fasta')
+align = os.path.join(temp_dir,spec_id + '_aligned.fasta')
 SeqIO.write(rec_list,not_align,'fasta')
 align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
 success = RunCmd(align_cmd)
 
-CheckSnp(align)
+CheckSnp(align,spec_id)
 exit(0)
 
 
 for fasta in fasta_test:
     #print(fasta)
     rec_new = SeqIO.read(fasta,'fasta')
-    #print(rec.id)
+    print(rec.id)  # Canada/Qc-L00241115/2020
     #print(gisaid_rec_dict_2[rec.id])
     rec_list = []
     rec_list.extend([rec_new,gisaid_rec_dict_2[rec.id]])
