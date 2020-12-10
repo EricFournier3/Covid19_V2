@@ -39,10 +39,11 @@ def MountBelugaServer():
 
 
 compare_outdir = "/data/PROJETS/COVID-19_Beluga/Consensus/CompareFreeze1_OLDvsNEW_pipeline/"
-new_consensus_outdir = os.path.join(compare_outdir,"NewConsensus")
+new_consensus_outdir = os.path.join(compare_outdir,"NewConsensus") #TODO CHANGE TO NewConsensus
 temp_dir = os.path.join(compare_outdir,"temp")
 align_dir = os.path.join(compare_outdir,"Aligned")
-
+nuc_diff_df_out = os.path.join(align_dir,"Freeze1_ConsensusDiff.xlsx")
+nuc_diff_df_out_no_N = os.path.join(align_dir,"Freeze1_ConsensusDiff_no_N.xlsx")
 
 illumina_reprocess_path_file = os.path.join(compare_outdir,"illumina_reprocess_path.txt")
 mgi_reprocess_path_file = os.path.join(compare_outdir,"mgi_reprocess_path.txt")
@@ -89,7 +90,7 @@ for gisaid_fasta in [fasta_gisaid_sequence_sub_1,fasta_gisaid_sequence_sub_2,fas
     for rec in SeqIO.parse(gisaid_fasta,'fasta'):
         techno = GetTechno(rec.id)
         gisaid_rec_dict[rec.id] = techno
-        gisaid_rec_dict_2[rec.id] = rec
+        gisaid_rec_dict_2[re.sub(r'hCoV-19/','',rec.id)] = rec
 
 print("len(gisaid_rec_dict) : ",len(gisaid_rec_dict)) # len(gisaid_rec_dict) :  734
 
@@ -206,27 +207,6 @@ for fasta in new_keeped_consensus_list:
 #print("new_rej_consensus : ",new_rej_consensus) # [['/home/fournie1/COVID_full_processing/mgi_reprocess/20200605_mgi_LSPQPlate03_V300063030/consensus/L00227094/L00227094.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/mgi_reprocess/20200608/consensus/L00227094/L00227094.consensus.MGI.rej.fasta'], ['/home/fournie1/COVID_full_processing/mgi_reprocess/20200605_mgi_LSPQPlate03_V300063030/consensus/L00227481/L00227481.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/mgi_reprocess/20200608/consensus/L00227481/L00227481.consensus.MGI.rej.fasta'], ['/home/fournie1/COVID_full_processing/mgi_reprocess/20200605_mgi_LSPQPlate05_V300063030/consensus/L00232614/L00232614.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/mgi_reprocess/20200608/consensus/L00232614/L00232614.consensus.MGI.rej.fasta'], ['/home/fournie1/COVID_full_processing/mgi_reprocess/20200605_mgi_LSPQPlate05_V300063030/consensus/L00232813/L00232813.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/mgi_reprocess/20200608/consensus/L00232813/L00232813.consensus.MGI.rej.fasta'], '/home/fournie1/COVID_full_processing/mgi_reprocess/20200424_mgi_LSPQPlate09_V300035341/consensus/L00241242/L00241242.consensus.MGI.rej.fasta', '/home/fournie1/COVID_full_processing/illumina_reprocess/20200609_illumina_LSPQPlate06_HM2CTDRXX/consensus/L00235085/L00235085.consensus.illumina.rej.fasta', '/home/fournie1/COVID_full_processing/illumina_reprocess/20200616_illumina_LSPQPlate11_HM275DRXX/consensus/L00243973/L00243973.consensus.illumina.rej.fasta']
 #print("len(new_rej_consensus) ",len(new_rej_consensus)) # 7
 
-def RunCmdORI(cmd):
-    env = os.environ.copy()
-    shellexec = ['env','bash']
-    shargs = ['-c', "set -euo pipefail; " + cmd]
-
-    try:
-        subprocess.check_output(shellexec + shargs,shell = False, stderr = subprocess.STDOUT,env = env)
-    except subprocess.CalledProcessError as error:
-        print_error(
-            "{out}\nshell exited {rc} when running: {cmd}{extra}",
-            out = error.output,
-            rc  = error.returncode,
-            cmd = cmd,
-            extra = "\nAre you sure this program is installed?" if error.returncode==127 else "",
-        )
-        if raise_errors:
-            raise
-        else:
-            return False
-    else:
-        return True
 
 def RunCmd(cmd):
     env = os.environ.copy()
@@ -242,18 +222,95 @@ def RunCmd(cmd):
     else:
         return True
 
-fasta_test = glob.glob(new_consensus_outdir + "/*.fasta")[0:3]
+#new_fasta_consensus = glob.glob(new_consensus_outdir + "/*.fasta")[0:3]
+new_fasta_consensus = glob.glob(new_consensus_outdir + "/*.fasta")
 
-#INITIALISATION_LENGTH = 15
+nuc_diff_df_list = []
+nuc_diff_df_no_N_list = []
 
+
+def CheckSnp(fasta_align,spec_id):
+    logging.info("Work on " + spec_id) # voir /data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/priorities.py
+    
+    fh = open(fasta_align, 'rt')
+    
+    generator = SimpleFastaParser(fh)
+
+    old = next(generator)
+    old_s = old[1]
+    old_np_s = np.array(list(old_s))
+
+    new = next(generator)
+    new_s = new[1]
+    new_np_s = np.array(list(new_s))
+
+    old_np  = np.frombuffer(old_s.lower().encode('utf-8'), dtype=np.int8).copy()
+    new_np  = np.frombuffer(new_s.lower().encode('utf-8'), dtype=np.int8).copy()
+
+    snps_np_bool = new_np!=old_np
+
+    new_snps_np = new_np[snps_np_bool]
+
+    old_snps_np = old_np[snps_np_bool]
+
+    new_snps_np_s = new_np_s[snps_np_bool]
+
+    old_snps_np_s = old_np_s[snps_np_bool]
+
+    snps_np_pos = np.nonzero(snps_np_bool)[0]
+
+    id_np = np.full((len(snps_np_pos),1),spec_id)
+
+    final_np = np.array(list(zip(snps_np_pos,new_snps_np_s,old_snps_np_s)))
+    final_np = np.append(final_np,id_np,axis=1)
+
+    df = pd.DataFrame(final_np,columns=['POS','NEW_NUC','OLD_NUC','ID'])
+    df_no_N = df.loc[(df['NEW_NUC'] != 'N') & (df['OLD_NUC'] != 'N'),:]
+    nuc_diff_df_list.append(df)
+    nuc_diff_df_no_N_list.append(df_no_N)
+
+    fh.close()
+
+
+
+for fasta in new_fasta_consensus:
+    #print(fasta)
+    rec_new = SeqIO.read(fasta,'fasta')
+    #print(rec.id) 
+    spec_id = re.search(r'Canada/Qc-(\S+)/\d{4}',rec_new.id).group(1)
+    #print(gisaid_rec_dict_2[rec.id])
+    rec_list = []
+    rec_list.extend([rec_new,gisaid_rec_dict_2[rec_new.id]])
+    
+    not_align = os.path.join(temp_dir,'not_align.fasta')
+    align = os.path.join(align_dir,spec_id + '_align.fasta')
+    SeqIO.write(rec_list,not_align,'fasta')
+
+    align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
+    success = RunCmd(align_cmd)
+    
+    CheckSnp(align,spec_id)
+
+nuc_diff_df = pd.concat(nuc_diff_df_list)
+nuc_diff_df.to_excel(nuc_diff_df_out,sheet_name='Sheet1',index=False)
+
+nuc_diff_df_no_N = pd.concat(nuc_diff_df_no_N_list)
+nuc_diff_df_no_N.to_excel(nuc_diff_df_out_no_N,sheet_name='Sheet1',index=False)
+exit(0)
+
+# *******************************************   TEST   **************************************
+'''
+global nuc_diff_df
 nuc_diff_df = pd.DataFrame(columns=['POS','NEW','OLD','ID'])
-print(nuc_diff_df)
 
 
-def CheckSnp(fastafile,spec_id):
+def CheckSnpTest(fastafile,spec_id,final_df):
+    logging.info("Work on " + spec_id)
     #voir /data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/priorities.py
     fh = open(fastafile, 'rt')
-    
+   
+    print(nuc_diff_df)
+ 
     gen = SimpleFastaParser(fh)
     
     old = next(gen)
@@ -308,7 +365,9 @@ def CheckSnp(fastafile,spec_id):
 
     df = pd.DataFrame(final_np,columns=['POS','NEW','OLD','ID'])
     
-    print("Final pd \n ",df)
+    final_df = pd.concat([final_df,df])
+    
+    #print("final_df \n ",final_df)
     # POS NEW OLD ID
     # 2    a  g  L00241115
     # 8    g  a  L00241115
@@ -330,21 +389,21 @@ SeqIO.write(rec_list,not_align,'fasta')
 align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
 success = RunCmd(align_cmd)
 
-CheckSnp(align,spec_id)
+CheckSnpTest(align,spec_id,nuc_diff_df)
+
+rec_list = []
+rec1 = SeqIO.read(os.path.join(temp_dir,'fasta2Old.fasta'),'fasta')
+print("ID ",rec1.id)
+spec_id = re.search(r'Canada/Qc-(\S+)/\d{4}',rec1.id).group(1)
+rec2 = SeqIO.read(os.path.join(temp_dir,'fasta2New.fasta'),'fasta')
+rec_list.extend([rec1,rec2])
+not_align = os.path.join(temp_dir,'not_align.fasta')
+align = os.path.join(temp_dir,spec_id + '_aligned.fasta')
+SeqIO.write(rec_list,not_align,'fasta')
+align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
+success = RunCmd(align_cmd)
+
+CheckSnpTest(align,spec_id,nuc_diff_df)
+print("nuc_diff_df ",nuc_diff_df)
 exit(0)
-
-
-for fasta in fasta_test:
-    #print(fasta)
-    rec_new = SeqIO.read(fasta,'fasta')
-    print(rec.id)  # Canada/Qc-L00241115/2020
-    #print(gisaid_rec_dict_2[rec.id])
-    rec_list = []
-    rec_list.extend([rec_new,gisaid_rec_dict_2[rec.id]])
-    not_align = os.path.join(temp_dir,'not_align.fasta')
-    align = os.path.join(temp_dir,'align.fasta')
-    SeqIO.write(rec_list,not_align,'fasta')
-
-    align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
-    success = RunCmd(align_cmd)
-
+'''
