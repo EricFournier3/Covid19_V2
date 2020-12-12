@@ -20,7 +20,7 @@ from Bio import SeqIO
 logging.basicConfig(level=logging.DEBUG)
 
 #TODO choose here
-only_human = True
+only_human = False
 
 
 #
@@ -54,7 +54,7 @@ script_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/"
 tool_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/tools/"
 
 if not only_human:
-    align_out_dir = os.path.join(base_dir,"alignment_results_mink_and_mink_to_human")
+    align_out_dir = os.path.join(base_dir,"alignment_results_mink_and_mink_to_human_V2")
 else:
     #align_out_dir = os.path.join(base_dir,"alignment_results_mink_to_human_only")
     align_out_dir = os.path.join(base_dir,"alignment_results_mink_to_human_only_V2")

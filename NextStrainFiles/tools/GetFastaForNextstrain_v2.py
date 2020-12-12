@@ -56,6 +56,10 @@ parser.add_argument('--pangolin',help="Produce pangolin mapping file for LNM",ac
 parser.add_argument('--maxsampledate',help="Maximum sampled date YYYY-MM-DD",required=True)
 parser.add_argument('--minsampledate',help="Minimum sampled date YYYY-MM-DD",required=True)
 parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['ALL','PASS','FLAG'],required=True)
+parser.add_argument('--outbreak',help="Produce metadata for outbreak analysis",action='store_true')
+parser.add_argument('--max-perc-n',type=int,help='Maximun percentage of N tolerated in consensus for outbreak sample in outbreak analysis')
+
+
 args = parser.parse_args()
 
 _debug_ = args.debug
@@ -66,8 +70,6 @@ min_sample_date = args.minsampledate
 pangolin = args.pangolin
 laser_sub = args.laser_sub
 laser_sub_freeze1 = args.laser_sub_freeze1
-
-
 
 global qc_keep
 
@@ -105,13 +107,21 @@ mnt_beluga_server = "/mnt/BelugaEric/"
 global gisaid_sub_basedir  
 gisaid_sub_basedir = "/data/PROJETS/COVID-19_Beluga/Gisaid/FinalPublished/release1/"
 
-
 global liste_envoi_genome_quebec
 global sgil_extract
 global fasta_outdir
 global metadata_ourdir
 global pangolin_outdir
 global gisaid_metadata
+global _outbreak_
+global max_perc_n
+
+_outbreak_ = args.outbreak
+max_perc_n = args.max_perc_n
+
+if _outbreak_ and not max_perc_n:
+    logging.error("Max perc N missing")
+    exit(1)
 
 
 if _debug_:
@@ -216,7 +226,7 @@ class MetadataManager():
     def GetUpperCorrectedSamplesList(self,sample_id):
             return(str(sample_id.upper()))
 
-    def CreateMetadata(self,max_sample_date):
+    def CreateMetadata(self,max_sample_date,tolerated_rej_samples):
         MySQLcovid19.SetConnection()
 
         year_2020 = datetime.datetime.strptime("2020","%Y")
@@ -275,7 +285,10 @@ class MetadataManager():
         #print(self.pd_metadata)
         #print(self.pd_samples_missing_rss)
 
-        self.pd_metadata.loc[self.pd_metadata['OUTBREAK'].isnull(),['OUTBREAK']] = 'NoOutbreakRelated'
+        self.pd_metadata.loc[(self.pd_metadata['OUTBREAK'].isnull()) | (self.pd_metadata['OUTBREAK'] == 'NA'),['OUTBREAK']] = 'NoOutbreakRelated'
+
+        if _outbreak_:
+            self.pd_metadata = self.pd_metadata.loc[~((self.pd_metadata['OUTBREAK'] == 'NoOutbreakRelated') & (self.pd_metadata['sample'].isin(tolerated_rej_samples))),:]
 
     def CreatePdMetadataWithOldLaSERSub(self):
         old_laser_file_list = glob.glob(laser_outdir + "/*.csv")
@@ -300,9 +313,13 @@ class MetadataManager():
         else:
             return("Missing")
 
-    def BuildTechnoDir(self):
-        pass
+    def GetFreeze1HospitalName(self,strain):
+        hospital_name = self.excel_gisaid_metadata_sub_df_all.loc[self.excel_gisaid_metadata_sub_df_all['covv_virus_name'] == strain,'covv_orig_lab']
 
+        if len(hospital_name) == 1:
+            return(list(hospital_name)[0])
+        else:
+            return("Missing")
 
 
     def GetSequencingInstrument(self,strain):
@@ -327,7 +344,22 @@ class MetadataManager():
             consensus_method = "Missing"
 
         return(consensus_method)
-      
+
+          
+    def SetFreeze1GisaidSubDf(self):
+        excel_gisaid_metadata_sub_1 = "/data/PROJETS/COVID-19_Beluga/Gisaid/FinalPublished/release1/20200520/20200520_ncov19_metadata.xls"
+        excel_gisaid_metadata_sub_2 = "/data/PROJETS/COVID-19_Beluga/Gisaid/FinalPublished/release1/20200610/20200610_ncov19_metadata.xls"
+        excel_gisaid_metadata_sub_3 = "/data/PROJETS/COVID-19_Beluga/Gisaid/FinalPublished/release1/20200914/20200914_ncov19_metadata.xls"
+
+        df_1 = pd.read_excel(excel_gisaid_metadata_sub_1,sheet_name=0)
+        df_2 = pd.read_excel(excel_gisaid_metadata_sub_2,sheet_name=0)
+        df_3 = pd.read_excel(excel_gisaid_metadata_sub_3,sheet_name=0)
+
+        self.excel_gisaid_metadata_sub_df_all = pd.concat([df_1,df_2,df_3]) 
+        self.excel_gisaid_metadata_sub_df_all = self.excel_gisaid_metadata_sub_df_all.drop(self.excel_gisaid_metadata_sub_df_all.index[0])
+        self.excel_gisaid_metadata_sub_df_all['covv_virus_name'] = self.excel_gisaid_metadata_sub_df_all['covv_virus_name'].str.replace(r'hCoV-19/','')
+        #print(self.excel_gisaid_metadata_sub_df_all)
+        
 
     def CreateLaSERMetadata(self,freeze1=False,techno_dir=None):
         self.pd_metadata_gisaid = pd.read_csv(gisaid_metadata,sep="\t",index_col=False,usecols=['strain','gisaid_epi_isl'])
@@ -340,8 +372,12 @@ class MetadataManager():
 
         if freeze1:
             self.pd_metadata_laser = self.pd_metadata_laser.loc[self.pd_metadata_laser['specimen collector sample ID'].isin(self.techno_dir.keys()),:]
+            self.SetFreeze1GisaidSubDf()
+            self.pd_metadata_laser['sample collected by'] = self.pd_metadata_laser['specimen collector sample ID'].apply(self.GetFreeze1HospitalName)
+        else:
+            self.pd_metadata_laser['sample collected by'] = "S C B"
 
-        self.pd_metadata_laser['sample collected by'] = "S C B"
+        
         self.pd_metadata_laser['sequence submitted by'] = "Laboratoire de santé publique du Québec (LSPQ)"
         self.pd_metadata_laser['sample collection date'] = self.pd_metadata['sample_date'] 
         self.pd_metadata_laser['geo_loc_name (country)'] = self.pd_metadata['country'] 
@@ -349,7 +385,7 @@ class MetadataManager():
         self.pd_metadata_laser['organism'] = "Severe acute respiratory syndrome coronavirus 2" 
         self.pd_metadata_laser['isolate'] = "My Isolate" 
         self.pd_metadata_laser['purpose of sampling'] = "Surveillance testing" 
-        self.pd_metadata_laser['purpose of sampling details'] = "P O S D" 
+        self.pd_metadata_laser['purpose of sampling details'] = "Surveillance testing" 
         self.pd_metadata_laser['anatomical material'] = "Not Provided" 
         self.pd_metadata_laser['anatomical part'] = "Not Provided"
         self.pd_metadata_laser['body product'] = "Not Provided"
@@ -565,15 +601,29 @@ class FastaListManager():
     def GetPdFastaList(self):
         pd_df = pd.read_csv(self.fasta_list_file,sep="\t",index_col=False)
         #pd_df['SAMPLE'] = pd_df['SAMPLE'].str.upper() # pas necessaire
-        return(pd_df.loc[pd_df['STATUS'].isin(fasta_qual_status_to_keep),:])
+        if _outbreak_:
+            pd_df_rej_samples_tolerated = pd_df.loc[(pd_df['STATUS'] == 'REJ' ) & (pd_df['PERC_N'] <= max_perc_n)]  
+
+            return(pd.concat([pd_df_rej_samples_tolerated,pd_df.loc[pd_df['STATUS'].isin(fasta_qual_status_to_keep),:]]))
+        else:
+            return(pd_df.loc[pd_df['STATUS'].isin(fasta_qual_status_to_keep),:])
 
     def GetSamplesList(self):
         return self.samples_list
 
+    def GetRejSamplesTolerated(self):
+        return(self.rej_samples_tolerated_list)
+
     def BuildSamplesList(self):
         start = time.time()
         self.samples_list = np.array([])
-        self.samples_list = self.pd_fasta_list.loc[self.pd_fasta_list['STATUS'].isin(fasta_qual_status_to_keep),'SAMPLE'].unique()
+        if _outbreak_: 
+            pd_df_rej_samples_tolerated = self.pd_fasta_list.loc[(self.pd_fasta_list['STATUS'] == 'REJ' ) & (self.pd_fasta_list['PERC_N'] <= max_perc_n)]
+            self.rej_samples_tolerated_list = list(pd_df_rej_samples_tolerated['SAMPLE']) 
+            temp_df = pd.concat([pd_df_rej_samples_tolerated[['SAMPLE']],self.pd_fasta_list.loc[self.pd_fasta_list['STATUS'].isin(fasta_qual_status_to_keep),['SAMPLE']]])
+            self.samples_list = temp_df['SAMPLE'].unique()
+        else:
+            self.samples_list = self.pd_fasta_list.loc[self.pd_fasta_list['STATUS'].isin(fasta_qual_status_to_keep),'SAMPLE'].unique()
 
         i = 0
         for sample in self.samples_list:
@@ -624,23 +674,31 @@ def GetTechno(fasta):
         my_techno_dir[rec.id] = {"seq_method":seq_method,"assemb_method":assemb_method,"snv_call_method":snv_call_method}
     return(my_techno_dir)
 
+
+
 def Main():
     logging.info("In Main()")
 
     fasta_list_manager = FastaListManager(os.path.join(in_dir,beluga_fasta_file))
 
+    if _outbreak_:
+        tolerated_rej_sample = fasta_list_manager.GetRejSamplesTolerated()
+    else:
+        tolerated_rej_sample = []
+
     techno_dir = {}
+
 
     if laser_sub_freeze1 and only_metadata:
         samples_list,techno_dir = GetFreeze1SampleList()
         metadata_manager = MetadataManager(samples_list,None)
-        metadata_manager.CreateMetadata(max_sample_date)
+        metadata_manager.CreateMetadata(max_sample_date,tolerated_rej_sample)
     else:
         samples_list = fasta_list_manager.GetSamplesList()
 
         metadata_manager = MetadataManager(samples_list,fasta_list_manager.GetPdFastaList())
 
-        metadata_manager.CreateMetadata(max_sample_date)
+        metadata_manager.CreateMetadata(max_sample_date,tolerated_rej_sample)
         metadata_manager.GetBelugaRunsWithTargetSamples()
 
 

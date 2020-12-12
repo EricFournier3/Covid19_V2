@@ -63,7 +63,6 @@ aa_mut_string = ""
 for nuc_mut in mut.keys():
     nuc_mut_string = nuc_mut_string + nuc_mut + "|"
     for aa_mut in mut[nuc_mut]:
-        print(aa_mut)  
         aa_mut_string = aa_mut_string + aa_mut + ","
     
     aa_mut_string = aa_mut_string.strip(',')

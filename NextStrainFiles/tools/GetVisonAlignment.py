@@ -28,9 +28,8 @@ pd_metadata_all = pd.read_csv(metadata_all,sep="\t",index_col=False)
 pd_metadata_mink = pd_metadata_all.loc[pd_metadata_all['host'] == 'Neovison vison',:]
 #print(pd_metadata_mink.shape[0]) #226
 
-subprocess.call(["augur","-h"],stdout=open("/data/Users/Eric/Covid19/Vison/augur_out.txt","w"))
+#subprocess.call(["augur","-h"],stdout=open("/data/Users/Eric/Covid19/Vison/augur_out.txt","w"))
 
-exit(0)
 for index,row in pd_metadata_mink.iterrows():
     strain = str(row['strain'])
     #print(strain)

@@ -18,7 +18,6 @@ import subprocess
 import os
 from Bio import AlignIO
 from Bio.SeqRecord import SeqRecord
-import subprocess
 import sys
 import re
 

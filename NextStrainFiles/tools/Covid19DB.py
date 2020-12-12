@@ -12,7 +12,7 @@ class MySQLcovid19:
     host = 'localhost'
     user = 'root'
     password = 'lspq2019'
-    database = 'TestCovid19_20201014'
+    database = 'testing'
     connection = None
 
     @classmethod
@@ -54,21 +54,21 @@ class MySQLcovid19Selector:
         
         start = time.time()
 
-        columns_renamed = {'RTA':'rta','GENOME_QUEBEC_REQUETE':'sample','DATE_PRELEV_HOPITAL':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','RSS_LSPQ_CAS':'rss','SEXEINFO':'sex','COUNTRY':'country','DIVISION':'division','DTNAISSINFO':'date_naiss'}        
+        columns_renamed = {'RTA':'rta','GENOME_QUEBEC_REQUETE':'sample','DATE_PRELEV':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','RSS':'rss','SEXE':'sex','COUNTRY':'country','DIVISION':'division','DTNAISS':'date_naiss','OUTBREAK':'OUTBREAK'}        
 
         #spec_list = '|'.join(spec_list)
         #spec_list_format = ','.join(['%s'] * len(spec_list))
         prelevements_alias = 'pr'
         patients_alias = 'p'
 
-        PRELEVEMENTS_COLUMNS = ['GENOME_QUEBEC_REQUETE','DATE_PRELEV_HOPITAL','TRAVEL_HISTORY','CT']
+        PRELEVEMENTS_COLUMNS = ['GENOME_QUEBEC_REQUETE','DATE_PRELEV','TRAVEL_HISTORY','CT','OUTBREAK']
         PRELEVEMENTS_COLUMNS = [prelevements_alias + "." + col for col in PRELEVEMENTS_COLUMNS]
         PRELEVEMENTS_COLUMNS = ','.join(PRELEVEMENTS_COLUMNS)
 
         if (metadata_destination == 'LSPQ'):
-            PATIENTS_COLUMNS = ['RSS_LSPQ_CAS','DTNAISSINFO','SEXEINFO']
+            PATIENTS_COLUMNS = ['RSS','DTNAISS','SEXE']
         else:
-            PATIENTS_COLUMNS = ['SEXEINFO','RSS_LSPQ_CAS']
+            PATIENTS_COLUMNS = ['SEXE','RSS']
 
         PATIENTS_COLUMNS = [patients_alias + "." + col for col in PATIENTS_COLUMNS]
         PATIENTS_COLUMNS = ','.join(PATIENTS_COLUMNS)
