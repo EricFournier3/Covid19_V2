@@ -237,9 +237,9 @@ def FindDuplicatedPath():
 FindDuplicatedPath()
  
 new_keeped_consensus_set = set(new_keeped_consensus_list)
-print("len(new_keeped_consensus_set)", len(new_keeped_consensus_set)) # 
-print("duplicated_path ", duplicated_path) # 
-print("len(duplicated_path)",len(duplicated_path)) # 
+print("len(new_keeped_consensus_set)", len(new_keeped_consensus_set)) #  len(new_keeped_consensus_set) 541
+print("duplicated_path ", duplicated_path) #  duplicated_path  []
+print("len(duplicated_path)",len(duplicated_path)) # len(duplicated_path) 0
 
 #print("Check ",check, " check2 ",check2," check3 ",check3, " check4 ",check4," check5 ",check5, " check5a ",check5a, " check6 ",check6)
 
@@ -270,7 +270,7 @@ nuc_diff_df_no_N_list = []
 
 #Check differences between old and new consensus
 def CheckSnp(fasta_align,spec_id):
-    logging.info("Work on " + spec_id) 
+    #logging.info("Work on " + spec_id) 
     
     fh = open(fasta_align, 'rt')
     
@@ -317,7 +317,6 @@ def CheckSnp(fasta_align,spec_id):
 
     new_qc_status = rec_dict[my_seq_id]['new_qcstatus_from_beluga_fasta_path']
     new_qc_status_np = np.full((len(snps_np_pos),1),new_qc_status)
-    #print(new_qc_status_np)
 
     new_techno = rec_dict[my_seq_id]['new_techno_from_beluga_fasta_path']
     new_techno_np = np.full((len(snps_np_pos),1),new_techno)
@@ -337,7 +336,6 @@ def CheckSnp(fasta_align,spec_id):
         df_no_N = df.loc[(df['NEW_NUC'] != 'N') & (df['OLD_NUC'] != 'N'),:]
         nuc_diff_df_list.append(df)
         nuc_diff_df_no_N_list.append(df_no_N)
-
     except:
         print(">>>>>>>>>>>>>>>>>>>>> No difference for  ", spec_id)
         #print(id_np)
@@ -357,7 +355,7 @@ for fasta in new_fasta_consensus:
     SeqIO.write(rec_list,not_align,'fasta')
 
     align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
-    success = RunCmd(align_cmd)
+    #success = RunCmd(align_cmd)
     
     CheckSnp(align,spec_id)
 
@@ -369,19 +367,21 @@ nuc_diff_df_no_N = pd.concat(nuc_diff_df_no_N_list)
 nuc_diff_df_no_N.to_excel(nuc_diff_df_out_no_N,sheet_name='Sheet1',index=False)
 no_diff_out_handle.close()
 
+
+qc_status_df_excel = os.path.join(align_dir,"QcStatus.xlsx") 
 old_qc_status_df = nuc_diff_df[['ID','OLD_QC_STATUS']].drop_duplicates()
 old_qc_status_df = old_qc_status_df.rename(columns={'OLD_QC_STATUS':'QC_STATUS'})
 old_qc_status_df = old_qc_status_df.reset_index(drop=True)
 old_qc_status_df['VERSION'] = 'OLD'
 
-new_qc_status_df = nuc_diff_df[['ID','OLD_QC_STATUS']].drop_duplicates()
-new_qc_status_df = new_qc_status_df.rename(columns={'OLD_QC_STATUS':'QC_STATUS'})
+new_qc_status_df = nuc_diff_df[['ID','NEW_QC_STATUS']].drop_duplicates()
+new_qc_status_df = new_qc_status_df.rename(columns={'NEW_QC_STATUS':'QC_STATUS'})
 new_qc_status_df = new_qc_status_df.reset_index(drop=True)
 new_qc_status_df['VERSION'] = 'NEW'
 
 qc_status_df = pd.concat([old_qc_status_df,new_qc_status_df])
 qc_status_df = qc_status_df.reset_index(drop=True)
-
+qc_status_df.to_excel(qc_status_df_excel,index=False,sheet_name='Sheet1')
 
 out_qc_status_hist = os.path.join(align_dir,"QcStatus.png")
 ax = qc_status_df['QC_STATUS'].hist(by=qc_status_df['VERSION'])
@@ -391,26 +391,26 @@ for i,my_ax in enumerate(ax):
         my_ax.set_ylabel("Samples Frequency")
 plt.suptitle("QC Status Distribution")
 plt.savefig(out_qc_status_hist)
-#plt.show()
+plt.show()
 
 out_nb_sites_diff = os.path.join(align_dir,"NbSitesDiff.png")
 group_by_id_df = nuc_diff_df.groupby(['ID']).agg('count')
-ax = group_by_id_df['NEW_NUC'].hist(bins=10)
+ax = group_by_id_df['NEW_NUC'].hist(bins=20)
 ax.set_xlabel("Number of different positions")
 ax.set_ylabel("Samples Frequency")
 plt.suptitle("New versus old consensus")
 plt.savefig(out_nb_sites_diff)
-#plt.show()
+plt.show()
 
 
 out_nb_sites_diff_no_N = os.path.join(align_dir,"NbSitesDiffNoN.png")
 group_by_id_df_no_N = nuc_diff_df_no_N.groupby(['ID']).agg('count')
-ax = group_by_id_df_no_N['NEW_NUC'].hist(bins=10)
+ax = group_by_id_df_no_N['NEW_NUC'].hist(bins=20)
 ax.set_xlabel("Number of different positions")
 ax.set_ylabel("Samples Frequency")
 plt.suptitle("New versus old consensus (excluding Ns)")
 plt.savefig(out_nb_sites_diff_no_N)
-#plt.show()
+plt.show()
 
 def CheckIfTechnoFromHeaderSameAsTechnoFromFastaName(row):
     if row.OLD_TECHNO_FROM_NAME.upper() in row.OLD_TECHNO_FROM_HEADER.upper():
