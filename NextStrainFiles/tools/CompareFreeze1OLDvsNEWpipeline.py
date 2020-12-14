@@ -35,7 +35,7 @@ def MountBelugaServer():
     os.system("sudo sshfs -o allow_other -o follow_symlinks {0} {1}".format(beluga_server,mnt_beluga_server))
     logging.info("Beluga mounted")
 
-MountBelugaServer()
+#MountBelugaServer()
 
 
 compare_outdir = "/data/PROJETS/COVID-19_Beluga/Consensus/CompareFreeze1_OLDvsNEW_pipeline/"
@@ -244,8 +244,8 @@ print("len(duplicated_path)",len(duplicated_path)) # len(duplicated_path) 0
 #print("Check ",check, " check2 ",check2," check3 ",check3, " check4 ",check4," check5 ",check5, " check5a ",check5a, " check6 ",check6)
 
 for fasta in new_keeped_consensus_list:
-    logging.info("Get " + fasta)
-    shutil.copy2(fasta,new_consensus_outdir) 
+    #logging.info("Get " + fasta)
+    #shutil.copy2(fasta,new_consensus_outdir) 
     pass
            
 def RunCmd(cmd):
@@ -355,7 +355,7 @@ for fasta in new_fasta_consensus:
     SeqIO.write(rec_list,not_align,'fasta')
 
     align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
-    success = RunCmd(align_cmd)
+    #success = RunCmd(align_cmd)
     
     CheckSnp(align,spec_id)
 
@@ -387,6 +387,27 @@ out_qc_status_hist = os.path.join(align_dir,"QcStatus.png")
 ax = qc_status_df['QC_STATUS'].hist(by=qc_status_df['VERSION'])
 for i,my_ax in enumerate(ax):
     my_ax.set_xlabel("Qc status")
+    rects = my_ax.patches
+    for rect in rects:
+        #print("RECT ",rect)
+        #x_val = rect.get_width()
+        x_val = rect.get_x() + rect.get_width() / 2
+        #print("X VAL ",x_val)
+        #y_val = rect.get_y() + rect.get_height() / 2
+        y_val = rect.get_height()
+        #print("Y VAL ",y_val)
+        space = 2
+        ha = 'left'
+        if x_val < 0:
+            space *= -1
+            ha = 'right'
+
+        #label = "{:.1f}".format(y_val)
+        label = str(int(y_val))
+        #print("label ",label)
+        if y_val > 0:
+            my_ax.annotate(label,(x_val,y_val),xytext=(-1,10),textcoords="offset points",va='center',ha='center',rotation=60) # voir https://matplotlib.org/3.3.3/api/_as_gen/matplotlib.axes.Axes.annotate.html
+    
     if i == 0:
         my_ax.set_ylabel("Samples Frequency")
 plt.suptitle("QC Status Distribution")
