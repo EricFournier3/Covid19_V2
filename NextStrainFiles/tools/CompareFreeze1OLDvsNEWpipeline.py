@@ -35,7 +35,7 @@ def MountBelugaServer():
     os.system("sudo sshfs -o allow_other -o follow_symlinks {0} {1}".format(beluga_server,mnt_beluga_server))
     logging.info("Beluga mounted")
 
-#MountBelugaServer()
+MountBelugaServer()
 
 
 compare_outdir = "/data/PROJETS/COVID-19_Beluga/Consensus/CompareFreeze1_OLDvsNEW_pipeline/"
@@ -244,8 +244,8 @@ print("len(duplicated_path)",len(duplicated_path)) # len(duplicated_path) 0
 #print("Check ",check, " check2 ",check2," check3 ",check3, " check4 ",check4," check5 ",check5, " check5a ",check5a, " check6 ",check6)
 
 for fasta in new_keeped_consensus_list:
-    #logging.info("Get " + fasta)
-    #shutil.copy2(fasta,new_consensus_outdir) 
+    logging.info("Get " + fasta)
+    shutil.copy2(fasta,new_consensus_outdir) 
     pass
            
 def RunCmd(cmd):
@@ -270,7 +270,7 @@ nuc_diff_df_no_N_list = []
 
 #Check differences between old and new consensus
 def CheckSnp(fasta_align,spec_id):
-    #logging.info("Work on " + spec_id) 
+    logging.info("Work on " + spec_id) 
     
     fh = open(fasta_align, 'rt')
     
@@ -355,7 +355,7 @@ for fasta in new_fasta_consensus:
     SeqIO.write(rec_list,not_align,'fasta')
 
     align_cmd="mafft --reorder --anysymbol --nomemsave --adjustdirection --thread 40 {0} > {1}".format(not_align,align)
-    #success = RunCmd(align_cmd)
+    success = RunCmd(align_cmd)
     
     CheckSnp(align,spec_id)
 
