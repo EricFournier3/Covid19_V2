@@ -119,7 +119,6 @@ def CompareOldTechnoFromFastaHeader2FastaName():
         if not re.search(techno_from_name,techno_from_header,re.IGNORECASE):
             print("Mismatch old techno for ", my_id, " header: ",techno_from_header, " name : ",techno_from_name)
 
-#for gisaid_fasta in [fasta_gisaid_sequence_sub_1]:
 for gisaid_fasta in [fasta_gisaid_sequence_sub_1,fasta_gisaid_sequence_sub_2,fasta_gisaid_sequence_sub_3]:
     for rec in SeqIO.parse(gisaid_fasta,'fasta'):
         techno = GetGisaidTechnoFromFastaHeader(rec.id)
@@ -132,7 +131,7 @@ for gisaid_fasta in [fasta_gisaid_sequence_sub_1,fasta_gisaid_sequence_sub_2,fas
 CompareOldTechnoFromFastaHeader2FastaName()
 
 
-#print("len(gisaid_rec_dict) : ",len(gisaid_rec_dict)) # len(gisaid_rec_dict) :  734
+print("len(gisaid_rec_dict) : ",len(gisaid_rec_dict)) # len(gisaid_rec_dict) :  734
 
 new_rej_consensus = []
 new_multiple_consensus = []
@@ -238,9 +237,9 @@ def FindDuplicatedPath():
 FindDuplicatedPath()
  
 new_keeped_consensus_set = set(new_keeped_consensus_list)
-#print("len(new_keeped_consensus_set)", len(new_keeped_consensus_set)) # len(new_keeped_consensus_set) 517
-#print("duplicated_path ", duplicated_path) # duplicated_path  []
-#print("len(duplicated_path)",len(duplicated_path)) # len(duplicated_path) 0
+print("len(new_keeped_consensus_set)", len(new_keeped_consensus_set)) # 
+print("duplicated_path ", duplicated_path) # 
+print("len(duplicated_path)",len(duplicated_path)) # 
 
 #print("Check ",check, " check2 ",check2," check3 ",check3, " check4 ",check4," check5 ",check5, " check5a ",check5a, " check6 ",check6)
 
@@ -263,8 +262,8 @@ def RunCmd(cmd):
     else:
         return True
 
-new_fasta_consensus = glob.glob(new_consensus_outdir + "/*.fasta")[0:3]
-#new_fasta_consensus = glob.glob(new_consensus_outdir + "/*.fasta")
+#new_fasta_consensus = glob.glob(new_consensus_outdir + "/*.fasta")[0:3]
+new_fasta_consensus = glob.glob(new_consensus_outdir + "/*.fasta")
 
 nuc_diff_df_list = []
 nuc_diff_df_no_N_list = []
@@ -307,7 +306,6 @@ def CheckSnp(fasta_align,spec_id):
     old_qc_status = rec_dict[my_seq_id]['old_qcstatus_from_beluga_fasta_path']
     old_qc_status_np = np.full((len(snps_np_pos),1),old_qc_status) 
     #print(old_qc_status_np)
-
 
     old_techno_from_fasta_header = rec_dict[my_seq_id]['old_techno_from_fasta_header']
     old_techno_from_fasta_header_np = np.full((len(snps_np_pos),1),old_techno_from_fasta_header)
@@ -392,8 +390,8 @@ for i,my_ax in enumerate(ax):
     if i == 0:
         my_ax.set_ylabel("Samples Frequency")
 plt.suptitle("QC Status Distribution")
-#plt.savefig(out_qc_status_hist)
-plt.show()
+plt.savefig(out_qc_status_hist)
+#plt.show()
 
 out_nb_sites_diff = os.path.join(align_dir,"NbSitesDiff.png")
 group_by_id_df = nuc_diff_df.groupby(['ID']).agg('count')
@@ -401,8 +399,8 @@ ax = group_by_id_df['NEW_NUC'].hist(bins=10)
 ax.set_xlabel("Number of different positions")
 ax.set_ylabel("Samples Frequency")
 plt.suptitle("New versus old consensus")
-#plt.savefig(out_nb_sites_diff)
-plt.show()
+plt.savefig(out_nb_sites_diff)
+#plt.show()
 
 
 out_nb_sites_diff_no_N = os.path.join(align_dir,"NbSitesDiffNoN.png")
@@ -411,8 +409,8 @@ ax = group_by_id_df_no_N['NEW_NUC'].hist(bins=10)
 ax.set_xlabel("Number of different positions")
 ax.set_ylabel("Samples Frequency")
 plt.suptitle("New versus old consensus (excluding Ns)")
-#plt.savefig(out_nb_sites_diff_no_N)
-plt.show()
+plt.savefig(out_nb_sites_diff_no_N)
+#plt.show()
 
 def CheckIfTechnoFromHeaderSameAsTechnoFromFastaName(row):
     if row.OLD_TECHNO_FROM_NAME.upper() in row.OLD_TECHNO_FROM_HEADER.upper():
