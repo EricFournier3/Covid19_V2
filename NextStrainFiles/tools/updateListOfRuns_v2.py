@@ -53,7 +53,9 @@ def main() :
     global logfile
     global runMessageFile
     global missingConsensusLog
+    global missingVCFLog
     global consensusListFile
+    global vcfListFile
     global missingConsPercNLog
     global hiddenSampleFile
     global LRUNHEADER
@@ -94,10 +96,17 @@ def main() :
 
     missingConsensusLog_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_MissingConsensus" +".txt")
     missingConsensusLog = open(missingConsensusLog_path,'w')
+    
+    missingVCFLog_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_MissingVcf" +".txt")
+    missingVCFLog = open(missingVCFLog_path,'w')
 
     consensusListFile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList" +".list")
     consensusListFile = open(consensusListFile_path,'w')
     consensusListFile.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\n")
+
+    vcfListFile_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_vcfList" +".list")
+    vcfListFile = open(vcfListFile_path,'w')
+    vcfListFile.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\n")
 
     missingConsPercNLog_path = os.path.join(TRACE_DIR,os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_MissingConsPercN" +".txt")
     missingConsPercNLog = open(missingConsPercNLog_path,'w')
@@ -223,6 +232,11 @@ def updateRepo( drun, dplate, repodir ) :
                     
                     # For all the samples in processing directory
                     for sname in lsample :
+                        # 20201217 pour test seulement
+                        '''
+                        if sname in ['L00235295','L00234878','JUS-V5301580','JUS-V5272229','L00228862','L00218559','L00241513','L00241435']:
+                            print("YES ",sname)
+                        '''
                         s += 1
                         
                         # Relative path to processing dir => NO : abs path
@@ -298,12 +312,20 @@ def updateRepo( drun, dplate, repodir ) :
                                 os.symlink( lbami[0] , os.path.join( sampledirdest , sample + ".primertrim.bam.bai" ) )
                           
                             # Link to vcf major variants
+                            #20201217
                             if techno == "nanopore" :
-                                lvcfmaj     = glob.glob( os.path.join( sampledirsrc ,  "*.pass.vcf" ) )
-                            else :
-                                lvcfmaj     = glob.glob( os.path.join( sampledirsrc ,  "*.primerTrim.vcf" ) )
+                                #lvcfmaj     = glob.glob( os.path.join( sampledirsrc ,  "*.pass.vcf" ) )
+                                lvcfmaj     = glob.glob( os.path.join( sampledirsrc ,  "*.pass.SnpEff.vcf" ) )
+                            elif techno == "mgi":
+                                lvcfmaj     = glob.glob( os.path.join( sampledirsrc ,  "*.primerTrim.annotate.vcf" ) )
+                            else : #illumina
+                                if run  not in ILLUMINA_OLD_RUNS:
+                                    sampledirsrc_variant = re.sub(r'consensus','variant',sampledirsrc)
+                                else:
+                                    sampledirsrc_variant = sampledirsrc
+                                lvcfmaj     = glob.glob( os.path.join( sampledirsrc_variant ,  "*.sorted.filtered.primerTrim.annotate.vcf" ) )
                             if len(lvcfmaj) > 0 :
-                                os.symlink( lvcfmaj[0] , os.path.join( sampledirdest , sample + ".major.vcf" ) )
+                                os.symlink( lvcfmaj[0] , os.path.join( sampledirdest , sample + "SnpEff.major.vcf" ) )
                             
                             # Link to vcf minor variants
                             if techno == "nanopore" :
@@ -392,6 +414,10 @@ def updateRepo( drun, dplate, repodir ) :
 
                                 if dsamplejson["qcstatus"] in ["PASS","FLAG","REJ"] and save_consensus_path:
                                     consensusListFile.write(str(sample).split('_')[0] + "\t" + dsamplejson["qcstatus"] + "\t" + lconsensus[0]  + "\t" + techno + "\t" + dsamplejson["cons.perc.N"] + "\t"+ run + "\n")
+                                    try:
+                                        vcfListFile.write(str(sample).split('_')[0] + "\t" + dsamplejson["qcstatus"] + "\t" + lvcfmaj[0]  + "\t" + techno + "\t" + dsamplejson["cons.perc.N"] + "\t"+ run + "\n")
+                                    except:
+                                        missingVCFLog.write((str(sample).split('_')[0] + "\t" + techno + "\t" + run + "\n"))
 
                                 if not save_consensus_path: 
                                     consensusListFile.write(str(sample).split('_')[0] + "\t" + "NA" + "\t" + "NA"  + "\t" + techno + "\t" + "NA" + "\t"+ run + "\n")
@@ -508,7 +534,18 @@ def updateRunFile(  ) :
         if tech == "nanopore" :
             i       = -1
 
+        #20201217 seulement pour accelerer test
+        '''
+        lrun = []
+        if tech == "illumina":
+            lrun = ["20200609_illumina_LSPQPlate06_HM2CTDRXX","20200828_LSPQ_GQ0011-0018_CTL"]
+        elif tech == "nanopore":
+            lrun = ["LSPQplate9C_FAN28417_20200425"]
+        else: #mgi
+            lrun = ["20200608"]
+        '''
         lrun    = os.listdir( techdir )
+
         # For each run of the  technology
         for run in lrun :
             if verbose:
@@ -677,7 +714,9 @@ if __name__ == "__main__":
         logfile.close()
         runMessageFile.close()
         missingConsensusLog.close()
+        missingVCFLog.close()
         consensusListFile.close()
+        vcfListFile.close()
         missingConsPercNLog.close()
         hiddenSampleFile.close()
     except KeyboardInterrupt:
