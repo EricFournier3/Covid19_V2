@@ -15,6 +15,7 @@ import glob
 vcf_basedir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/OUT/VCF/"
 parsed_outdir = os.path.join(vcf_basedir,"PARSED")
 parsed_outfile = os.path.join(parsed_outdir,"Variant_20200201_20201218.xlsx")
+req_not_found_in_envois_gq = os.path.join(parsed_outdir,"ReqNotFound_20200201_20201218.xlsx")
 
 vcf_infiles = glob.glob(vcf_basedir + "/*.vcf")
 
@@ -75,15 +76,43 @@ for vcf_file in vcf_infiles:
         #print("********************************************")
      
 mut_df = pd.DataFrame(columns=['# Requête',"AA_MUTATIONS"])
-envois_gq_df = pd.read_excel("/data/Databases/CovBanQ_Epi/LISTE_ENVOIS_GENOME_QUEBEC/ListeEnvoisGenomeQuebec_test_variant.xlsx",sheet_name=0) 
+
+envois_gq_df = pd.read_excel("/data/Databases/CovBanQ_Epi/LISTE_ENVOIS_GENOME_QUEBEC/ListeEnvoisGenomeQuebec_2020-12-02.xlsx",sheet_name=0) 
+#envois_gq_df = pd.read_excel("/data/Databases/CovBanQ_Epi/LISTE_ENVOIS_GENOME_QUEBEC/ListeEnvoisGenomeQuebec_test_variant.xlsx",sheet_name=0) 
+envois_gq_df['# Requête'] = envois_gq_df['# Requête'].str.upper().str.strip(' ')
+
+sgil_df = pd.read_table("/data/Databases/CovBanQ_Epi/SGIL_EXTRACT/extract_with_Covid19_extraction_v2_20201203_CovidPos.txt")
+
 
 for spec,mut in spec_mut_dict.items():
     #print(spec, " : ",str(mut))
     mut_df = mut_df.append({'# Requête':spec,'AA_MUTATIONS':str(mut)},ignore_index=True)
     mut_df['# Requête'] = mut_df['# Requête'].str.upper()
 
-final_mut_df = pd.merge(mut_df,envois_gq_df,how='inner',on = ['# Requête'])
-final_mut_df = final_mut_df[['# Requête','Nom','Prénom','Date de naissance','NAM','AA_MUTATIONS']]
-#print(final_mut_df)
-final_mut_df.to_excel(parsed_outfile,sheet_name='Sheet1')
 
+mut_df['# Requête'] = mut_df['# Requête'].str.replace(r'(^HGA-\S+)2D$',r'\1',regex=True)
+mut_df['# Requête'] = mut_df['# Requête'].str.strip(' ')
+
+#temp_df = mut_df.loc[mut_df['# Requête'].str.contains('HGA'),'# Requête']
+#print(temp_df)
+
+final_mut_df_1 = pd.merge(mut_df,envois_gq_df,how='inner',on = ['# Requête'])
+final_mut_df_1 = final_mut_df_1[['# Requête','Nom','Prénom','Date de naissance','NAM','Date de prélèvement','AA_MUTATIONS']]
+
+print("SHAPE 1",final_mut_df_1.shape[0])
+
+final_mut_df_2 = pd.merge(mut_df,sgil_df,how='inner',left_on = '# Requête',right_on='NUMERO_SGIL')
+final_mut_df_2 = final_mut_df_2.rename(columns={'DATE_NAISS':'Date de naissance','NOM':'Nom','PRENOM':'Prénom','SAMPLED_DATE':'Date de prélèvement'})
+final_mut_df_2 = final_mut_df_2[['# Requête','Nom','Prénom','Date de naissance','NAM','Date de prélèvement','AA_MUTATIONS']]
+
+print("SHAPE 2",final_mut_df_2.shape[0])
+final_mut_df = pd.concat([final_mut_df_1,final_mut_df_2])
+
+req_found = list(final_mut_df['# Requête'])
+#print(final_mut_df)
+
+req_not_found_in_envois_gq_df = mut_df.loc[~mut_df['# Requête'].isin(req_found)]
+req_not_found_in_envois_gq_df = req_not_found_in_envois_gq_df['# Requête']
+
+final_mut_df.to_excel(parsed_outfile,sheet_name='Sheet1',index=False)
+req_not_found_in_envois_gq_df.to_excel(req_not_found_in_envois_gq,sheet_name='Sheet1')
