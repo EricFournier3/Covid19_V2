@@ -1,0 +1,228 @@
+from os import environ
+from packaging import version
+from socket import getfqdn
+from getpass import getuser
+from snakemake.logging import logger
+import sys
+import stat
+import shutil
+from shutil import which
+import logging
+import datetime
+from datetime import timedelta
+import os
+import pandas as pd
+import subprocess
+from Bio import AlignIO
+from Bio import SeqIO
+
+
+logging.basicConfig(level=logging.DEBUG)
+
+#TODO choose here
+only_human = False
+
+
+#
+# Verify that required versions of dependencies are installed.
+#
+MIN_AUGUR_VERSION = "7.0.2"
+
+try:
+    from augur.__version__ import __version__ as augur_version
+except ModuleNotFoundError:
+    logger.error("ERROR: Could not find augur. Follow installation instructions at https://nextstrain.org/docs/ and try again.")
+    sys.exit(1)
+
+if version.parse(augur_version) < version.parse(MIN_AUGUR_VERSION):
+    logger.error("ERROR: Found version '%s' of augur, but version '%s' or greater is required" % (augur_version, MIN_AUGUR_VERSION))
+    sys.exit(1)
+
+SHELL_COMMANDS_NEEDED = ["augur", "iqtree", "mafft"]
+for sh_cmd in SHELL_COMMANDS_NEEDED:
+    if not which(sh_cmd):
+        logger.error(f"ERROR: `{sh_cmd}` is not available as a shell command. Please follow installation instructions at https://nextstrain.org/docs/ and try again.")
+        sys.exit(1)
+
+
+def get_todays_date():
+    date = datetime.datetime.today().strftime('%Y-%m-%d')
+    return date
+
+
+base_dir = "/data/PROJETS/COVID-19_Epidemio/UKvariantB117_20201221/"
+script_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/scripts/"
+tool_dir = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/tools/"
+
+align_out_dir = os.path.join(base_dir,"aligned")
+
+gisaid_fasta_all = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/20201220/sequences_2020-12-20_12-04.fasta"
+reference = os.path.join(base_dir,"reference.gb")
+
+gisaid_fasta_notaligned_B117 = os.path.join(base_dir,"gisaid_fasta_notaligned_B117_temp.fasta")
+metadata_B117 = os.path.join(base_dir,"MetadataGisaid_B.1.1.7_small.tsv")
+pd_metadata_B117 = pd.read_csv(metadata_B117,sep="\t",index_col=False)
+
+rec_to_keep = []
+strain_to_keep_from_metadata = list(pd_metadata_B117['strain'])
+print("LENGTH ",len(strain_to_keep_from_metadata))
+check = 0
+
+for rec in SeqIO.parse(gisaid_fasta_all,'fasta'):
+    check += 1
+    sys.stdout.write("Gisaid check >>> %d\r"%check)
+    sys.stdout.flush()
+    if str(rec.id) in strain_to_keep_from_metadata:
+        #rec_to_keep.append(rec[0:30])
+        rec_to_keep.append(rec)
+
+SeqIO.write(rec_to_keep,gisaid_fasta_notaligned_B117,'fasta')
+#exit(0)
+
+
+
+rule files: 
+    params:
+        reference = reference,
+        to_align =  gisaid_fasta_notaligned_B117
+
+files = rules.files.params
+
+#print(files.reference)
+
+
+checkpoint partition_sequences:
+    input:
+        sequences = files.to_align
+    output:
+        split_sequences = directory(os.path.join(align_out_dir,"split_sequences/pre/"))
+    params:
+        sequences_per_group = 150,
+        script_dir = script_dir
+    shell:
+        """
+        python3 {params.script_dir}partition-sequences.py \
+            --sequences {input.sequences} \
+            --sequences-per-group {params.sequences_per_group} \
+            --output-dir {output.split_sequences}
+        """
+
+rule partitions_intermediate:
+    message:
+        """
+        partitions_intermediate: Copying sequence fastas
+        {wildcards.cluster}
+        """
+    input:
+        os.path.join(align_out_dir,"split_sequences/pre/{cluster}.fasta")
+    output:
+        os.path.join(align_out_dir,"split_sequences/post/{cluster}.fasta")
+    shell:
+        "cp {input} {output}"
+
+rule align:
+    message:
+        """
+        Aligning sequences to {input.reference}
+          - gaps relative to reference are considered real
+        Cluster:  {wildcards.cluster}
+        """
+    input:
+        sequences = rules.partitions_intermediate.output,
+        reference = files.reference
+    output:
+        alignment = os.path.join(align_out_dir,"split_alignments/{cluster}.fasta")
+    threads: -1
+    shell:
+        """
+        augur align \
+            --sequences {input.sequences} \
+            --reference-sequence {input.reference} \
+            --output {output.alignment} \
+            --nthreads auto \
+            --remove-reference \
+            --fill-gaps
+        """
+
+def _get_alignments(wildcards):
+    checkpoint_output = checkpoints.partition_sequences.get(**wildcards).output[0]
+    return expand(os.path.join(align_out_dir,"split_alignments/{i}.fasta"),
+                  i=glob_wildcards(os.path.join(checkpoint_output, "{i}.fasta")).i)
+
+rule aggregate_alignments:
+    message: "Collecting alignments"
+    input:
+        alignments = _get_alignments
+    output:
+        alignment = os.path.join(align_out_dir,"aligned.fasta")
+    shell:
+        """
+        cat {input.alignments} > {output.alignment}
+        """
+
+rule mask:
+    message:
+        """
+        Mask bases in alignment
+          - masking {params.mask_from_beginning} from beginning
+          - masking {params.mask_from_end} from end
+          - masking other sites: {params.mask_sites}
+        """
+    input:
+        alignment = rules.aggregate_alignments.output.alignment
+    output:
+        alignment = os.path.join(align_out_dir,"masked.fasta")
+    params:
+        mask_from_beginning = 100,
+        mask_from_end = 50,
+        mask_sites = "18529 29849 29851 29853",
+        script_dir = script_dir
+    shell:
+        """
+        python3 {params.script_dir}mask-alignment.py \
+            --alignment {input.alignment} \
+            --mask-from-beginning {params.mask_from_beginning} \
+            --mask-from-end {params.mask_from_end} \
+            --mask-sites {params.mask_sites} \
+            --output {output.alignment}
+        """
+
+
+rule extract_seq_region:
+    message:
+        """
+        Extract S region
+        """
+    input :
+        align_file = rules.mask.output.alignment
+    output :
+        out_s =  os.path.join(align_out_dir,"S_region_B117.fasta")
+    params:
+        script_dir = tool_dir
+    shell:
+        """
+        python3 {params.script_dir}ExtractSregion.py \
+            --alignment {input.align_file} \
+            --output-s-region {output.out_s}
+        """
+
+rule get_seq_length:
+    message:
+        """
+        Get seq length
+        """
+    input :
+        align_file = rules.mask.output.alignment,
+        fasta_temp = gisaid_fasta_notaligned_B117
+    output: 
+        out_seq_length = os.path.join(align_out_dir,"seq_length.txt")
+    params:
+        script_dir = tool_dir
+    shell:
+        """
+        python3 {params.script_dir}GetSeqLength.py \
+            --alignment {input.align_file} \
+            --output-seq-length {output.out_seq_length} 
+        rm {input.fasta_temp}
+        """ 
+
