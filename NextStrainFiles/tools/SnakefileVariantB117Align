@@ -60,7 +60,7 @@ gisaid_fasta_all = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/data
 reference = os.path.join(base_dir,"reference.gb")
 
 gisaid_fasta_notaligned_B117 = os.path.join(base_dir,"gisaid_fasta_notaligned_B117_temp.fasta")
-metadata_B117 = os.path.join(base_dir,"MetadataGisaid_B.1.1.7_small.tsv")
+metadata_B117 = os.path.join(base_dir,"MetadataGisaid_B.1.1.7.tsv")
 pd_metadata_B117 = pd.read_csv(metadata_B117,sep="\t",index_col=False)
 
 rec_to_keep = []

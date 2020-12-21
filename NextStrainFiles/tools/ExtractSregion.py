@@ -10,8 +10,9 @@ args = parser.parse_args()
 rec_s_list = []
 
 for rec in AlignIO.read(args.alignment,'fasta'):
-    rec_s = rec[21563:25385]
+    rec_s = rec[21562:25384]
     #print(rec_s)
     rec_s_list.append(rec_s)
+    #print("S Length ",len(rec_s.seq))
 
 SeqIO.write(rec_s_list,args.output_s_region,'fasta')
