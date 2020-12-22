@@ -5,6 +5,7 @@ Eric Fournier 2020-10-19
 
 """
 
+import shutil
 import mysql.connector
 import datetime
 import pandas as pd
@@ -30,13 +31,13 @@ verifier si on peut resoumettre un numero; par exemple a la deuxieme soumission 
 """
 Usage exemple:
 
-python GetFastaForNextstrain_v2.py -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_Dev_2020-10-20_consensusList_small.list --debug   --maxsampledate 2020-10-20  --minsampledate 2020-05-15 --keep 'FLAG' --pangolin
+python GetFastaForNextstrain_v2.py -i /data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v2_2020-12-21_consensusList.list -v /data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v2_2020-12-21_vcfList.list   --maxsampledate 2020-10-20  --minsampledate 2020-05-15 --keep 'FLAG' --pangolin --sgil-metadata /data/Databases/CovBanQ_Epi/SGIL_EXTRACT/extract_with_Covid19_extraction_v2_20201221_CovidPos.txt --gq-metadata /data/Databases/CovBanQ_Epi/LISTE_ENVOIS_GENOME_QUEBEC/ListeEnvoisGenomeQuebec_2020-12-14.xlsx --gisaid-metadata /data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/metadata_2020-10-12_07-15.tsv
 
 Exemple pour un laser submission
-python GetFastaForNextstrain_v2_Dev.py  -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_2020-11-23_consensusList_small.list  --debug --maxsampledate 2020-12-01  --minsampledate 2020-02-01 --keep 'PASS' --laser-sub
+python GetFastaForNextstrain_v2.py  -i  /data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v2_2020-12-21_consensusList.list -v /data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v2_2020-12-21_vcfList.list  --maxsampledate 2020-12-01  --minsampledate 2020-02-01 --keep 'PASS' --laser-sub --sgil-metadata /data/Databases/CovBanQ_Epi/SGIL_EXTRACT/extract_with_Covid19_extraction_v2_20201221_CovidPos.txt --gq-metadata /data/Databases/CovBanQ_Epi/LISTE_ENVOIS_GENOME_QUEBEC/ListeEnvoisGenomeQuebec_2020-12-14.xlsx --gisaid-metadata /data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/metadata_2020-10-12_07-15.tsv
 
 Exemple pour laser submission freeze1
-python GetFastaForNextstrain_v2_Dev.py  -i /home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/updateListOfRuns_v2_2020-11-23_consensusList.list  --debug --maxsampledate 2020-05-01  --minsampledate 2020-02-01 --keep 'FLAG' --laser-sub-freeze1 --onlymetadata
+python GetFastaForNextstrain_v2_Dev.py  -i /data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v2_2020-12-21_consensusList.list -v /data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v2_2020-12-21_vcfList.list --maxsampledate 2020-05-01  --minsampledate 2020-02-01 --keep 'FLAG' --laser-sub-freeze1 --onlymetadata --sgil-metadata /data/Databases/CovBanQ_Epi/SGIL_EXTRACT/extract_with_Covid19_extraction_v2_20201221_CovidPos.txt --gq-metadata /data/Databases/CovBanQ_Epi/LISTE_ENVOIS_GENOME_QUEBEC/ListeEnvoisGenomeQuebec_2020-12-14.xlsx --gisaid-metadata /data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/metadata_2020-10-12_07-15.tsv
 """
 
 base_dir_dsp_db = "/data/Databases/CovBanQ_Epi/"
@@ -50,6 +51,7 @@ parser = argparse.ArgumentParser(description="Download Beluga consensus and Crea
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
 parser.add_argument('--laser-sub-freeze1',help="run in debug mode",action='store_true')
 parser.add_argument('--input','-i',help="Beluga fasta list file",required=True)
+parser.add_argument('--vcf','-v',help="Beluga vcf list file")
 parser.add_argument('--onlymetadata',help="Only produce metadata",action='store_true')
 parser.add_argument('--laser-sub',help="Produce metadata for LaSER submission",action='store_true')
 parser.add_argument('--pangolin',help="Produce pangolin mapping file for LNM",action='store_true')
@@ -58,12 +60,16 @@ parser.add_argument('--minsampledate',help="Minimum sampled date YYYY-MM-DD",req
 parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['ALL','PASS','FLAG'],required=True)
 parser.add_argument('--outbreak',help="Produce metadata for outbreak analysis",action='store_true')
 parser.add_argument('--max-perc-n',type=int,help='Maximun percentage of N tolerated in consensus for outbreak sample in outbreak analysis')
+parser.add_argument('--sgil-metadata',help='Path to sgil extract file',required=True)
+parser.add_argument('--gq-metadata',help='Path to liste envois genome quebec',required=True)
+parser.add_argument('--gisaid-metadata',help='Path to gisaid metadata',required=True)
 
 
 args = parser.parse_args()
 
 _debug_ = args.debug
 beluga_fasta_file  = args.input
+beluga_vcf_file  = args.vcf
 only_metadata = args.onlymetadata
 max_sample_date = args.maxsampledate
 min_sample_date = args.minsampledate
@@ -110,6 +116,7 @@ gisaid_sub_basedir = "/data/PROJETS/COVID-19_Beluga/Gisaid/FinalPublished/releas
 global liste_envoi_genome_quebec
 global sgil_extract
 global fasta_outdir
+global vcf_outdir
 global metadata_ourdir
 global pangolin_outdir
 global gisaid_metadata
@@ -123,34 +130,46 @@ if _outbreak_ and not max_perc_n:
     logging.error("Max perc N missing")
     exit(1)
 
+if (not only_metadata) and (not beluga_vcf_file) :
+    logging.error("Vcf path missing")
+    exit(1)
+
 
 if _debug_:
-    #sgil_extract = "/home/foueri01@inspq.qc.ca/temp/20200924/extract_with_Covid19_extraction_v2_20200923_CovidPos_small.txt"
-    #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"/home/foueri01@inspq.qc.ca/temp/20200924/ListeEnvoisGenomeQuebec_small6.xlsx")
-    #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","EnvoiSmall.xlsx")
-    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201123_CovidPos.txt")
-    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-11-06.xlsx")
-    #gisaid_metadata = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/IN/metadata_2020-10-12_07-15_small.tsv"
+    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201203_CovidPos.txt")
+    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-12-02.xlsx")
     gisaid_metadata = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/metadata_2020-10-12_07-15.tsv"
 else:
-    sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201123_CovidPos.txt")
-    liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-11-06.xlsx")
-    gisaid_metadata = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/metadata_2020-10-12_07-15.tsv"
+    #sgil_extract = os.path.join(base_dir_dsp_db,"SGIL_EXTRACT","extract_with_Covid19_extraction_v2_20201221_CovidPos.txt")
+    sgil_extract = args.sgil_metadata
+    #liste_envoi_genome_quebec = os.path.join(base_dir_dsp_db,"LISTE_ENVOIS_GENOME_QUEBEC","ListeEnvoisGenomeQuebec_2020-12-14.xlsx")
+    liste_envoi_genome_quebec = args.gq_metadata
+    #gisaid_metadata = "/data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/metadata_2020-10-12_07-15.tsv"
+    gisaid_metadata = args.gisaid_metadata
 
-#TODO CHANGER base_dir pour production
-base_dir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/" if  _debug_ else "/data/PROJETS/COVID-19_Beluga/Metadata"
-in_dir = os.path.join(base_dir,"IN")
-out_dir = os.path.join(base_dir,"OUT")
 
-fasta_outdir = os.path.join(out_dir,'FASTA')
-metadata_outdir = os.path.join(out_dir,'METADATA')
-pangolin_outdir = os.path.join(out_dir,'PANGOLIN')
-laser_outdir = os.path.join(metadata_outdir,'LASER')
+if _debug_:
+    base_dir = "/home/foueri01@inspq.qc.ca/temp/TEST_GET_FASTA_FOR_NEXTSTRAIN/"
+    in_dir = os.path.join(base_dir,"IN")
+    out_dir = os.path.join(base_dir,"OUT")
+    fasta_outdir = os.path.join(out_dir,'FASTA')
+    vcf_outdir = os.path.join(out_dir,'VCF')
+    metadata_outdir = os.path.join(out_dir,'METADATA')
+    pangolin_outdir = os.path.join(out_dir,'PANGOLIN')
+    laser_outdir = os.path.join(metadata_outdir,'LASER')
+else:
+    base_dir = "/data/PROJETS/COVID-19_Beluga/"
+    in_dir = os.path.join(base_dir,"UpdateListOfRunsConsensusAndVcfList")
+    fasta_outdir = os.path.join(base_dir,"Consensus","Fasta")
+    vcf_outdir = os.path.join(base_dir,"VCF")
+    metadata_outdir = os.path.join(base_dir, "Metadata")
+    pangolin_outdir = os.path.join(base_dir,"Pangolin")
+    laser_outdir = os.path.join(metadata_outdir,"Laser")
+
 
 if not os.path.isfile(os.path.join(in_dir,beluga_fasta_file)):
     logging.error("File missing : " + os.path.join(in_dir,beluga_fasta_file))
     exit(1)
-
 
 ##################################################################################
 def MountBelugaServer():
@@ -495,9 +514,10 @@ class MetadataManager():
 
 
 class FastaGetter():
-    def __init__(self,pd_metadata,pd_fasta_list):
+    def __init__(self,pd_metadata,pd_fasta_list,pd_vcf_list):
         self.pd_metadata = pd_metadata
         self.pd_fasta_list = pd_fasta_list
+        self.pd_vcf_list = pd_vcf_list
         self.fasta_rec_list = []
 
         self.samples_to_keep = list(self.pd_metadata['sample'])
@@ -518,8 +538,31 @@ class FastaGetter():
         idx  = self.pd_selected_fasta.groupby(['SAMPLE'])['TECHNO'].transform(min) == self.pd_selected_fasta['TECHNO']
         self.pd_selected_fasta = self.pd_selected_fasta[idx]
 
+    def GetVcf(self):
+        temp_df = self.pd_selected_fasta.copy()
+        temp_df = temp_df[['SAMPLE','RUN_NAME','TECHNO']]
+        self.pd_selected_vcf = pd.merge(temp_df,self.pd_vcf_list,how='inner',on=['SAMPLE','RUN_NAME','TECHNO'])
+        self.pd_selected_vcf['PATH'] = self.pd_selected_vcf['PATH'].str.replace(r'/genfs/projects/',mnt_beluga_server,regex=True)
+      
+        print("Shape FASTA ",temp_df.shape[0]) 
+        print("Shape VCF ",self.pd_selected_vcf.shape[0])
+        vcf_list = list(self.pd_selected_vcf['SAMPLE'])
+        print("len(vcf_list) ",len(vcf_list))
+        not_in_vcf_df = temp_df.loc[~temp_df['SAMPLE'].isin(vcf_list),:]
+        not_in_vcf_list = list(not_in_vcf_df['SAMPLE'])
+        print("len(not_in_vcf_list) ",len(not_in_vcf_list))
+        print("not_in_vcf_list ",not_in_vcf_list)
+        
+        for index, row in self.pd_selected_vcf.iterrows():
+            vcf_beluga_path = str(row['PATH'])
+            logging.info("Get " + vcf_beluga_path)
+
+            shutil.copy(vcf_beluga_path,os.path.join(vcf_outdir,os.path.basename(vcf_beluga_path)))
+            
 
     def GetFastaFromBeluga(self,beluga_fasta_file,max_sample_date,min_sample_date):
+
+        self.GetVcf()
 
         id_pattern = r'(^Canada/Qc-)(\S+)(/\d{4})'
 
@@ -589,6 +632,14 @@ class FastaGetter():
         os.remove(fasta_file)
 
 
+class VcfListManager():
+    def __init__(self,vcf_list_file):
+        self.vcf_list_file = vcf_list_file
+        self.pd_vcf_list = self.GetPdVcfList()
+
+    def GetPdVcfList(self):
+        pd_df = pd.read_csv(self.vcf_list_file,sep="\t",index_col=False)
+        return(pd_df.loc[pd_df['STATUS'].isin(fasta_qual_status_to_keep),:])
 
 class FastaListManager():
     def __init__(self,fasta_list_file):
@@ -680,6 +731,8 @@ def Main():
     logging.info("In Main()")
 
     fasta_list_manager = FastaListManager(os.path.join(in_dir,beluga_fasta_file))
+    vcf_list_manager = VcfListManager(os.path.join(in_dir,beluga_vcf_file))
+
 
     if _outbreak_:
         tolerated_rej_sample = fasta_list_manager.GetRejSamplesTolerated()
@@ -704,9 +757,10 @@ def Main():
 
     if not only_metadata and qc_keep in ['PASS','FLAG']:
         MountBelugaServer()
-        fasta_getter = FastaGetter(metadata_manager.GetPdMetadata(),fasta_list_manager.GetPdFastaList())
+        fasta_getter = FastaGetter(metadata_manager.GetPdMetadata(),fasta_list_manager.GetPdFastaList(),vcf_list_manager.GetPdVcfList())
         fasta_getter.SelectFasta()
         fasta_getter.GetFastaFromBeluga(beluga_fasta_file,max_sample_date.strftime("%Y-%m-%d"),min_sample_date.strftime("%Y-%m-%d"))
+
         if laser_sub and qc_keep in ['PASS']:
             techno_dir = GetTechno(fasta_getter.GetFinalFasta())
 
