@@ -67,6 +67,10 @@ global input_file_path
 input_file_path = os.path.join(trace_path,input_file_name)
 
 
+def TEST():
+    print("IN TESTING")
+
+
 class Run():
     def __init__(self,run_name,run_path,techno):
         self.run_name = run_name
@@ -78,6 +82,9 @@ class Run():
         self.SetSamplesObjList()
 
         #print(self.samples_obj_list)
+
+    def GetRunName(self):
+        return(self.run_name)
 
     def SetSamplesObjList(self):
         self.samples_obj_list = []
@@ -135,11 +142,20 @@ class Run():
         else: #nanopore
             self.analysis_dir = glob.glob(os.path.join(self.run_path,"analysis" + "/*nanopolish_800x"))[0]
 
+    def FindThisSample(self,sample_name):
+        print("TRY TO FIND ",sample_name)
 
 class Plate():
     def __init__(self,plate_name,df):
         self.plate_name = plate_name
         self.df = df
+        self.samples_list = list(self.df['Name'])
+
+    def GetPlateName(self):
+        return(self.plate_name)
+
+    def GetSamplesList(self):
+        return(self.samples_list)
 
 class Sample():
     def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff):
@@ -182,7 +198,31 @@ def BuildPlateObjList(listplate_sample_manager_obj):
         #print(plate_df)
         plate_obj_list.append(Plate(plate_name,plate_df))
 
-    #print(plate_obj_list)
+    return(plate_obj_list)
+
+
+def FindThisSampleInRuns(sample,run_obj_list):
+    
+    for run in run_obj_list:
+        print("RUN ",run.GetRunName())
+        run.FindThisSample(sample)
+
+def BuildRepository(plate_obj_list,run_obj_list):
+    for plate in plate_obj_list:
+        #print(plate.GetPlateName())
+        #print(plate.GetSamplesList())
+        plate_name = plate.GetPlateName()
+        samples_list = plate.GetSamplesList()
+
+        plate_path = os.path.join(repository_path,plate_name)
+        try:
+            os.mkdir(plate_path)
+        except OSError as error:
+            logging.info("Impossible de crée " + plate_name)
+
+        for sample in samples_list:
+            FindThisSampleInRuns(sample,run_obj_list)
+
 
 def Main():
     listplate_sample_manager_obj = ListPlateSampleManager(input_file_path)
@@ -203,7 +243,7 @@ def Main():
             run_obj_list.append(run_obj)
 
     #print(run_obj_list)
-
+    BuildRepository(plate_obj_list,run_obj_list)
 
 if __name__ == '__main__':
     Main()
