@@ -67,11 +67,6 @@ nanopore_base_dir = os.path.join(full_processing_path,"nanopore")
 global input_file_path
 input_file_path = os.path.join(trace_path,input_file_name)
 
-
-def TEST():
-    print("IN TESTING")
-
-
 class Run():
     def __init__(self,run_name,run_path,techno):
         self.run_name = run_name
@@ -87,6 +82,12 @@ class Run():
     def GetRunName(self):
         return(self.run_name)
 
+    def GetRunDate(self):
+            return(self.run_name.split('_')[-1] if self.techno == 'nanopore' else self.run_name.split('_')[0])
+
+    def GetRunTechno(self):
+        return(self.techno.lower())
+
     def SetSamplesObjList(self):
         self.samples_obj_list = []
 
@@ -94,7 +95,6 @@ class Run():
         clean_raw_reads_suffix = "*trim.pair1.fastq.gz"
         host_removal_suffix = "*host_removed.pair1.fastq.gz"
         metrics_suffix = "*metrics.csv"
-
 
         if hasattr(self,"analysis_dir"): #nanopore
             search_dir = self.analysis_dir
@@ -236,9 +236,17 @@ def BuildRepository(plate_obj_list,run_obj_list):
             logging.info("Impossible de crée " + plate_name)
 
         for sample in samples_list:
+            #TODO enregistrer les sample trouve null part
             found_runs = FindThisSampleInRuns(sample,run_obj_list)
+            #print("For ", sample , " => FOUND RUNS ",[x.GetRunName() for x in found_runs])
+            for found_run in found_runs:
+                sample_dir_name = ""
+                run_techno = found_run.GetRunTechno()
+                run_name = found_run.GetRunName()
+                run_date = found_run.GetRunDate()
+                sample_dir_name = plate_name + "." + sample + "." + run_techno + "." + run_date 
+                print("SAMPLE DIR NAME ",sample_dir_name)
 
-            print("For ", sample , " => FOUND RUNS ",[x.GetRunName() for x in found_runs])
         print("--------------------------------------------------------")
 
 def Main():
