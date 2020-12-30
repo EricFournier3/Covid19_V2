@@ -1,7 +1,5 @@
 # coding=utf-8
 
-
-
 import pandas as pd
 import logging
 import numpy as np
@@ -77,24 +75,56 @@ class Run():
         #print("self.run_path >> ",self.run_path)
 
         self.SetPath()
-        self.SetSamplesList()
+        self.SetSamplesObjList()
 
-        #print(self.samples_list)
+        #print(self.samples_obj_list)
 
-    def SetSamplesList(self):
-        self.samples_list = []
+    def SetSamplesObjList(self):
+        self.samples_obj_list = []
+
+        consensus_suffix = ".consensus.{0}.*.fasta".format(self.techno)
+        clean_raw_reads_suffix = "*trim.pair1.fastq.gz"
+        host_removal_suffix = "*host_removed.pair1.fastq.gz"
+        metrics_suffix = "*metrics.csv"
+
 
         if hasattr(self,"analysis_dir"): #nanopore
             search_dir = self.analysis_dir
+            variant_snpeff_suffix = "*.pass.SnpEff.vcf"
         else:
             search_dir = self.consensus_dir
+            variant_snpeff_suffix = "*sorted.filtered.primerTrim.annotate.vcf" 
 
         for sample in [x for x in os.listdir(search_dir) if os.path.isdir(os.path.join(search_dir,x))]:
-            self.samples_list.append(sample)
-            #TODO creer des object Sample ici
+
+            sample_consensus = glob.glob(self.analysis_dir + "/" + sample + "/" + re.sub(r'_\d$','',sample)  + consensus_suffix) if hasattr(self,"analysis_dir") else glob.glob(self.consensus_dir + "/" + sample + "/" + re.sub(r'_\d$','',sample) + consensus_suffix)
+            try:
+                sample_consensus = sample_consensus[0]
+            except:
+                sample_consensus = ""
+
+            cleaned_raw_reads = glob.glob(self.cleaned_raw_reads_dir  + "/" + sample + "/" + re.sub(r'_\d$','',sample) + clean_raw_reads_suffix) if not hasattr(self,"analysis_dir") else []
+
+            host_removal = glob.glob(self.host_removal_dir  + "/" + sample + "/" + re.sub(r'_\d$','',sample) + host_removal_suffix) if not hasattr(self,"analysis_dir") else []
+
+            metrics = glob.glob(self.analysis_dir  + "/" + sample + "/" + re.sub(r'_\d$','',sample) + metrics_suffix) if  hasattr(self,"analysis_dir") else glob.glob(self.metrics_dir + "/" + metrics_suffix)
+
+            try:
+                metrics = metrics[0]
+            except:
+                metrics = ""
+
+            variant_snpeff = glob.glob(self.analysis_dir  + "/" + sample + "/" + re.sub(r'_\d$','',sample) + variant_snpeff_suffix) if  hasattr(self,"analysis_dir") else glob.glob(self.variant_dir + "/" + sample  +  "/" + re.sub(r'_\d$','',sample) + variant_snpeff_suffix)
+
+            try:
+                variant_snpeff = variant_snpeff[0]
+            except:
+                variant_snpeff = ""
+
+            self.samples_obj_list.append(Sample(sample,sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff))
 
     def SetPath(self):
-        if self.techno in ['illumina','mgi']:
+        if self.techno in ['illumina','MGI']:
             self.consensus_dir = os.path.join(self.run_path,"consensus") 
             self.alignment_dir = os.path.join(self.run_path,"alignment") 
             self.cleaned_raw_reads_dir = os.path.join(self.run_path,"cleaned_raw_reads") 
@@ -112,8 +142,13 @@ class Plate():
         self.df = df
 
 class Sample():
-    def __init__(self,sample_name):
+    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff):
         self.sample_name = sample_name
+        self.consensus_path = consensus
+        self.cleaned_raw_reads = cleaned_raw_reads
+        self.host_removal = host_removal
+        self.metrics = metrics
+        self.variant_snpeff = variant_snpeff
 
 class ListPlateSampleManager():
     def __init__(self,listPlateSample_name):
@@ -147,7 +182,7 @@ def BuildPlateObjList(listplate_sample_manager_obj):
         #print(plate_df)
         plate_obj_list.append(Plate(plate_name,plate_df))
 
-    print(plate_obj_list)
+    #print(plate_obj_list)
 
 def Main():
     listplate_sample_manager_obj = ListPlateSampleManager(input_file_path)
@@ -156,7 +191,7 @@ def Main():
 
     run_obj_list = []
 
-    for key, value in {illumina_base_dir:'illumina',mgi_base_dir:'mgi',nanopore_base_dir:'nanopore'}.items():
+    for key, value in {illumina_base_dir:'illumina',mgi_base_dir:'MGI',nanopore_base_dir:'nanopore'}.items():
         techno = value
         #print("techno >> ",techno)
         for run_name in os.listdir(key):
