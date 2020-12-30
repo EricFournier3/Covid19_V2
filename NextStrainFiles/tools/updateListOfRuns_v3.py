@@ -22,6 +22,7 @@ Note:
 TODO:
     - combiner updateSampleList_v2.py et updateListOfRuns_v2.py
     - modifier le README
+    - ne pas oublier le NOTFOUND dans REPOSITORY
 '''
 
 pd.options.display.max_columns = 100
@@ -128,7 +129,8 @@ class Run():
             except:
                 variant_snpeff = ""
 
-            self.samples_obj_list.append(Sample(sample,sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff))
+            #print("APPEND ",sample)
+            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff))
 
     def SetPath(self):
         if self.techno in ['illumina','MGI']:
@@ -143,7 +145,11 @@ class Run():
             self.analysis_dir = glob.glob(os.path.join(self.run_path,"analysis" + "/*nanopolish_800x"))[0]
 
     def FindThisSample(self,sample_name):
-        print("TRY TO FIND ",sample_name)
+        #print("TRY TO FIND ",sample_name)
+        for sample_obj in self.samples_obj_list:
+            if sample_obj.GetSampleName() == sample_name:
+                #print("YES FOUND ",sample_name)
+                return(True)
 
 class Plate():
     def __init__(self,plate_name,df):
@@ -165,6 +171,9 @@ class Sample():
         self.host_removal = host_removal
         self.metrics = metrics
         self.variant_snpeff = variant_snpeff
+
+    def GetSampleName(self):
+        return(self.sample_name)
 
 class ListPlateSampleManager():
     def __init__(self,listPlateSample_name):
@@ -203,14 +212,20 @@ def BuildPlateObjList(listplate_sample_manager_obj):
 
 def FindThisSampleInRuns(sample,run_obj_list):
     
+    found_runs_list = []
+
     for run in run_obj_list:
-        print("RUN ",run.GetRunName())
-        run.FindThisSample(sample)
+        #print("RUN ",run.GetRunName())
+        found = run.FindThisSample(sample)
+        if found:
+            found_runs_list.append(run)
+
+    return(found_runs_list)
 
 def BuildRepository(plate_obj_list,run_obj_list):
     for plate in plate_obj_list:
-        #print(plate.GetPlateName())
-        #print(plate.GetSamplesList())
+        print("PLATE ",plate.GetPlateName())
+        print("    SAMPLE LIST ",plate.GetSamplesList())
         plate_name = plate.GetPlateName()
         samples_list = plate.GetSamplesList()
 
@@ -221,8 +236,10 @@ def BuildRepository(plate_obj_list,run_obj_list):
             logging.info("Impossible de crée " + plate_name)
 
         for sample in samples_list:
-            FindThisSampleInRuns(sample,run_obj_list)
+            found_runs = FindThisSampleInRuns(sample,run_obj_list)
 
+            print("For ", sample , " => FOUND RUNS ",[x.GetRunName() for x in found_runs])
+        print("--------------------------------------------------------")
 
 def Main():
     listplate_sample_manager_obj = ListPlateSampleManager(input_file_path)
