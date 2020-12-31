@@ -79,6 +79,9 @@ class Run():
 
         #print(self.samples_obj_list)
 
+    def GetRunPath(self):
+        return(self.run_path)
+
     def GetRunName(self):
         return(self.run_name)
 
@@ -92,8 +95,8 @@ class Run():
         self.samples_obj_list = []
 
         consensus_suffix = ".consensus.{0}.*.fasta".format(self.techno)
-        clean_raw_reads_suffix = "*trim.pair1.fastq.gz"
-        host_removal_suffix = "*host_removed.pair1.fastq.gz"
+        clean_raw_reads_suffix = "*trim.pair*.fastq.gz"
+        host_removal_suffix = "*host_removed.pair*.fastq.gz"
         metrics_suffix = "*metrics.csv"
 
         if hasattr(self,"analysis_dir"): #nanopore
@@ -146,10 +149,13 @@ class Run():
 
     def FindThisSample(self,sample_name):
         #print("TRY TO FIND ",sample_name)
+        sample_obj_found = None
         for sample_obj in self.samples_obj_list:
             if sample_obj.GetSampleName() == sample_name:
                 #print("YES FOUND ",sample_name)
-                return(True)
+                sample_obj_found = sample_obj
+                return(sample_obj_found)
+        return(sample_obj_found)
 
 class Plate():
     def __init__(self,plate_name,df):
@@ -174,6 +180,21 @@ class Sample():
 
     def GetSampleName(self):
         return(self.sample_name)
+
+    def GetConsensusPath(self):
+        return(self.consensus_path)
+
+    def GetCleanedRawReads(self):
+        return(self.cleaned_raw_reads)
+
+    def GetHostRemoval(self):
+        return(self.host_removal)
+
+    def GetMetrics(self):
+        return(self.metrics)
+
+    def GetVariantSnpeff(self):
+        return(self.variant_snpeff)
 
 class ListPlateSampleManager():
     def __init__(self,listPlateSample_name):
@@ -212,15 +233,15 @@ def BuildPlateObjList(listplate_sample_manager_obj):
 
 def FindThisSampleInRuns(sample,run_obj_list):
     
-    found_runs_list = []
+    found_runs_dict = {}
 
     for run in run_obj_list:
         #print("RUN ",run.GetRunName())
-        found = run.FindThisSample(sample)
-        if found:
-            found_runs_list.append(run)
+        sample_obj_found = run.FindThisSample(sample)
+        if sample_obj_found:
+            found_runs_dict[run] = sample_obj_found 
 
-    return(found_runs_list)
+    return(found_runs_dict)
 
 def BuildRepository(plate_obj_list,run_obj_list):
     for plate in plate_obj_list:
@@ -233,19 +254,51 @@ def BuildRepository(plate_obj_list,run_obj_list):
         try:
             os.mkdir(plate_path)
         except OSError as error:
-            logging.info("Impossible de crée " + plate_name)
+            logging.warning("Impossible de crée " + plate_name)
 
         for sample in samples_list:
             #TODO enregistrer les sample trouve null part
-            found_runs = FindThisSampleInRuns(sample,run_obj_list)
+            found_runs_dict = FindThisSampleInRuns(sample,run_obj_list)
             #print("For ", sample , " => FOUND RUNS ",[x.GetRunName() for x in found_runs])
-            for found_run in found_runs:
+            for found_run,samples_obj in found_runs_dict.items():
                 sample_dir_name = ""
                 run_techno = found_run.GetRunTechno()
                 run_name = found_run.GetRunName()
                 run_date = found_run.GetRunDate()
+                run_path = found_run.GetRunPath()
+
                 sample_dir_name = plate_name + "." + sample + "." + run_techno + "." + run_date 
-                print("SAMPLE DIR NAME ",sample_dir_name)
+                sample_dir_path = os.path.join(plate_path,sample_dir_name)
+                #print("SAMPLE DIR PATH ",sample_dir_path)
+
+                try:
+                    os.mkdir(sample_dir_path)
+                except OSError as error:
+                    logging.warning("Impossible de crée " + sample_dir_path)
+
+                ################# Symlink consensus ################
+                try:
+                    src_consensus = samples_obj.GetConsensusPath()
+                    #print("SRC CONSENSUS ", src_consensus)
+                    symlink_consensus = os.path.join(sample_dir_path,os.path.basename(src_consensus))
+                    #print("SYMLINK CONSENSUS ",symlink_consensus)
+                    os.symlink(src_consensus,symlink_consensus)
+                except OSError as error:
+                    logging.warning("Impossible de créer le symlink consensus pour " + sample_dir_path)
+
+
+                ################# Symlink cleaned raw reads ################
+                try:
+                    src_cleaned_raw_reads = samples_obj.GetCleanedRawReads()
+                    for src in src_cleaned_raw_reads:
+                        print("SRC CLEANED RAW READS ",src)
+                        symlink = os.path.join(sample_dir_path,os.path.basename(src))
+                        print("SYMLINK CLEANED RAW READS ",symlink)
+                        os.symlink(src,symlink)
+                except OSError as error:
+                    logging.warning("Impossible de créer le symlink cleaned raw reds pour " + sample_dir_path)
+                 
+
 
         print("--------------------------------------------------------")
 
