@@ -291,14 +291,40 @@ def BuildRepository(plate_obj_list,run_obj_list):
                 try:
                     src_cleaned_raw_reads = samples_obj.GetCleanedRawReads()
                     for src in src_cleaned_raw_reads:
-                        print("SRC CLEANED RAW READS ",src)
+                        #print("SRC CLEANED RAW READS ",src)
                         symlink = os.path.join(sample_dir_path,os.path.basename(src))
-                        print("SYMLINK CLEANED RAW READS ",symlink)
+                        #print("SYMLINK CLEANED RAW READS ",symlink)
                         os.symlink(src,symlink)
                 except OSError as error:
                     logging.warning("Impossible de créer le symlink cleaned raw reds pour " + sample_dir_path)
-                 
 
+
+                ################# Symlink host removal ################
+                try:
+                    src_host_removal = samples_obj.GetHostRemoval()
+                    for src in src_host_removal:
+                        #print("SRC HOST REMOVAL ",src)
+                        symlink = os.path.join(sample_dir_path,os.path.basename(src))
+                        #print("SYMLINK HOST REMOVAL ",symlink)
+                        os.symlink(src,symlink)
+                except OSError as error:
+                    logging.warning("Impossible de créer le symlink host removal pour " + sample_dir_path)
+                 
+                ################# Symlink metrics ################
+                try:
+                    src_metrics = samples_obj.GetMetrics()
+                    symlink_metrics = os.path.join(sample_dir_path,re.sub(r'_\d','',os.path.basename(src_metrics)))
+                    os.symlink(src_metrics,symlink_metrics)
+                except OSError as error:
+                    logging.warning("Impossible de créer le symlink metrics pour " + sample_dir_path)
+
+                ################# Symlink variant snpeff ################
+                try:
+                    src_variant_snpeff = samples_obj.GetVariantSnpeff()
+                    symlink_variant_snpeff = os.path.join(sample_dir_path,re.sub(r'_\d','',os.path.basename(src_variant_snpeff)))
+                    os.symlink(src_variant_snpeff,symlink_variant_snpeff)
+                except OSError as error:
+                    logging.warning("Impossible de créer le symlink variant snpeff pour " + sample_dir_path)
 
         print("--------------------------------------------------------")
 
