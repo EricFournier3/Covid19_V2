@@ -90,6 +90,15 @@ class Run():
     def GetRunTechno(self):
         return(self.techno.lower())
 
+    def GetSamplesWithoutPlate(self):
+        list_samples_without_plate = []
+
+        for sample in self.samples_obj_list:
+            if not sample.GetIsInPlate():
+                list_samples_without_plate.append(sample.GetSampleName())
+
+        return(list_samples_without_plate)
+
     def SetSamplesObjList(self):
         self.samples_obj_list = []
 
@@ -152,6 +161,7 @@ class Run():
         for sample_obj in self.samples_obj_list:
             if sample_obj.GetSampleName() == sample_name:
                 sample_obj_found = sample_obj
+                sample_obj_found.SetIsInPlate(True)
                 return(sample_obj_found)
         return(sample_obj_found)
 
@@ -175,6 +185,13 @@ class Sample():
         self.host_removal = host_removal
         self.metrics = metrics
         self.variant_snpeff = variant_snpeff
+        self.is_in_plate = False
+
+    def SetIsInPlate(self,is_in_plate):
+        self.is_in_plate = is_in_plate
+
+    def GetIsInPlate(self):
+        return(self.is_in_plate)
 
     def GetSampleName(self):
         return(self.sample_name)
@@ -273,6 +290,12 @@ class Logger():
         self.SetStdOutHandler()
         self.SetFileHandler()
         self.AddHandlerToLogger()
+
+def BuildNotFoundPlateObj(list_samples_without_plate):
+    plate_name = 'NOTFOUND'
+    plate_df = pd.DataFrame({'PlateOrSet':[plate_name]*len(list_samples_without_plate),'Name':list_samples_without_plate})
+    #print("PLATE_DF \n",plate_df)
+    return(Plate(plate_name,plate_df))
 
 def BuildPlateObjList(listplate_sample_manager_obj):
 
@@ -407,6 +430,15 @@ def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
                     #logging.warning("Impossible de créer le symlink variant snpeff pour " + sample_dir_path)
                     pass
 
+def MakeListOfSamplesWithoutPlate(run_obj_list):
+    list_samples_without_plate = []
+
+    for run in run_obj_list:
+        l = run.GetSamplesWithoutPlate()
+        list_samples_without_plate.extend(l)
+
+    return(list_samples_without_plate)
+
 def Main():
     today = datetime.today().strftime('%Y%m%d')
 
@@ -433,6 +465,11 @@ def Main():
     process_logger.LogMessage("Bluild repository")
 
     BuildRepository(plate_obj_list,run_obj_list,process_logger,file_output_manager)
+    list_samples_without_plate = list(set(MakeListOfSamplesWithoutPlate(run_obj_list)))
+    #print("list_samples_without_plate ",list_samples_without_plate)
+    not_found_plate_obj = BuildNotFoundPlateObj(list_samples_without_plate)
+
+    BuildRepository([not_found_plate_obj],run_obj_list,process_logger,file_output_manager)
 
     file_output_manager.CloseFilesHandler()
     process_logger.LogMessage("Terminé")
