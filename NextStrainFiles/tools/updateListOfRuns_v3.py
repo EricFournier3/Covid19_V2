@@ -9,7 +9,8 @@ import os
 import shutil
 import re
 import time
-
+import sys
+from datetime import datetime
 
 '''
 Created on 29 December 2020
@@ -23,6 +24,7 @@ TODO:
     - combiner updateSampleList_v2.py et updateListOfRuns_v2.py
     - modifier le README
     - ne pas oublier le NOTFOUND dans REPOSITORY
+    - corriger le logging stdout
 '''
 
 pd.options.display.max_columns = 100
@@ -72,12 +74,9 @@ class Run():
         self.run_name = run_name
         self.techno = techno
         self.run_path = run_path
-        #print("self.run_path >> ",self.run_path)
 
         self.SetPath()
         self.SetSamplesObjList()
-
-        #print(self.samples_obj_list)
 
     def GetRunPath(self):
         return(self.run_path)
@@ -109,6 +108,7 @@ class Run():
         for sample in [x for x in os.listdir(search_dir) if os.path.isdir(os.path.join(search_dir,x))]:
 
             sample_consensus = glob.glob(self.analysis_dir + "/" + sample + "/" + re.sub(r'_\d$','',sample)  + consensus_suffix) if hasattr(self,"analysis_dir") else glob.glob(self.consensus_dir + "/" + sample + "/" + re.sub(r'_\d$','',sample) + consensus_suffix)
+
             try:
                 sample_consensus = sample_consensus[0]
             except:
@@ -132,7 +132,6 @@ class Run():
             except:
                 variant_snpeff = ""
 
-            #print("APPEND ",sample)
             self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff))
 
     def SetPath(self):
@@ -148,11 +147,10 @@ class Run():
             self.analysis_dir = glob.glob(os.path.join(self.run_path,"analysis" + "/*nanopolish_800x"))[0]
 
     def FindThisSample(self,sample_name):
-        #print("TRY TO FIND ",sample_name)
         sample_obj_found = None
+
         for sample_obj in self.samples_obj_list:
             if sample_obj.GetSampleName() == sample_name:
-                #print("YES FOUND ",sample_name)
                 sample_obj_found = sample_obj
                 return(sample_obj_found)
         return(sample_obj_found)
@@ -199,7 +197,6 @@ class Sample():
 class ListPlateSampleManager():
     def __init__(self,listPlateSample_name):
         self.listPlateSample_name = listPlateSample_name
-
         self.SetPdDf()
 
     def SetPdDf(self):
@@ -210,7 +207,72 @@ class ListPlateSampleManager():
 
 class FileOutputManager():
     def __init__(self):
-        pass
+        self.missing_samples_filename = "MissingSamples.tsv"
+        self.missing_files_filename = "MissingFiles.tsv"
+
+        self.missing_samples_handler = None
+        self.missing_files_handler = None
+        
+        self.SetFilesHandler()
+
+    def WriteMissingSample(self,sample_name,plate_name):
+        self.missing_samples_handler.write(sample_name + "\t" + plate_name + "\n")
+
+    def WriteMissingFile(self,sample_name,plate_name,run_name,filetype):
+        self.missing_files_handler.write(sample_name + "\t" + plate_name + "\t" + run_name + "\t" + filetype + "\n")
+
+    def SetFilesHandler(self):
+        self.missing_samples_handler = open(os.path.join(trace_path,self.missing_samples_filename),'w')
+        self.missing_samples_handler.write("SAMPLE\tPLATE\n")
+
+        self.missing_files_handler = open(os.path.join(trace_path,self.missing_files_filename),'w')
+        self.missing_files_handler.write("SAMPLE\tPLATE\tRUN\tFILETYPE\n")
+
+    def CloseFilesHandler(self):
+        self.missing_samples_handler.close()
+        self.missing_files_handler.close()
+
+class Logger():
+    def __init__(self,logger_name,output):
+        self.log_level = logging.INFO
+        self.logger_name = logger_name
+        self.logger = None
+        self.formatter = None
+        self.file_handler = None
+        self.stdout_handler = None
+        self.output = output
+        self.Configure()
+
+    def LogMessage(self,message):
+        self.logger.info(message)
+
+    def SetLogger(self):
+        self.logger = logging.getLogger(self.logger_name)
+        self.logger.setLevel(self.log_level)
+
+    def SetStdOutHandler(self):
+        self.stdout_handler = logging.StreamHandler()
+        self.stdout_handler.setLevel(self.log_level)
+        self.stdout_handler.setFormatter(self.formatter)
+
+    def SetFormatter(self):
+        self.formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', '%m/%d/%Y %I:%M:%S')
+
+    def AddHandlerToLogger(self):
+        self.logger.addHandler(self.file_handler)
+        self.logger.addHandler(self.stdout_handler)
+
+    def SetFileHandler(self):
+        self.file_handler = logging.FileHandler(self.output)
+        self.file_handler.setLevel(self.log_level)
+        self.file_handler.setFormatter(self.formatter)
+
+    def Configure(self):
+        self.SetLogger()
+        self.SetFormatter()
+        self.SetStdOutHandler()
+        self.SetFileHandler()
+        self.AddHandlerToLogger()
 
 def BuildPlateObjList(listplate_sample_manager_obj):
 
@@ -218,48 +280,49 @@ def BuildPlateObjList(listplate_sample_manager_obj):
 
     df = listplate_sample_manager_obj.GetPdDf()
     uniq_plate_name_df = pd.DataFrame(df['PlateOrSet'].unique(),columns=['PlateOrSet'])
-    #print("uniq_plate_name \n",uniq_plate_name_df)
 
     for index, row in uniq_plate_name_df.loc[:,].iterrows():
         plate_name = row['PlateOrSet']
         plate_df = row.to_frame()
         plate_df = plate_df.T
         plate_df = pd.merge(plate_df,df,how='inner')[['PlateOrSet','Name']]
-        #print(plate_df)
         plate_obj_list.append(Plate(plate_name,plate_df))
 
     return(plate_obj_list)
-
 
 def FindThisSampleInRuns(sample,run_obj_list):
     
     found_runs_dict = {}
 
     for run in run_obj_list:
-        #print("RUN ",run.GetRunName())
         sample_obj_found = run.FindThisSample(sample)
         if sample_obj_found:
             found_runs_dict[run] = sample_obj_found 
 
     return(found_runs_dict)
 
-def BuildRepository(plate_obj_list,run_obj_list):
+def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
     for plate in plate_obj_list:
-        print("PLATE ",plate.GetPlateName())
-        print("    SAMPLE LIST ",plate.GetSamplesList())
+        logger.LogMessage("In plate " + plate.GetPlateName())
+
         plate_name = plate.GetPlateName()
         samples_list = plate.GetSamplesList()
 
         plate_path = os.path.join(repository_path,plate_name)
+
         try:
             os.mkdir(plate_path)
         except OSError as error:
-            logging.warning("Impossible de crée " + plate_name)
+            #logging.warning("Impossible de crée " + plate_name)
+            pass
 
         for sample in samples_list:
             #TODO enregistrer les sample trouve null part
             found_runs_dict = FindThisSampleInRuns(sample,run_obj_list)
-            #print("For ", sample , " => FOUND RUNS ",[x.GetRunName() for x in found_runs])
+
+            if len(found_runs_dict) == 0:
+                output_manager.WriteMissingSample(sample,plate_name)
+
             for found_run,samples_obj in found_runs_dict.items():
                 sample_dir_name = ""
                 run_techno = found_run.GetRunTechno()
@@ -269,87 +332,111 @@ def BuildRepository(plate_obj_list,run_obj_list):
 
                 sample_dir_name = plate_name + "." + sample + "." + run_techno + "." + run_date 
                 sample_dir_path = os.path.join(plate_path,sample_dir_name)
-                #print("SAMPLE DIR PATH ",sample_dir_path)
 
                 try:
                     os.mkdir(sample_dir_path)
                 except OSError as error:
-                    logging.warning("Impossible de crée " + sample_dir_path)
+                    #logging.warning("Impossible de crée " + sample_dir_path)
+                    pass
 
                 ################# Symlink consensus ################
                 try:
                     src_consensus = samples_obj.GetConsensusPath()
-                    #print("SRC CONSENSUS ", src_consensus)
-                    symlink_consensus = os.path.join(sample_dir_path,os.path.basename(src_consensus))
-                    #print("SYMLINK CONSENSUS ",symlink_consensus)
-                    os.symlink(src_consensus,symlink_consensus)
-                except OSError as error:
-                    logging.warning("Impossible de créer le symlink consensus pour " + sample_dir_path)
 
+                    if len(src_consensus) == 0:
+                        output_manager.WriteMissingFile(sample,plate_name,run_name,"consensus")
+                    else:
+                        symlink_consensus = os.path.join(sample_dir_path,os.path.basename(src_consensus))
+                        os.symlink(src_consensus,symlink_consensus)
+                except OSError as error:
+                    #logging.warning("Impossible de créer le symlink consensus pour " + sample_dir_path)
+                    pass
 
                 ################# Symlink cleaned raw reads ################
                 try:
                     src_cleaned_raw_reads = samples_obj.GetCleanedRawReads()
-                    for src in src_cleaned_raw_reads:
-                        #print("SRC CLEANED RAW READS ",src)
-                        symlink = os.path.join(sample_dir_path,os.path.basename(src))
-                        #print("SYMLINK CLEANED RAW READS ",symlink)
-                        os.symlink(src,symlink)
+
+                    if (len(src_cleaned_raw_reads) != 2) and (run_techno != "nanopore"):
+                        output_manager.WriteMissingFile(sample,plate_name,run_name,"cleaned_raw_reads")
+                    else:
+                        for src in src_cleaned_raw_reads:
+                            symlink = os.path.join(sample_dir_path,os.path.basename(src))
+                            os.symlink(src,symlink)
                 except OSError as error:
-                    logging.warning("Impossible de créer le symlink cleaned raw reds pour " + sample_dir_path)
+                    #logging.warning("Impossible de créer le symlink cleaned raw reds pour " + sample_dir_path)
+                    pass
 
 
                 ################# Symlink host removal ################
                 try:
                     src_host_removal = samples_obj.GetHostRemoval()
-                    for src in src_host_removal:
-                        #print("SRC HOST REMOVAL ",src)
-                        symlink = os.path.join(sample_dir_path,os.path.basename(src))
-                        #print("SYMLINK HOST REMOVAL ",symlink)
-                        os.symlink(src,symlink)
+
+                    if (len(src_host_removal) != 2) and (run_techno != "nanopore"):
+                        output_manager.WriteMissingFile(sample,plate_name,run_name,"host_removal")
+                    else:
+                        for src in src_host_removal:
+                            symlink = os.path.join(sample_dir_path,os.path.basename(src))
+                            os.symlink(src,symlink)
                 except OSError as error:
-                    logging.warning("Impossible de créer le symlink host removal pour " + sample_dir_path)
+                    #logging.warning("Impossible de créer le symlink host removal pour " + sample_dir_path)
+                    pass
                  
                 ################# Symlink metrics ################
                 try:
                     src_metrics = samples_obj.GetMetrics()
-                    symlink_metrics = os.path.join(sample_dir_path,re.sub(r'_\d','',os.path.basename(src_metrics)))
-                    os.symlink(src_metrics,symlink_metrics)
+
+                    if len(src_metrics) == 0:
+                        output_manager.WriteMissingFile(sample,plate_name,run_name,"metrics")
+                    else:
+                        symlink_metrics = os.path.join(sample_dir_path,re.sub(r'_\d','',os.path.basename(src_metrics)))
+                        os.symlink(src_metrics,symlink_metrics)
                 except OSError as error:
-                    logging.warning("Impossible de créer le symlink metrics pour " + sample_dir_path)
+                    #logging.warning("Impossible de créer le symlink metrics pour " + sample_dir_path)
+                    pass
 
                 ################# Symlink variant snpeff ################
                 try:
                     src_variant_snpeff = samples_obj.GetVariantSnpeff()
-                    symlink_variant_snpeff = os.path.join(sample_dir_path,re.sub(r'_\d','',os.path.basename(src_variant_snpeff)))
-                    os.symlink(src_variant_snpeff,symlink_variant_snpeff)
-                except OSError as error:
-                    logging.warning("Impossible de créer le symlink variant snpeff pour " + sample_dir_path)
 
-        print("--------------------------------------------------------")
+                    if len(src_variant_snpeff) == 0:
+                        output_manager.WriteMissingFile(sample,plate_name,run_name,"variant_snpeff")
+                    else:
+                        symlink_variant_snpeff = os.path.join(sample_dir_path,re.sub(r'_\d','',os.path.basename(src_variant_snpeff)))
+                        os.symlink(src_variant_snpeff,symlink_variant_snpeff)
+                except OSError as error:
+                    #logging.warning("Impossible de créer le symlink variant snpeff pour " + sample_dir_path)
+                    pass
 
 def Main():
+    today = datetime.today().strftime('%Y%m%d')
+
+    process_logger = Logger("ProcessLogger",os.path.join(trace_path,"Process_{0}.log".format(today)))
+    file_output_manager = FileOutputManager()
+
     listplate_sample_manager_obj = ListPlateSampleManager(input_file_path)
-    
+   
+    process_logger.LogMessage("Bluild plates")
     plate_obj_list = BuildPlateObjList(listplate_sample_manager_obj)
 
     run_obj_list = []
 
+    process_logger.LogMessage("Bluild runs")
+
     for key, value in {illumina_base_dir:'illumina',mgi_base_dir:'MGI',nanopore_base_dir:'nanopore'}.items():
         techno = value
-        #print("techno >> ",techno)
+
         for run_name in os.listdir(key):
-            #print("run_name >> ",run_name)
             run_path = os.path.join(key,run_name)
-            #print("run_path >> ",run_path)
             run_obj = Run(run_name,run_path,techno)
-            #print("HAS ATTR >> ",hasattr(run_obj,"analysis_dir"))
             run_obj_list.append(run_obj)
 
-    #print(run_obj_list)
-    BuildRepository(plate_obj_list,run_obj_list)
+    process_logger.LogMessage("Bluild repository")
+
+    BuildRepository(plate_obj_list,run_obj_list,process_logger,file_output_manager)
+
+    file_output_manager.CloseFilesHandler()
+    process_logger.LogMessage("Terminé")
 
 if __name__ == '__main__':
     Main()
-    logging.info('Terminé')
 
