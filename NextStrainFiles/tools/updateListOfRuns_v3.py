@@ -141,7 +141,54 @@ class Run():
             except:
                 variant_snpeff = ""
 
-            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff))
+            qc_status = self.GetSampleQcStatus(metrics,sample)
+
+            #print("QC STATUS ",qc_status)
+            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status))
+
+    def GetSampleQcStatus(self,metrics,sample_name):
+        
+        if len(metrics) == 0:
+            return("missing")
+        print(sample_name," ",self.run_name) 
+        metrics_df = pd.read_csv(metrics,sep=",",index_col=False)
+
+        if self.techno in ['illumina','MGI']:
+            metrics_df = metrics_df[['sample','cons.per.N','bam.perc.50x']]
+            metrics_df['cons.per.N'] = pd.to_numeric(metrics_df['cons.per.N'],errors='coerce')
+            metrics_df['bam.perc.50x'] =  pd.to_numeric(metrics_df['bam.perc.50x'],errors='coerce')
+            metrics_df = metrics_df.loc[metrics_df['sample'] == sample_name,['cons.per.N','bam.perc.50x']]
+            if metrics_df.shape[0] == 0:
+                return("missing")
+            cons_perc_n = list(metrics_df['cons.per.N'])[0]
+            bam_perc_n = list(metrics_df['bam.perc.50x'])[0]
+            print("CONS PERC N ", cons_perc_n, " BAM ",bam_perc_n)
+            print("TYPE ",type(cons_perc_n), " TYPE ",type(bam_perc_n))
+            #print("METRICS DF ",metrics_df)
+        else: # nanopore
+            metrics_df = metrics_df[['sample','cons.perc.N','bam.perc.50x']]
+            metrics_df['cons.perc.N'] = pd.to_numeric(metrics_df['cons.perc.N'],errors='coerce')
+            metrics_df['bam.perc.50x'] = pd.to_numeric(metrics_df['bam.perc.50x'],errors='coerce')
+            metrics_df = metrics_df.loc[metrics_df['sample'] == sample_name,['cons.perc.N','bam.perc.50x']]
+            if metrics_df.shape[0] == 0:
+                return("missing")
+            cons_perc_n = list(metrics_df['cons.perc.N'])[0]
+            bam_perc_n = list(metrics_df['bam.perc.50x'])[0]
+            print("CONS PERC N ", cons_perc_n, " BAM ",bam_perc_n)
+            print("TYPE ",type(cons_perc_n), " TYPE ",type(bam_perc_n))
+            #print("METRICS DF ",metrics_df)
+
+        if (str(cons_perc_n) != "nan") and (str(bam_perc_n) != "nan"):
+            if cons_perc_n > 5:
+                return("REJ")
+            elif cons_perc_n > 1:
+                return("FLAG")
+            elif bam_perc_n < 90:
+                return("FLAG")
+            else:
+                return("PASS")
+        else:
+            return("missing")
 
     def SetPath(self):
         if self.techno in ['illumina','MGI']:
@@ -178,14 +225,18 @@ class Plate():
         return(self.samples_list)
 
 class Sample():
-    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff):
+    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status):
         self.sample_name = sample_name
         self.consensus_path = consensus
         self.cleaned_raw_reads = cleaned_raw_reads
         self.host_removal = host_removal
         self.metrics = metrics
         self.variant_snpeff = variant_snpeff
+        self.qc_status = qc_status
         self.is_in_plate = False
+
+    def GetQcStatus(self):
+        return(self.qc_status)
 
     def SetIsInPlate(self,is_in_plate):
         self.is_in_plate = is_in_plate
@@ -225,15 +276,20 @@ class ListPlateSampleManager():
 class FileOutputManager():
     def __init__(self):
         self.missing_samples_filename = "MissingSamples.tsv"
+        self.missing_qc_status_filename = "MissingQcStatus.tsv"
         self.missing_files_filename = "MissingFiles.tsv"
 
         self.missing_samples_handler = None
+        self.missing_qc_status_handler = None
         self.missing_files_handler = None
         
         self.SetFilesHandler()
 
     def WriteMissingSample(self,sample_name,plate_name):
         self.missing_samples_handler.write(sample_name + "\t" + plate_name + "\n")
+
+    def WriteMissingQcStatus(self,sample_name,plate_name,run_name):
+        self.missing_qc_status_handler.write(sample_name + "\t" + plate_name + "\t" + run_name + "\n")
 
     def WriteMissingFile(self,sample_name,plate_name,run_name,filetype):
         self.missing_files_handler.write(sample_name + "\t" + plate_name + "\t" + run_name + "\t" + filetype + "\n")
@@ -242,12 +298,16 @@ class FileOutputManager():
         self.missing_samples_handler = open(os.path.join(trace_path,self.missing_samples_filename),'w')
         self.missing_samples_handler.write("SAMPLE\tPLATE\n")
 
+        self.missing_qc_status_handler = open(os.path.join(trace_path,self.missing_qc_status_filename),'w')
+        self.missing_qc_status_handler.write("SAMPLE\tPLATE\tRUN\n")
+
         self.missing_files_handler = open(os.path.join(trace_path,self.missing_files_filename),'w')
         self.missing_files_handler.write("SAMPLE\tPLATE\tRUN\tFILETYPE\n")
 
     def CloseFilesHandler(self):
         self.missing_samples_handler.close()
         self.missing_files_handler.close()
+        self.missing_qc_status_handler.close()
 
 class Logger():
     def __init__(self,logger_name,output):
@@ -410,7 +470,11 @@ def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
 
                     if len(src_metrics) == 0:
                         output_manager.WriteMissingFile(sample,plate_name,run_name,"metrics")
+                        output_manager.WriteMissingQcStatus(sample,plate_name,run_name)
                     else:
+                        if samples_obj.GetQcStatus() == "missing":
+                            output_manager.WriteMissingQcStatus(sample,plate_name,run_name)
+
                         symlink_metrics = os.path.join(sample_dir_path,re.sub(r'_\d','',os.path.basename(src_metrics)))
                         os.symlink(src_metrics,symlink_metrics)
                 except OSError as error:
@@ -465,8 +529,8 @@ def Main():
     process_logger.LogMessage("Bluild repository")
 
     BuildRepository(plate_obj_list,run_obj_list,process_logger,file_output_manager)
+
     list_samples_without_plate = list(set(MakeListOfSamplesWithoutPlate(run_obj_list)))
-    #print("list_samples_without_plate ",list_samples_without_plate)
     not_found_plate_obj = BuildNotFoundPlateObj(list_samples_without_plate)
 
     BuildRepository([not_found_plate_obj],run_obj_list,process_logger,file_output_manager)
