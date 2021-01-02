@@ -283,12 +283,13 @@ class FileOutputManager():
         self.missing_qc_status_filename = "MissingQcStatus.tsv"
         self.missing_files_filename = "MissingFiles.tsv"
         self.consensus_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList" +".list"
-        #print("CONSENSUS NAME ",self.consensus_list_filename)
+        self.vcf_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_vcfList" +".list"
 
         self.missing_samples_handler = None
         self.missing_qc_status_handler = None
         self.missing_files_handler = None
         self.consensus_list_handler = None
+        self.vcf_list_handler = None
 
         self.SetFilesHandler()
 
@@ -301,8 +302,11 @@ class FileOutputManager():
     def WriteMissingFile(self,sample_name,plate_name,run_name,filetype):
         self.missing_files_handler.write(sample_name + "\t" + plate_name + "\t" + run_name + "\t" + filetype + "\n")
 
-    def WriteConsensusList(self,sample_name,qc_status,path,techno,perc_n,run_name,plate_name):
-        self.consensus_list_handler.write(sample_name + "\t" + qc_status + "\t" + path + "\t" + techno + "\t" + str(perc_n) + "\t" + run_name + "\t" + plate_name + "\n")
+    def WriteConsensusList(self,sample_name,qc_status,consensus_path,techno,perc_n,run_name,plate_name):
+        self.consensus_list_handler.write(sample_name + "\t" + qc_status + "\t" + consensus_path + "\t" + techno + "\t" + str(perc_n) + "\t" + run_name + "\t" + plate_name + "\n")
+
+    def WriteVcfList(self,sample_name,qc_status,vcf_path,techno,perc_n,run_name,plate_name):
+        self.vcf_list_handler.write(sample_name + "\t" + qc_status + "\t" + vcf_path + "\t" + techno + "\t" + str(perc_n) + "\t" + run_name + "\t" + plate_name + "\n")
 
     def SetFilesHandler(self):
         self.missing_samples_handler = open(os.path.join(trace_path,self.missing_samples_filename),'w')
@@ -316,6 +320,9 @@ class FileOutputManager():
 
         self.consensus_list_handler = open(os.path.join(trace_path,self.consensus_list_filename),'w')
         self.consensus_list_handler.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\tPATE_NAME\n")
+
+        self.vcf_list_handler = open(os.path.join(trace_path,self.vcf_list_filename),'w')
+        self.vcf_list_handler.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\tPATE_NAME\n")
 
 
     def CloseFilesHandler(self):
@@ -504,6 +511,7 @@ def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
                     if len(src_variant_snpeff) == 0:
                         output_manager.WriteMissingFile(sample,plate_name,run_name,"variant_snpeff")
                     else:
+                        output_manager.WriteVcfList(sample,samples_obj.GetQcStatus(),src_variant_snpeff,run_techno,samples_obj.GetConsPercN(),run_name,plate_name)
                         symlink_variant_snpeff = os.path.join(sample_dir_path,re.sub(r'_\d','',os.path.basename(src_variant_snpeff)))
                         os.symlink(src_variant_snpeff,symlink_variant_snpeff)
                 except OSError as error:
