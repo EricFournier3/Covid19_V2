@@ -141,16 +141,16 @@ class Run():
             except:
                 variant_snpeff = ""
 
-            qc_status = self.GetSampleQcStatus(metrics,sample)
+            qc_status, perc_n = self.GetSampleQcStatus(metrics,sample)
 
             #print("QC STATUS ",qc_status)
-            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status))
+            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,perc_n))
 
     def GetSampleQcStatus(self,metrics,sample_name):
         
         if len(metrics) == 0:
-            return("missing")
-        print(sample_name," ",self.run_name) 
+            return("missing","")
+        #print(sample_name," ",self.run_name) 
         metrics_df = pd.read_csv(metrics,sep=",",index_col=False)
 
         if self.techno in ['illumina','MGI']:
@@ -159,11 +159,11 @@ class Run():
             metrics_df['bam.perc.50x'] =  pd.to_numeric(metrics_df['bam.perc.50x'],errors='coerce')
             metrics_df = metrics_df.loc[metrics_df['sample'] == sample_name,['cons.per.N','bam.perc.50x']]
             if metrics_df.shape[0] == 0:
-                return("missing")
+                return("missing","")
             cons_perc_n = list(metrics_df['cons.per.N'])[0]
             bam_perc_n = list(metrics_df['bam.perc.50x'])[0]
-            print("CONS PERC N ", cons_perc_n, " BAM ",bam_perc_n)
-            print("TYPE ",type(cons_perc_n), " TYPE ",type(bam_perc_n))
+            #print("CONS PERC N ", cons_perc_n, " BAM ",bam_perc_n)
+            #print("TYPE ",type(cons_perc_n), " TYPE ",type(bam_perc_n))
             #print("METRICS DF ",metrics_df)
         else: # nanopore
             metrics_df = metrics_df[['sample','cons.perc.N','bam.perc.50x']]
@@ -171,24 +171,24 @@ class Run():
             metrics_df['bam.perc.50x'] = pd.to_numeric(metrics_df['bam.perc.50x'],errors='coerce')
             metrics_df = metrics_df.loc[metrics_df['sample'] == sample_name,['cons.perc.N','bam.perc.50x']]
             if metrics_df.shape[0] == 0:
-                return("missing")
+                return("missing","")
             cons_perc_n = list(metrics_df['cons.perc.N'])[0]
             bam_perc_n = list(metrics_df['bam.perc.50x'])[0]
-            print("CONS PERC N ", cons_perc_n, " BAM ",bam_perc_n)
-            print("TYPE ",type(cons_perc_n), " TYPE ",type(bam_perc_n))
+            #print("CONS PERC N ", cons_perc_n, " BAM ",bam_perc_n)
+            #print("TYPE ",type(cons_perc_n), " TYPE ",type(bam_perc_n))
             #print("METRICS DF ",metrics_df)
 
         if (str(cons_perc_n) != "nan") and (str(bam_perc_n) != "nan"):
             if cons_perc_n > 5:
-                return("REJ")
+                return("REJ",cons_perc_n)
             elif cons_perc_n > 1:
-                return("FLAG")
+                return("FLAG",cons_perc_n)
             elif bam_perc_n < 90:
-                return("FLAG")
+                return("FLAG",cons_perc_n)
             else:
-                return("PASS")
+                return("PASS",cons_perc_n)
         else:
-            return("missing")
+            return("missing",cons_perc_n)
 
     def SetPath(self):
         if self.techno in ['illumina','MGI']:
@@ -225,7 +225,7 @@ class Plate():
         return(self.samples_list)
 
 class Sample():
-    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status):
+    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,cons_perc_n):
         self.sample_name = sample_name
         self.consensus_path = consensus
         self.cleaned_raw_reads = cleaned_raw_reads
@@ -233,7 +233,11 @@ class Sample():
         self.metrics = metrics
         self.variant_snpeff = variant_snpeff
         self.qc_status = qc_status
+        self.cons_perc_n = cons_perc_n
         self.is_in_plate = False
+
+    def GetConsPercN(self):
+        return(self.cons_perc_n)
 
     def GetQcStatus(self):
         return(self.qc_status)
@@ -278,11 +282,14 @@ class FileOutputManager():
         self.missing_samples_filename = "MissingSamples.tsv"
         self.missing_qc_status_filename = "MissingQcStatus.tsv"
         self.missing_files_filename = "MissingFiles.tsv"
+        self.consensus_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList" +".list"
+        #print("CONSENSUS NAME ",self.consensus_list_filename)
 
         self.missing_samples_handler = None
         self.missing_qc_status_handler = None
         self.missing_files_handler = None
-        
+        self.consensus_list_handler = None
+
         self.SetFilesHandler()
 
     def WriteMissingSample(self,sample_name,plate_name):
@@ -294,6 +301,9 @@ class FileOutputManager():
     def WriteMissingFile(self,sample_name,plate_name,run_name,filetype):
         self.missing_files_handler.write(sample_name + "\t" + plate_name + "\t" + run_name + "\t" + filetype + "\n")
 
+    def WriteConsensusList(self,sample_name,qc_status,path,techno,perc_n,run_name,plate_name):
+        self.consensus_list_handler.write(sample_name + "\t" + qc_status + "\t" + path + "\t" + techno + "\t" + str(perc_n) + "\t" + run_name + "\t" + plate_name + "\n")
+
     def SetFilesHandler(self):
         self.missing_samples_handler = open(os.path.join(trace_path,self.missing_samples_filename),'w')
         self.missing_samples_handler.write("SAMPLE\tPLATE\n")
@@ -304,10 +314,15 @@ class FileOutputManager():
         self.missing_files_handler = open(os.path.join(trace_path,self.missing_files_filename),'w')
         self.missing_files_handler.write("SAMPLE\tPLATE\tRUN\tFILETYPE\n")
 
+        self.consensus_list_handler = open(os.path.join(trace_path,self.consensus_list_filename),'w')
+        self.consensus_list_handler.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\tPATE_NAME\n")
+
+
     def CloseFilesHandler(self):
         self.missing_samples_handler.close()
         self.missing_files_handler.close()
         self.missing_qc_status_handler.close()
+        self.consensus_list_handler.close()
 
 class Logger():
     def __init__(self,logger_name,output):
@@ -429,6 +444,7 @@ def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
                     if len(src_consensus) == 0:
                         output_manager.WriteMissingFile(sample,plate_name,run_name,"consensus")
                     else:
+                        output_manager.WriteConsensusList(sample,samples_obj.GetQcStatus(),src_consensus,run_techno,samples_obj.GetConsPercN(),run_name,plate_name)
                         symlink_consensus = os.path.join(sample_dir_path,os.path.basename(src_consensus))
                         os.symlink(src_consensus,symlink_consensus)
                 except OSError as error:
