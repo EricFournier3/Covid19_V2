@@ -164,7 +164,7 @@ class Run():
             qc_status, perc_n = self.GetSampleQcStatus(metrics,sample)
 
             #print("QC STATUS ",qc_status)
-            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,perc_n,self.techno))
+            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,perc_n,self.techno,self.GetRunDate()))
 
     def GetSampleQcStatus(self,metrics,sample_name):
         
@@ -215,7 +215,6 @@ class Run():
         else: #nanopore
             try:
                 self.analysis_dir = glob.glob(os.path.join(self.run_path,"analysis" + "/*nanopolish_800x"))[0]
-                #print("ACCESS ",os.access(self.analysis_dir,os.R_OK|os.X_OK))
             except:
                 self.analysis_dir = ""
 
@@ -245,8 +244,31 @@ class Plate():
     def AddSampleObj(self,sample_obj):
         self.samples_obj_list.append(sample_obj)
 
+    def GetSamplesObjList(self):
+        return(self.samples_obj_list)
+
+    def GetsamplesSummaryInPlateDf(self):
+        return(self.samples_summary_in_plate_df)
+        
+    def SummarizeSamplesInPlate(self):
+        self.samples_summary_in_plate_df = pd.DataFrame({'Plate[0]':[],'SampleKEY[1]':[],'Sample[2]':[],'Techno[3]':[],'RunDate[4]':[],'QCStatus{PASS,FLAG,REJ}[5]':[],'CurrationStatus{UNK,PASS,REJ}[6]':[],'AnalysisStatus{SKIP,KEEP}[7]':[],'REPOPATH[8]':[]})
+
+        for sample_obj in self.GetSamplesObjList():
+            sample_key = sample_obj.GetSampleDirNameInThisPlate(self.plate_name)
+            sample_name = sample_obj.GetSampleName()
+            techno = sample_obj.GetTechno()
+            run_date = sample_obj.GetRunDate()
+            qc_status = sample_obj.GetQcStatus()
+            curration_status = qc_status
+            analysis_status = qc_status
+
+            temp_df = pd.DataFrame({'Plate[0]':[self.plate_name],'SampleKEY[1]':[sample_key],'Sample[2]':[sample_name],'Techno[3]':[techno],'RunDate[4]':[run_date],'QCStatus{PASS,FLAG,REJ}[5]':[qc_status],'CurrationStatus{UNK,PASS,REJ}[6]':[curration_status],'AnalysisStatus{SKIP,KEEP}[7]':[analysis_status],'REPOPATH[8]':['']})
+
+            self.samples_summary_in_plate_df = pd.concat([self.samples_summary_in_plate_df,temp_df])
+
+
 class Sample():
-    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,cons_perc_n,techno):
+    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,cons_perc_n,techno,run_date):
         self.sample_name = sample_name
         self.consensus_path = consensus
         self.cleaned_raw_reads = cleaned_raw_reads
@@ -258,6 +280,17 @@ class Sample():
         self.is_in_plate = False
         self.techno = techno
         self.plates_list = []
+        self.run_date = run_date
+        self.sample_dirname_in_plate = {}
+
+    def GetRunDate(self):
+        return(self.run_date)
+
+    def SetSampleDirNameInThisPlate(self,plate_name,sample_dir_name):
+        self.sample_dirname_in_plate[plate_name] = sample_dir_name
+
+    def GetSampleDirNameInThisPlate(self,plate_name):
+        return(self.sample_dirname_in_plate[plate_name])
 
     def GetTechno(self):
         return(self.techno)
@@ -307,15 +340,18 @@ class ListPlateSampleManager():
         return(self.pd_df)
 
 class Stats():
-    def __init__(self,run_obj_list,file_output_manager):
+    def __init__(self,run_obj_list,plate_obj_list,file_output_manager):
         self.run_obj_list = run_obj_list
+        self.plate_obj_list = plate_obj_list
         self.file_output_manager = file_output_manager
 
+        self.list_runs_df = None
+        self.plate_summary_df_dict = {}
+
     def ComptuteListRuns(self):
-        df = pd.DataFrame({'Date[0]':[],'Techno{illumina,nanopore,mgi}[1]':[],'Folder[2]':[],'BelugaPath[3]':[],'Status{RAW,PROC,REP,ERR}[4]':[],'Note[5]':[],'Nb samples total[6]':[],'Nb samples in Repo[7]':[]})
-        #print("DF ",df)
-        df['Nb samples total[6]'] = df['Nb samples total[6]'].astype(int)
-        df['Nb samples in Repo[7]'] = df['Nb samples in Repo[7]'].astype(int)
+        self.list_runs_df = pd.DataFrame({'Date[0]':[],'Techno{illumina,nanopore,mgi}[1]':[],'Folder[2]':[],'BelugaPath[3]':[],'Status{RAW,PROC,REP,ERR}[4]':[],'Note[5]':[],'Nb samples total[6]':[],'Nb samples in Repo[7]':[]})
+        self.list_runs_df['Nb samples total[6]'] = self.list_runs_df['Nb samples total[6]'].astype(int)
+        self.list_runs_df['Nb samples in Repo[7]'] = self.list_runs_df['Nb samples in Repo[7]'].astype(int)
 
         for run in self.run_obj_list:
             date = run.GetRunDate()
@@ -327,10 +363,16 @@ class Stats():
             nb_samples_in_runs = len(run.GetSamplesObjList())
             nb_samples_in_repo = nb_samples_in_runs
             df_temp = pd.DataFrame({'Date[0]':[date],'Techno{illumina,nanopore,mgi}[1]':[techno],'Folder[2]':[folder],'BelugaPath[3]':[beluga_path],'Status{RAW,PROC,REP,ERR}[4]':[status],'Note[5]':[note],'Nb samples total[6]':[nb_samples_in_runs],'Nb samples in Repo[7]':[nb_samples_in_repo]})
-            df = pd.concat([df,df_temp])
+            self.list_runs_df = pd.concat([self.list_runs_df,df_temp])
 
-        print(df)
+    def SummarizeSamplesInEachPlate(self):
+        for plate in self.plate_obj_list:
+            plate.SummarizeSamplesInPlate()
+            plate_df = plate.GetsamplesSummaryInPlateDf()
+            self.plate_summary_df_dict[plate.GetPlateName()] = plate_df
 
+    def SaveStats(self):
+        self.file_output_manager.SaveStats(self.list_runs_df,self.plate_summary_df_dict)
 
 class FileOutputManager():
     def __init__(self):
@@ -339,6 +381,7 @@ class FileOutputManager():
         self.missing_files_filename = "MissingFiles.tsv"
         self.consensus_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList" +".list"
         self.vcf_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_vcfList" +".list"
+        self.list_runs_filename = "listRuns_{0}.tsv".format(datetime.today().strftime('%Y%m%d'))
 
         self.missing_samples_handler = None
         self.missing_qc_status_handler = None
@@ -347,6 +390,14 @@ class FileOutputManager():
         self.vcf_list_handler = None
 
         self.SetFilesHandler()
+
+    def SaveStats(self,list_runs_df,plate_summary_df_dict):
+        list_runs_df.to_csv(os.path.join(trace_path,self.list_runs_filename),sep="\t",index=False)
+
+        for plate_name,plate_summary_df in plate_summary_df_dict.items():
+            plate_summary_df.to_csv(os.path.join(trace_path,plate_name + "." + datetime.today().strftime('%Y%m%d') + ".list"),sep="\t",index=False)
+
+        pd.concat(plate_summary_df_dict.values()).to_csv(os.path.join(trace_path,"AllSample." + datetime.today().strftime('%Y%m%d') + ".list"),sep="\t",index=False)
 
     def WriteMissingSample(self,sample_name,plate_name):
         self.missing_samples_handler.write(sample_name + "\t" + plate_name + "\n")
@@ -431,7 +482,6 @@ class Logger():
 def BuildNotFoundPlateObj(list_samples_without_plate):
     plate_name = 'NOTFOUND'
     plate_df = pd.DataFrame({'PlateOrSet':[plate_name]*len(list_samples_without_plate),'Name':list_samples_without_plate})
-    #print("PLATE_DF \n",plate_df)
     return(Plate(plate_name,plate_df))
 
 def BuildPlateObjList(listplate_sample_manager_obj):
@@ -493,6 +543,7 @@ def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
                 plate.AddSampleObj(samples_obj)
 
                 sample_dir_name = plate_name + "." + sample + "." + run_techno + "." + run_date 
+                samples_obj.SetSampleDirNameInThisPlate(plate_name,sample_dir_name)
                 sample_dir_path = os.path.join(plate_path,sample_dir_name)
 
                 try:
@@ -616,9 +667,12 @@ def Main():
 
     BuildRepository([not_found_plate_obj],run_obj_list,process_logger,file_output_manager)
 
+    plate_obj_list.append(not_found_plate_obj)
 
-    stat_manager = Stats(run_obj_list,file_output_manager)
+    stat_manager = Stats(run_obj_list,plate_obj_list,file_output_manager)
     stat_manager.ComptuteListRuns()
+    stat_manager.SummarizeSamplesInEachPlate()
+    stat_manager.SaveStats()
 
     file_output_manager.CloseFilesHandler()
     process_logger.LogMessage("Terminé")
