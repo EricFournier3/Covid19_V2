@@ -77,6 +77,7 @@ class Run():
 
         self.SetPath()
         self.SetSamplesObjList()
+        #TODO determiner si cette run a ete traiter
 
     def GetRunPath(self):
         return(self.run_path)
@@ -98,6 +99,9 @@ class Run():
                 list_samples_without_plate.append(sample.GetSampleName())
 
         return(list_samples_without_plate)
+
+    def GetSamplesObjList(self):
+        return(self.samples_obj_list)
 
     def SetSamplesObjList(self):
         self.samples_obj_list = []
@@ -144,7 +148,7 @@ class Run():
             qc_status, perc_n = self.GetSampleQcStatus(metrics,sample)
 
             #print("QC STATUS ",qc_status)
-            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,perc_n))
+            self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,perc_n,self.techno))
 
     def GetSampleQcStatus(self,metrics,sample_name):
         
@@ -217,6 +221,7 @@ class Plate():
         self.plate_name = plate_name
         self.df = df
         self.samples_list = list(self.df['Name'])
+        self.samples_obj_list = []
 
     def GetPlateName(self):
         return(self.plate_name)
@@ -224,8 +229,11 @@ class Plate():
     def GetSamplesList(self):
         return(self.samples_list)
 
+    def AddSampleObj(self,sample_obj):
+        self.samples_obj_list.append(sample_obj)
+
 class Sample():
-    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,cons_perc_n):
+    def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,cons_perc_n,techno):
         self.sample_name = sample_name
         self.consensus_path = consensus
         self.cleaned_raw_reads = cleaned_raw_reads
@@ -235,6 +243,14 @@ class Sample():
         self.qc_status = qc_status
         self.cons_perc_n = cons_perc_n
         self.is_in_plate = False
+        self.techno = techno
+        self.plates_list = []
+
+    def GetTechno(self):
+        return(self.techno)
+
+    def AddPlateObj(self,plate):
+        self.plates_list.append(plate)
 
     def GetConsPercN(self):
         return(self.cons_perc_n)
@@ -276,6 +292,30 @@ class ListPlateSampleManager():
 
     def GetPdDf(self):
         return(self.pd_df)
+
+class Stats():
+    def __init__(self,run_obj_list,file_output_manager):
+        self.run_obj_list = run_obj_list
+        self.file_output_manager = file_output_manager
+
+    def ComptuteListRuns(self):
+        df = pd.DataFrame({'Date[0]':[],'Techno{illumina,nanopore,mgi}[1]':[],'Folder[2]':[],'BelugaPath[3]':[],'Status{RAW,PROC,REP,ERR}[4]':[],'Note[5]':[],'Nb samples total[6]':[],'Nb samples in Repo[7]':[]})
+        #print("DF ",df)
+
+        for run in self.run_obj_list:
+            date = run.GetRunDate()
+            techno = run.GetRunTechno()
+            folder = run.GetRunName()
+            beluga_path = run.GetRunPath()
+            status = "INCONNU" #TODO OBTENIR LE STATUS
+            note = ""
+            nb_samples_in_runs = len(run.GetSamplesObjList())
+            nb_samples_in_repo = nb_samples_in_runs
+            df_temp = pd.DataFrame({'Date[0]':[date],'Techno{illumina,nanopore,mgi}[1]':[techno],'Folder[2]':[folder],'BelugaPath[3]':[beluga_path],'Status{RAW,PROC,REP,ERR}[4]':[status],'Note[5]':[note],'Nb samples total[6]':[nb_samples_in_runs],'Nb samples in Repo[7]':[nb_samples_in_repo]})
+            df = pd.concat([df,df_temp])
+
+        print(df)
+
 
 class FileOutputManager():
     def __init__(self):
@@ -422,7 +462,6 @@ def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
             pass
 
         for sample in samples_list:
-            #TODO enregistrer les sample trouve null part
             found_runs_dict = FindThisSampleInRuns(sample,run_obj_list)
 
             if len(found_runs_dict) == 0:
@@ -434,6 +473,9 @@ def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
                 run_name = found_run.GetRunName()
                 run_date = found_run.GetRunDate()
                 run_path = found_run.GetRunPath()
+
+                samples_obj.AddPlateObj(plate)
+                plate.AddSampleObj(samples_obj)
 
                 sample_dir_name = plate_name + "." + sample + "." + run_techno + "." + run_date 
                 sample_dir_path = os.path.join(plate_path,sample_dir_name)
@@ -558,6 +600,10 @@ def Main():
     not_found_plate_obj = BuildNotFoundPlateObj(list_samples_without_plate)
 
     BuildRepository([not_found_plate_obj],run_obj_list,process_logger,file_output_manager)
+
+
+    stat_manager = Stats(run_obj_list,file_output_manager)
+    stat_manager.ComptuteListRuns()
 
     file_output_manager.CloseFilesHandler()
     process_logger.LogMessage("Terminé")
