@@ -75,9 +75,16 @@ class Run():
         self.techno = techno
         self.run_path = run_path
 
+        self.run_status = 'RAW'
+
         self.SetPath()
         self.SetSamplesObjList()
-        #TODO determiner si cette run a ete traiter
+
+    def SetRunStatus(self,status):
+        self.run_status = status
+
+    def GetRunStatus(self):
+        return(self.run_status)
 
     def GetRunPath(self):
         return(self.run_path)
@@ -118,6 +125,15 @@ class Run():
             search_dir = self.consensus_dir
             variant_snpeff_suffix = "*sorted.filtered.primerTrim.annotate.vcf" 
 
+        if not os.path.isdir(search_dir):
+            self.SetRunStatus('RAW')
+            return()
+        elif not os.access(search_dir,os.R_OK|os.X_OK):
+            self.SetRunStatus('ERR')
+            return()
+        else:
+            self.SetRunStatus('PROC')
+
         for sample in [x for x in os.listdir(search_dir) if os.path.isdir(os.path.join(search_dir,x))]:
 
             sample_consensus = glob.glob(self.analysis_dir + "/" + sample + "/" + re.sub(r'_\d$','',sample)  + consensus_suffix) if hasattr(self,"analysis_dir") else glob.glob(self.consensus_dir + "/" + sample + "/" + re.sub(r'_\d$','',sample) + consensus_suffix)
@@ -154,7 +170,6 @@ class Run():
         
         if len(metrics) == 0:
             return("missing","")
-        #print(sample_name," ",self.run_name) 
         metrics_df = pd.read_csv(metrics,sep=",",index_col=False)
 
         if self.techno in ['illumina','MGI']:
@@ -166,9 +181,6 @@ class Run():
                 return("missing","")
             cons_perc_n = list(metrics_df['cons.per.N'])[0]
             bam_perc_n = list(metrics_df['bam.perc.50x'])[0]
-            #print("CONS PERC N ", cons_perc_n, " BAM ",bam_perc_n)
-            #print("TYPE ",type(cons_perc_n), " TYPE ",type(bam_perc_n))
-            #print("METRICS DF ",metrics_df)
         else: # nanopore
             metrics_df = metrics_df[['sample','cons.perc.N','bam.perc.50x']]
             metrics_df['cons.perc.N'] = pd.to_numeric(metrics_df['cons.perc.N'],errors='coerce')
@@ -178,9 +190,6 @@ class Run():
                 return("missing","")
             cons_perc_n = list(metrics_df['cons.perc.N'])[0]
             bam_perc_n = list(metrics_df['bam.perc.50x'])[0]
-            #print("CONS PERC N ", cons_perc_n, " BAM ",bam_perc_n)
-            #print("TYPE ",type(cons_perc_n), " TYPE ",type(bam_perc_n))
-            #print("METRICS DF ",metrics_df)
 
         if (str(cons_perc_n) != "nan") and (str(bam_perc_n) != "nan"):
             if cons_perc_n > 5:
@@ -204,7 +213,11 @@ class Run():
             self.variant_dir = os.path.join(self.run_path,"variant") 
             self.data_dir = os.path.join(self.run_path,"data") 
         else: #nanopore
-            self.analysis_dir = glob.glob(os.path.join(self.run_path,"analysis" + "/*nanopolish_800x"))[0]
+            try:
+                self.analysis_dir = glob.glob(os.path.join(self.run_path,"analysis" + "/*nanopolish_800x"))[0]
+                #print("ACCESS ",os.access(self.analysis_dir,os.R_OK|os.X_OK))
+            except:
+                self.analysis_dir = ""
 
     def FindThisSample(self,sample_name):
         sample_obj_found = None
@@ -301,13 +314,15 @@ class Stats():
     def ComptuteListRuns(self):
         df = pd.DataFrame({'Date[0]':[],'Techno{illumina,nanopore,mgi}[1]':[],'Folder[2]':[],'BelugaPath[3]':[],'Status{RAW,PROC,REP,ERR}[4]':[],'Note[5]':[],'Nb samples total[6]':[],'Nb samples in Repo[7]':[]})
         #print("DF ",df)
+        df['Nb samples total[6]'] = df['Nb samples total[6]'].astype(int)
+        df['Nb samples in Repo[7]'] = df['Nb samples in Repo[7]'].astype(int)
 
         for run in self.run_obj_list:
             date = run.GetRunDate()
             techno = run.GetRunTechno()
             folder = run.GetRunName()
-            beluga_path = run.GetRunPath()
-            status = "INCONNU" #TODO OBTENIR LE STATUS
+            beluga_path = re.sub(full_processing_path,'',run.GetRunPath())
+            status = run.GetRunStatus()
             note = ""
             nb_samples_in_runs = len(run.GetSamplesObjList())
             nb_samples_in_repo = nb_samples_in_runs
