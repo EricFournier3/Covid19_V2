@@ -22,8 +22,7 @@ Note:
 
 TODO:
     - combiner updateSampleList_v2.py et updateListOfRuns_v2.py
-    - modifier le README
-    - ne pas oublier le NOTFOUND dans REPOSITORY
+    - modifier le README faire version 2
     - corriger le logging stdout
 '''
 
@@ -163,7 +162,6 @@ class Run():
 
             qc_status, perc_n = self.GetSampleQcStatus(metrics,sample)
 
-            #print("QC STATUS ",qc_status)
             self.samples_obj_list.append(Sample(re.sub(r'_\d$','',sample),sample_consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,perc_n,self.techno,self.GetRunDate()))
 
     def GetSampleQcStatus(self,metrics,sample_name):
@@ -235,6 +233,9 @@ class Plate():
         self.samples_list = list(self.df['Name'])
         self.samples_obj_list = []
 
+        self.samples_summary_in_plate_df = None
+        self.qc_status_distribution = {'Total':{'mgi':{'PASS':0,'FLAG':0,'REJ':0},'illumina':{'PASS':0,'FLAG':0,'REJ':0},'nanopore':{'PASS':0,'FLAG':0,'REJ':0}},'Uniq':{'mgi':{'PASS':0,'FLAG':0,'REJ':0},'illumina':{'PASS':0,'FLAG':0,'REJ':0},'nanopore':{'PASS':0,'FLAG':0,'REJ':0}}}
+
     def GetPlateName(self):
         return(self.plate_name)
 
@@ -247,11 +248,16 @@ class Plate():
     def GetSamplesObjList(self):
         return(self.samples_obj_list)
 
+    def GetQcStatusDistribution(self):
+        return(self.qc_status_distribution)
+
     def GetsamplesSummaryInPlateDf(self):
         return(self.samples_summary_in_plate_df)
         
     def SummarizeSamplesInPlate(self):
         self.samples_summary_in_plate_df = pd.DataFrame({'Plate[0]':[],'SampleKEY[1]':[],'Sample[2]':[],'Techno[3]':[],'RunDate[4]':[],'QCStatus{PASS,FLAG,REJ}[5]':[],'CurrationStatus{UNK,PASS,REJ}[6]':[],'AnalysisStatus{SKIP,KEEP}[7]':[],'REPOPATH[8]':[]})
+
+        uniq_samples_name = set([])
 
         for sample_obj in self.GetSamplesObjList():
             sample_key = sample_obj.GetSampleDirNameInThisPlate(self.plate_name)
@@ -261,6 +267,13 @@ class Plate():
             qc_status = sample_obj.GetQcStatus()
             curration_status = qc_status
             analysis_status = qc_status
+
+            if sample_name not in uniq_samples_name:
+                self.qc_status_distribution['Uniq'][str(techno).lower()][qc_status] += 1
+
+            uniq_samples_name.add(sample_name)
+
+            self.qc_status_distribution['Total'][str(techno).lower()][qc_status] += 1
 
             temp_df = pd.DataFrame({'Plate[0]':[self.plate_name],'SampleKEY[1]':[sample_key],'Sample[2]':[sample_name],'Techno[3]':[techno],'RunDate[4]':[run_date],'QCStatus{PASS,FLAG,REJ}[5]':[qc_status],'CurrationStatus{UNK,PASS,REJ}[6]':[curration_status],'AnalysisStatus{SKIP,KEEP}[7]':[analysis_status],'REPOPATH[8]':['']})
 
@@ -347,6 +360,7 @@ class Stats():
 
         self.list_runs_df = None
         self.plate_summary_df_dict = {}
+        self.qc_status_distribution_per_plate_dict = {}
 
     def ComptuteListRuns(self):
         self.list_runs_df = pd.DataFrame({'Date[0]':[],'Techno{illumina,nanopore,mgi}[1]':[],'Folder[2]':[],'BelugaPath[3]':[],'Status{RAW,PROC,REP,ERR}[4]':[],'Note[5]':[],'Nb samples total[6]':[],'Nb samples in Repo[7]':[]})
@@ -370,9 +384,35 @@ class Stats():
             plate.SummarizeSamplesInPlate()
             plate_df = plate.GetsamplesSummaryInPlateDf()
             self.plate_summary_df_dict[plate.GetPlateName()] = plate_df
+            self.qc_status_distribution_per_plate_dict[plate.GetPlateName()] = plate.GetQcStatusDistribution()
+
+        self.reformat_qc_status_distribution_per_plate_dict = self.ReformatQcStatusDistributionPerPlate()
+
+    def ReformatQcStatusDistributionPerPlate(self):
+        d_sample = {'Total':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0},'Uniq':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}}
+        d_techno = {'illumina':{'Total':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0},'Uniq':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}},'mgi':{'Total':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0},'Uniq':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}},'nanopore':{'Total':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0},'Uniq':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}}}
+        
+        d_plate = {}
+        
+        for plate in self.qc_status_distribution_per_plate_dict.keys():
+            d_plate[plate] = {}
+            for total_or_uniq in self.qc_status_distribution_per_plate_dict[plate]:
+                d_plate[plate][total_or_uniq] = {'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}
+                for techno in self.qc_status_distribution_per_plate_dict[plate][total_or_uniq]:
+                    for qc_status in self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno]:
+                        d_sample[total_or_uniq][qc_status] += self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno][qc_status]
+                        d_sample[total_or_uniq]['Total'] += self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno][qc_status]
+
+                        d_techno[techno][total_or_uniq][qc_status] += self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno][qc_status]
+                        d_techno[techno][total_or_uniq]['Total'] += self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno][qc_status]
+
+                        d_plate[plate][total_or_uniq][qc_status] += self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno][qc_status]
+                        d_plate[plate][total_or_uniq]['Total'] += self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno][qc_status]
+
+        return({'d_sample':d_sample,'d_techno':d_techno,'d_plate':d_plate})
 
     def SaveStats(self):
-        self.file_output_manager.SaveStats(self.list_runs_df,self.plate_summary_df_dict)
+        self.file_output_manager.SaveStats(self.list_runs_df,self.plate_summary_df_dict,self.reformat_qc_status_distribution_per_plate_dict)
 
 class FileOutputManager():
     def __init__(self):
@@ -382,22 +422,32 @@ class FileOutputManager():
         self.consensus_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList" +".list"
         self.vcf_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_vcfList" +".list"
         self.list_runs_filename = "listRuns_{0}.tsv".format(datetime.today().strftime('%Y%m%d'))
+        self.qc_status_distribution_per_plate_filename = "AllSample.{0}.stat".format(datetime.today().strftime('%Y%m%d'))
 
         self.missing_samples_handler = None
         self.missing_qc_status_handler = None
         self.missing_files_handler = None
         self.consensus_list_handler = None
         self.vcf_list_handler = None
+        self.qc_status_distribution_per_plate_handler = None
 
         self.SetFilesHandler()
 
-    def SaveStats(self,list_runs_df,plate_summary_df_dict):
+    def SaveStats(self,list_runs_df,plate_summary_df_dict,qc_status_distribution_per_plate_dict):
         list_runs_df.to_csv(os.path.join(trace_path,self.list_runs_filename),sep="\t",index=False)
 
         for plate_name,plate_summary_df in plate_summary_df_dict.items():
             plate_summary_df.to_csv(os.path.join(trace_path,plate_name + "." + datetime.today().strftime('%Y%m%d') + ".list"),sep="\t",index=False)
 
-        pd.concat(plate_summary_df_dict.values()).to_csv(os.path.join(trace_path,"AllSample." + datetime.today().strftime('%Y%m%d') + ".list"),sep="\t",index=False)
+        all_df = pd.concat(plate_summary_df_dict.values())
+        all_df = all_df.loc[all_df['Plate[0]'] != 'NOTFOUND',:]
+        all_df.to_csv(os.path.join(trace_path,"AllSample." + datetime.today().strftime('%Y%m%d') + ".list"),sep="\t",index=False)
+
+        self.WriteQcStatusDitributionPerPlate(qc_status_distribution_per_plate_dict)
+
+    def WriteQcStatusDitributionPerPlate(self,qc_status_distribution_per_plate_dict):
+        #self.qc_status_distribution_per_plate_handler.write
+        print(qc_status_distribution_per_plate_dict)
 
     def WriteMissingSample(self,sample_name,plate_name):
         self.missing_samples_handler.write(sample_name + "\t" + plate_name + "\n")
@@ -430,12 +480,15 @@ class FileOutputManager():
         self.vcf_list_handler = open(os.path.join(trace_path,self.vcf_list_filename),'w')
         self.vcf_list_handler.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\tPATE_NAME\n")
 
+        self.qc_status_distribution_per_plate_handler = open(os.path.join(trace_path,self.qc_status_distribution_per_plate_filename),'w')
+        self.qc_status_distribution_per_plate_handler.write("Sample\tPASS\tFLAG\tREJ\tUNK\tTotal\n")
 
     def CloseFilesHandler(self):
         self.missing_samples_handler.close()
         self.missing_files_handler.close()
         self.missing_qc_status_handler.close()
         self.consensus_list_handler.close()
+        self.qc_status_distribution_per_plate_handler.close()
 
 class Logger():
     def __init__(self,logger_name,output):
