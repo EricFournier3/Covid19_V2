@@ -233,7 +233,8 @@ class Plate():
         self.samples_obj_list = []
 
         self.samples_summary_in_plate_df = None
-        self.qc_status_distribution = {'Total':{'mgi':{'PASS':0,'FLAG':0,'REJ':0},'illumina':{'PASS':0,'FLAG':0,'REJ':0},'nanopore':{'PASS':0,'FLAG':0,'REJ':0}},'Uniq':{'mgi':{'PASS':0,'FLAG':0,'REJ':0},'illumina':{'PASS':0,'FLAG':0,'REJ':0},'nanopore':{'PASS':0,'FLAG':0,'REJ':0}}}
+        qc_status_dict = {'PASS':0,'FLAG':0,'REJ':0,'UNK':0} 
+        self.qc_status_distribution = {'Total':{'mgi':copy.deepcopy(qc_status_dict),'illumina':copy.deepcopy(qc_status_dict),'nanopore':copy.deepcopy(qc_status_dict)},'Uniq':{'mgi':copy.deepcopy(qc_status_dict),'illumina':copy.deepcopy(qc_status_dict),'nanopore':copy.deepcopy(qc_status_dict)}}
 
     def GetPlateName(self):
         return(self.plate_name)
@@ -264,6 +265,7 @@ class Plate():
             techno = sample_obj.GetTechno()
             run_date = sample_obj.GetRunDate()
             qc_status = sample_obj.GetQcStatus()
+            qc_status = 'UNK' if qc_status == "missing" else qc_status
             curration_status = qc_status
             analysis_status = qc_status
 
@@ -452,9 +454,7 @@ class FileOutputManager():
         keys_4 = ['PASS','FLAG','REJ','UNK','Total']
 
         for key1 in keys_1:
-
             if set(qc_status_distribution_per_plate_dict[key1].keys()) == set(keys_2):
-
                 for key2 in keys_2:
                     index_suffix = 'Sample'
                     index_prefix = key2
@@ -462,7 +462,6 @@ class FileOutputManager():
                     for key4 in keys_4: 
                         self.qc_status_distribution_per_plate_handler.write(str(qc_status_distribution_per_plate_dict[key1][key2][key4]) + "\t")
                     self.qc_status_distribution_per_plate_handler.write("\n")
-
             elif set(qc_status_distribution_per_plate_dict[key1].keys()) == set(keys_3):
                 for key3 in keys_3:
                     index_suffix = key3
@@ -543,7 +542,6 @@ class Logger():
 
     def SetStdOutHandler(self):
         self.stdout_handler = logging.StreamHandler()
-        self.stdout_handler.setLevel(self.log_level)
         self.stdout_handler.setFormatter(self.formatter)
 
     def SetFormatter(self):
@@ -555,7 +553,6 @@ class Logger():
 
     def SetFileHandler(self):
         self.file_handler = logging.FileHandler(self.output)
-        self.file_handler.setLevel(self.log_level)
         self.file_handler.setFormatter(self.formatter)
 
     def Configure(self):
@@ -756,7 +753,9 @@ def Main():
     plate_obj_list.append(not_found_plate_obj)
 
     stat_manager = Stats(run_obj_list,plate_obj_list,file_output_manager)
+    process_logger.LogMessage("Compute List Runs")
     stat_manager.ComptuteListRuns()
+    process_logger.LogMessage("Summarize samples in plates")
     stat_manager.SummarizeSamplesInEachPlate()
     stat_manager.SaveStats()
 
