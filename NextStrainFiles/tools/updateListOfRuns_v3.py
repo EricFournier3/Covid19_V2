@@ -11,6 +11,7 @@ import re
 import time
 import sys
 from datetime import datetime
+import copy
 
 '''
 Created on 29 December 2020
@@ -19,9 +20,7 @@ Created on 29 December 2020
 Note:
     - pour executer ce script, il faut au prealable executer <module load scipy-stack>
 
-
 TODO:
-    - combiner updateSampleList_v2.py et updateListOfRuns_v2.py
     - modifier le README faire version 2
     - corriger le logging stdout
 '''
@@ -279,7 +278,6 @@ class Plate():
 
             self.samples_summary_in_plate_df = pd.concat([self.samples_summary_in_plate_df,temp_df])
 
-
 class Sample():
     def __init__(self,sample_name,consensus,cleaned_raw_reads,host_removal,metrics,variant_snpeff,qc_status,cons_perc_n,techno,run_date):
         self.sample_name = sample_name
@@ -389,15 +387,16 @@ class Stats():
         self.reformat_qc_status_distribution_per_plate_dict = self.ReformatQcStatusDistributionPerPlate()
 
     def ReformatQcStatusDistributionPerPlate(self):
-        d_sample = {'Total':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0},'Uniq':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}}
-        d_techno = {'illumina':{'Total':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0},'Uniq':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}},'mgi':{'Total':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0},'Uniq':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}},'nanopore':{'Total':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0},'Uniq':{'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}}}
-        
+        qc_status_template_dict = {'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}
+        d_sample = {'Total':copy.deepcopy(qc_status_template_dict),'Uniq':copy.deepcopy(qc_status_template_dict)}
+        d_techno = {'illumina':copy.deepcopy(d_sample),'mgi':copy.deepcopy(d_sample),'nanopore':copy.deepcopy(d_sample)}
+
         d_plate = {}
-        
+
         for plate in self.qc_status_distribution_per_plate_dict.keys():
             d_plate[plate] = {}
             for total_or_uniq in self.qc_status_distribution_per_plate_dict[plate]:
-                d_plate[plate][total_or_uniq] = {'PASS':0,'FLAG':0,'REJ':0,'UNK':0,'Total':0}
+                d_plate[plate][total_or_uniq] = copy.deepcopy(qc_status_template_dict)
                 for techno in self.qc_status_distribution_per_plate_dict[plate][total_or_uniq]:
                     for qc_status in self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno]:
                         d_sample[total_or_uniq][qc_status] += self.qc_status_distribution_per_plate_dict[plate][total_or_uniq][techno][qc_status]
@@ -446,9 +445,43 @@ class FileOutputManager():
         self.WriteQcStatusDitributionPerPlate(qc_status_distribution_per_plate_dict)
 
     def WriteQcStatusDitributionPerPlate(self,qc_status_distribution_per_plate_dict):
-        #self.qc_status_distribution_per_plate_handler.write
-        print(qc_status_distribution_per_plate_dict)
 
+        keys_1 = ['d_sample','d_techno','d_plate']
+        keys_2 = ['Total','Uniq']
+        keys_3 = ['illumina','nanopore','mgi']
+        keys_4 = ['PASS','FLAG','REJ','UNK','Total']
+
+        for key1 in keys_1:
+
+            if set(qc_status_distribution_per_plate_dict[key1].keys()) == set(keys_2):
+
+                for key2 in keys_2:
+                    index_suffix = 'Sample'
+                    index_prefix = key2
+                    self.qc_status_distribution_per_plate_handler.write(index_prefix + " " + index_suffix + "\t")
+                    for key4 in keys_4: 
+                        self.qc_status_distribution_per_plate_handler.write(str(qc_status_distribution_per_plate_dict[key1][key2][key4]) + "\t")
+                    self.qc_status_distribution_per_plate_handler.write("\n")
+
+            elif set(qc_status_distribution_per_plate_dict[key1].keys()) == set(keys_3):
+                for key3 in keys_3:
+                    index_suffix = key3
+                    for key2 in keys_2:
+                        index_prefix = key2
+                        self.qc_status_distribution_per_plate_handler.write(index_prefix + " " + index_suffix + "\t")
+                        for key4 in keys_4:
+                            self.qc_status_distribution_per_plate_handler.write(str(qc_status_distribution_per_plate_dict[key1][key3][key2][key4]) + "\t")
+                        self.qc_status_distribution_per_plate_handler.write("\n")
+            else:
+                for plate in qc_status_distribution_per_plate_dict[key1].keys():
+                    index_suffix = plate
+                    for key2 in keys_2:
+                        index_prefix = key2
+                        self.qc_status_distribution_per_plate_handler.write(index_prefix + " " + index_suffix + "\t")
+                        for key4 in keys_4:
+                            self.qc_status_distribution_per_plate_handler.write(str(qc_status_distribution_per_plate_dict[key1][plate][key2][key4]) + "\t")
+                        self.qc_status_distribution_per_plate_handler.write("\n")
+        
     def WriteMissingSample(self,sample_name,plate_name):
         self.missing_samples_handler.write(sample_name + "\t" + plate_name + "\n")
 
