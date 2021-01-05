@@ -21,8 +21,7 @@ Note:
     - pour executer ce script, il faut au prealable executer <module load scipy-stack>
 
 TODO:
-    - modifier le README faire version 2
-    - corriger le logging stdout
+    - enregister seulement les vrais missing files (voir message Hector sur slack) 
 '''
 
 pd.options.display.max_columns = 100
@@ -32,11 +31,15 @@ parser = argparse.ArgumentParser(description="Parse sequencing runs")
 
 parser.add_argument('--debug',help='run in debug mode',action='store_true')
 parser.add_argument('--input',help='listPlateSampleYYYYMMDD.tsv file name',required=True)
+parser.add_argument('--per-run',help='create one updateListOfRuns_v3_YYYY-MM-JJ_consensusList.list per run',action='store_true')
 
 args = parser.parse_args()
 
 global _debug
 _debug = args.debug
+
+global _per_run
+_per_run = args.per_run
 
 global input_file_name
 input_file_name = args.input
@@ -446,6 +449,13 @@ class FileOutputManager():
 
         self.WriteQcStatusDitributionPerPlate(qc_status_distribution_per_plate_dict)
 
+    def WriteConsensusListForThisRun(self,sample_name,qc_status,consensus_path,techno,perc_n,run_name,plate_name):
+        consensus_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList_" + run_name + ".list"
+        handler = open(os.path.join(trace_path,consensus_list_filename),'w')
+        handler.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\tPATE_NAME\n")
+        handler.write(sample_name + "\t" + qc_status + "\t" + consensus_path + "\t" + techno + "\t" + str(perc_n) + "\t" + run_name + "\t" + plate_name + "\n")
+        handler.close()
+
     def WriteQcStatusDitributionPerPlate(self,qc_status_distribution_per_plate_dict):
 
         keys_1 = ['d_sample','d_techno','d_plate']
@@ -643,6 +653,8 @@ def BuildRepository(plate_obj_list,run_obj_list,logger,output_manager):
                         output_manager.WriteMissingFile(sample,plate_name,run_name,"consensus")
                     else:
                         output_manager.WriteConsensusList(sample,samples_obj.GetQcStatus(),src_consensus,run_techno,samples_obj.GetConsPercN(),run_name,plate_name)
+                        if _per_run:
+                            output_manager.WriteConsensusListForThisRun(sample,samples_obj.GetQcStatus(),src_consensus,run_techno,samples_obj.GetConsPercN(),run_name,plate_name)
                         symlink_consensus = os.path.join(sample_dir_path,os.path.basename(src_consensus))
                         os.symlink(src_consensus,symlink_consensus)
                 except OSError as error:
