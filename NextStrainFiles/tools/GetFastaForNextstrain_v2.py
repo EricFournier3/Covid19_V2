@@ -25,6 +25,7 @@ from Covid19DB import MySQLcovid19,MySQLcovid19Selector
 """
 TODO
 verifier si on peut resoumettre un numero; par exemple a la deuxieme soumission il a son numero GISAID alors qu a la premiere il etait manquant 
+sudo sshfs -o allow_other -o follow_symlinks moreiras@beluga.computecanada.ca:/home/moreiras /mnt/BelugaSam  (a faire par Sandrine)
 """
 
 
@@ -63,7 +64,7 @@ parser.add_argument('--max-perc-n',type=int,help='Maximun percentage of N tolera
 parser.add_argument('--sgil-metadata',help='Path to sgil extract file',required=True)
 parser.add_argument('--gq-metadata',help='Path to liste envois genome quebec',required=True)
 parser.add_argument('--gisaid-metadata',help='Path to gisaid metadata',required=True)
-
+parser.add_argument('--user',help='user name',choices=['foueri01','morsan01'],required=True)
 
 args = parser.parse_args()
 
@@ -78,7 +79,6 @@ laser_sub = args.laser_sub
 laser_sub_freeze1 = args.laser_sub_freeze1
 
 global qc_keep
-
 qc_keep = args.keep
 
 
@@ -96,7 +96,6 @@ except:
 
 global fasta_qual_status_to_keep
 
-
 if qc_keep == 'ALL':
     fasta_qual_status_to_keep = ['PASS','FLAG','REJ','NA','MISSING_METRICS_HEADER','MISSING_CONS_PERC_N']
 elif qc_keep == 'FLAG':
@@ -104,11 +103,14 @@ elif qc_keep == 'FLAG':
 else:
     fasta_qual_status_to_keep = ['PASS']
 
+username = args.user 
+beluga_user_dict = {'foueri01':['fournie1','BelugaEric'],'morsan01':['moreiras','BelugaSam']} 
+
 global beluga_server
-beluga_server = "fournie1@beluga.computecanada.ca:/home/fournie1"
+beluga_server = "{0}@beluga.computecanada.ca:/home/{0}".format(beluga_user_dict[username][0])
 
 global mnt_beluga_server
-mnt_beluga_server = "/mnt/BelugaEric/"
+mnt_beluga_server = "/mnt/{}/".format(beluga_user_dict[username][1])
 
 global gisaid_sub_basedir  
 gisaid_sub_basedir = "/data/PROJETS/COVID-19_Beluga/Gisaid/FinalPublished/release1/"
