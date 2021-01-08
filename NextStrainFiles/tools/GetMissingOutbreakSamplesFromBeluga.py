@@ -18,12 +18,12 @@ outbreak_dir = "/data/Databases/CovBanQ_Epi/OUTBREAK_NEW/"
 metadata = "/data/PROJETS/COVID-19_Beluga/Metadata/metadata_2021-01-07_PASS_FLAG_minmaxSampleDate_2020-02-01_2021-01-06.tsv"
 beluga_consensus = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v3_2021-01-07_consensusList.list" 
 missing_run_samples = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/MissingSamples_20210107.tsv"
-missing_run_files = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/MissingFiles_20210107.tsv"
+missing_qc_status = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/MissingQcStatus_20210107.tsv"
 
 metadata_df = pd.read_csv(metadata,sep="\t",index_col=False)
 beluga_consensus_df = pd.read_csv(beluga_consensus,sep="\t",index_col=False)
 missing_run_samples_df = pd.read_csv(missing_run_samples,sep="\t",index_col=False)
-missing_run_files_df = pd.read_csv(missing_run_files),sep="\t",index_col=False
+missing_qc_status_df = pd.read_csv(missing_qc_status,sep="\t",index_col=False)
 
 temp_dir = "/home/foueri01@inspq.qc.ca/temp/20210108/"
 
@@ -38,8 +38,8 @@ missing_from_metadata_in_consensus_file = os.path.join(temp_dir,"MissingFromMeta
 missing_from_missing_run_samples = os.path.join(temp_dir,"MissingFromRunSamples.tsv")
 missing_from_consensus_in_missing_run_samples = os.path.join(temp_dir,"MissingFromConsensusInMissingRunSamples.tsv")
 
-missing_from_missing_run_files = os.path.join(temp_dir,"MissingFromMissingRunFiles.tsv")
-missing_from_missing_run_samples_in_missing_run_files = os.path.join(temp_dir,"MissingFromMissingRunSamplesInMissingRunFiles.tsv")
+missing_from_missing_qc_status = os.path.join(temp_dir,"MissingFromMissingQcStatus.tsv")
+missing_from_missing_run_samples_in_missing_qc_status = os.path.join(temp_dir,"MissingFromMissingRunSamplesInMissinQcStatus.tsv")
 
 
 
@@ -91,20 +91,21 @@ merge_df_3 = pd.merge(missing_df_2,missing_run_samples_df,how='inner',left_on='B
 merge_df_3 = merge_df_3.sort_values(by=['BIOBANK'])
 biobank_set_3 = set(merge_df_3['BIOBANK'])
 biobank_missing_set_3 = biobank_missing_set_2 - biobank_set_3
-missing_df_3 = outbreak_df.loc[outbreak_df['BIOBANK'].isin(biobank_missing_set_2),:]#enregistrer ce df
+missing_df_3 = outbreak_df.loc[outbreak_df['BIOBANK'].isin(biobank_missing_set_3),:]#enregistrer ce df
 missing_df_3.to_csv(missing_from_missing_run_samples,sep="\t",index=False)
 merge_df_3.to_csv(missing_from_consensus_in_missing_run_samples,sep="\t",index=False)
 stat_file_handler.write("Number of missing from missing run samples : " + str(missing_df_3.shape[0]) + "\n")
 stat_file_handler.write("Number of missing from consensus in missing run samples : " + str(merge_df_3.shape[0]) + "\n")
 
-################### Search in MissingFiles from beluga runs ###################
-merge_df_4 = pd.merge(missing_df_2,missing_run_samples_df,how='inner',left_on='BIOBANK',right_on='SAMPLE')
+################### Search in MissingQcStatus from beluga runs ###################
+merge_df_4 = pd.merge(missing_df_2,missing_qc_status_df,how='inner',left_on='BIOBANK',right_on='SAMPLE')
 merge_df_4 = merge_df_4.sort_values(by=['BIOBANK'])
 biobank_set_4 = set(merge_df_4['BIOBANK'])
 biobank_missing_set_4 = biobank_missing_set_3 - biobank_set_4
-missing_df_3 = outbreak_df.loc[outbreak_df['BIOBANK'].isin(biobank_missing_set_2),:]#enregistrer ce df
+missing_df_4 = outbreak_df.loc[outbreak_df['BIOBANK'].isin(biobank_missing_set_4),:]#enregistrer ce df
+missing_df_4.to_csv(missing_from_missing_qc_status,sep="\t",index=False)
+merge_df_4.to_csv(missing_from_missing_run_samples_in_missing_qc_status,sep="\t",index=False)
+stat_file_handler.write("Number of missing from missing qc status : " + str(missing_df_4.shape[0]) + "\n")
+stat_file_handler.write("Number of missing from run samples in missing qc status : " + str(merge_df_4.shape[0]) + "\n")
 
-
-#missing_from_missing_run_files = os.path.join(temp_dir,"MissingFromMissingRunFiles.tsv")
-#missing_from_missing_run_samples_in_missing_run_files = os.path.join(temp_dir,"MissingFromMissingRunSamplesInMissingRunFiles.tsv")
 stat_file_handler.close()
