@@ -15,10 +15,10 @@ import argparse
 import glob
 
 outbreak_dir = "/data/Databases/CovBanQ_Epi/OUTBREAK_NEW/"
-metadata = "/data/PROJETS/COVID-19_Beluga/Metadata/metadata_2021-01-07_PASS_FLAG_minmaxSampleDate_2020-02-01_2021-01-06.tsv"
-beluga_consensus = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v3_2021-01-07_consensusList.list" 
-missing_run_samples = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/MissingSamples_20210107.tsv"
-missing_qc_status = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/MissingQcStatus_20210107.tsv"
+metadata = "/data/PROJETS/COVID-19_Beluga/Metadata/metadata_2021-01-08_PASS_FLAG_minmaxSampleDate_2020-02-01_2021-01-06.tsv"
+beluga_consensus = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/updateListOfRuns_v3_2021-01-08_consensusList.list" 
+missing_run_samples = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/MissingSamples_20210108.tsv"
+missing_qc_status = "/data/PROJETS/COVID-19_Beluga/UpdateListOfRunsConsensusAndVcfList/MissingQcStatus_20210108.tsv"
 
 metadata_df = pd.read_csv(metadata,sep="\t",index_col=False)
 beluga_consensus_df = pd.read_csv(beluga_consensus,sep="\t",index_col=False)
