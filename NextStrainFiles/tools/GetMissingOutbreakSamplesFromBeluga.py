@@ -41,8 +41,6 @@ missing_from_consensus_in_missing_run_samples = os.path.join(temp_dir,"MissingFr
 missing_from_missing_qc_status = os.path.join(temp_dir,"MissingFromMissingQcStatus.tsv")
 missing_from_missing_run_samples_in_missing_qc_status = os.path.join(temp_dir,"MissingFromMissingRunSamplesInMissinQcStatus.tsv")
 
-
-
 outbreak_file_list = []
 
 for outbreak_file in glob.glob(outbreak_dir + "*.list"):
