@@ -451,8 +451,9 @@ class FileOutputManager():
 
     def WriteConsensusListForThisRun(self,sample_name,qc_status,consensus_path,techno,perc_n,run_name,plate_name):
         consensus_list_filename = os.path.basename(__file__)[:-3] + "_" + datetime.now().strftime('%Y-%m-%d') + "_consensusList_" + run_name + ".list"
-        handler = open(os.path.join(trace_path,consensus_list_filename),'w')
-        handler.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\tPATE_NAME\n")
+        handler = open(os.path.join(trace_path,consensus_list_filename),'a')
+        if os.stat(os.path.join(trace_path,consensus_list_filename)).st_size == 0:
+            handler.write("SAMPLE\tSTATUS\tPATH\tTECHNO\tPERC_N\tRUN_NAME\tPATE_NAME\n")
         handler.write(sample_name + "\t" + qc_status + "\t" + consensus_path + "\t" + techno + "\t" + str(perc_n) + "\t" + run_name + "\t" + plate_name + "\n")
         handler.close()
 
