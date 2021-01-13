@@ -90,7 +90,7 @@ global gisaid_metadata
 
 
 if _debug_:
-    input_file = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport_test.tsv'
+    input_file = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport_test2.tsv'
     gisaid_metadata =  '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/metadata_2020-12-20_12-24_test.tsv'
 else:
     base_dir = "/data/PROJETS/COVID-19_Beluga/"
@@ -187,12 +187,15 @@ class DataSubmissionManager:
         consensus_out = os.path.join(self.submission_dir,"all_sequences.fasta")
         rec_list =  [] 
         for index,row in self.input_file_df.iterrows():
-            print("ROW ",row)
+            #print("ROW ",row)
             sample_name = row['Sample Name']
             run_name = row['run_name']
             
-            #TODO if not none
-            consensus = GenomeCenterConnector.GetConsensusPath('illumina','L00232955','20200609_illumina_LSPQPlate05_HM2CTDRXX')
+            consensus = GenomeCenterConnector.GetConsensusPath(self.techno,sample_name,run_name)
+            if consensus is None:
+                logging.warning("No consensus for " + sample_name)
+                return()
+
             rec = SeqIO.read(consensus,'fasta')
             try:
                 print(rec.description)
@@ -245,7 +248,6 @@ def Main():
     logging.info('Begin')
     GenomeCenterConnector.MountBelugaServer()
     data_submission_manager = DataSubmissionManager(input_file,gisaid_metadata,beluga_run,seq_techno)
-    #print(GenomeCenterConnector.GetConsensusPath(seq_techno,'L00214634',beluga_run))
 
     data_submission_manager.GetConsensus()
 
