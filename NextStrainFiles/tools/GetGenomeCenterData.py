@@ -20,6 +20,7 @@ import logging
 import gc
 import argparse
 import time
+import yaml
 import glob
 from Bio import SeqIO
 
@@ -104,9 +105,15 @@ Tools.CheckUserArgs(gisaid_metadata_filename,mode)
 
 class CovBankDB:
     def __init__(self):
-        self.self.yaml_conn_param = open('/data/Databases/CovBanQ_Epi/CovBankParam.yaml')
+        self.yaml_conn_param = open('/data/Databases/CovBanQ_Epi/CovBankParam.yaml')
         self.ReadConnParam()
         self.connection = self.SetConnection()
+
+    def GetCursor(self):
+        return self.GetConnection().cursor()
+
+    def Commit(self):
+        self.connection.commit()
 
     def SetConnection(self):
         return mysql.connector.connect(host=self.host,user=self.user,password=self.password,database=self.database)
@@ -124,6 +131,9 @@ class CovBankDB:
         self.password = param['password']
         self.database = param['database']
 
+    def GetGisaidMetadataAsPdDataFrame(self):
+        pass
+
 
 class NextstrainDataManager:
     def __init__(self):
@@ -139,11 +149,12 @@ class VariantDataManager:
         pass
 
 
-class DataSubmissionManager:
-    def __init__(self,input_file,gisaid_metadata,run_name,techno):
+class GisaidDataSubmissionManager:
+    def __init__(self,input_file,gisaid_metadata,run_name,techno,cov_bank_db_obj):
         self.input_file = input_file
         self.gisaid_metadata = gisaid_metadata
        
+        self.cov_bank_db_obj = cov_bank_db_obj
         self.techno = techno
         self.run_name = run_name
         self.today = datetime.datetime.now().strftime("%Y%m%d")
@@ -215,6 +226,21 @@ class DataSubmissionManager:
         #print(self.sample_to_submit_dict)
         SeqIO.write(rec_list,consensus_out,'fasta')
 
+    def BuildSampleList(self):
+        self.sample_list = []
+        for sample in self.sample_to_submit_dict:
+            print("SAMPLE ,", sample)
+            short_sample_name = re.search(r'Canada/Qc-(\S+)/\d+',sample).group(1)
+            self.sample_list.append(short_sample_name)
+
+        print(self.sample_list)
+
+    def CreateMetadata(self):
+        metadata_out = os.path.join(self.submission_dir,"{0}_ncov19_metadata.xls".format(self.today))
+        print("METADATA OUT ",metadata_out)
+        metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame() 
+        #TODO enrergistrer les sample non trouve dans db
+
 
 class GenomeCenterConnector:
     beluga_user_dict = {'foueri01':['fournie1','BelugaEric'],'morsan01':['moreiras','BelugaSam']}
@@ -241,15 +267,23 @@ class GenomeCenterConnector:
         try:
             return(glob.glob(consensus_path)[0])
         except:
+            #TODO save consensus non trouve
             return(None)
             
 
 def Main():
     logging.info('Begin')
-    GenomeCenterConnector.MountBelugaServer()
-    data_submission_manager = DataSubmissionManager(input_file,gisaid_metadata,beluga_run,seq_techno)
 
-    data_submission_manager.GetConsensus()
+    cov_bank_db_obj = CovBankDB()
+
+    GenomeCenterConnector.MountBelugaServer()
+    gisaid_data_submission_manager = GisaidDataSubmissionManager(input_file,gisaid_metadata,beluga_run,seq_techno,cov_bank_db_obj)
+
+    gisaid_data_submission_manager.GetConsensus()
+    gisaid_data_submission_manager.BuildSampleList()
+    #gisaid_data_submission_manager.CreateMetadata()
+
+    cov_bank_db_obj.CloseConnection()
 
 if __name__ == '__main__':
     Main()
