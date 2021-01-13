@@ -184,7 +184,8 @@ class DataSubmissionManager:
         #print(self.input_file_df)
 
     def GetConsensus(self):
-        
+        consensus_out = os.path.join(self.submission_dir,"all_sequences.fasta")
+        rec_list =  [] 
         for index,row in self.input_file_df.iterrows():
             print("ROW ",row)
             sample_name = row['Sample Name']
@@ -193,13 +194,23 @@ class DataSubmissionManager:
             #TODO if not none
             consensus = GenomeCenterConnector.GetConsensusPath('illumina','L00232955','20200609_illumina_LSPQPlate05_HM2CTDRXX')
             rec = SeqIO.read(consensus,'fasta')
-            parsed_header = re.search(r'(Canada/Qc-)(\S+)/(\d{4}) seq_method:(\S+)\|assemb_method:\S+\|snv_call_method:\S+ ',rec.description)
-            #print("rec id ",rec.id)
-            method = parsed_header.group(4)
-            self.sample_to_submit_dict[rec.id] = {}
-            self.sample_to_submit_dict[rec.id]['method'] = method
-            self.sample_to_submit_dict[rec.id]['gisaid_id'] = 'hCoV-19/' + rec.id
-
+            try:
+                print(rec.description)
+                parsed_header = re.search(r'(Canada/Qc-)(\S+)/(\d{4}) seq_method:(\S+)\|assemb_method:\S+\|snv_call_method:\S+',rec.description)
+                #print("rec id ",rec.id)
+                method = parsed_header.group(4)
+                self.sample_to_submit_dict[rec.id] = {}
+                self.sample_to_submit_dict[rec.id]['method'] = method
+                self.sample_to_submit_dict[rec.id]['gisaid_id'] = 'hCoV-19/' + rec.id
+                rec.description = ""
+                rec.id = self.sample_to_submit_dict[rec.id]['gisaid_id']
+                rec_list.append(rec)
+                 
+            except:
+                logging.error("Bug parse " + rec.description)
+         
+        #print(self.sample_to_submit_dict)
+        SeqIO.write(rec_list,consensus_out,'fasta')
 
 
 class GenomeCenterConnector:
