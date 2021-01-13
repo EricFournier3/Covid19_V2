@@ -41,8 +41,6 @@ class Tools:
                     logging.error('Gisaid metadata argument missing')
                     exit(1)
 
-
-
 parser = argparse.ArgumentParser(description="Download Genome Center data for Nextstrain, Pangolin, variant analysis and GISAID/NML submission")
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
 parser.add_argument('--mode',help='execution mode',choices=['nextstrain','pangolin','variant','submission'],required=True)
@@ -52,6 +50,8 @@ parser.add_argument('--user','-u',help='user name',required=True,choices=['fouer
 parser.add_argument('--minsampledate',help="Minimum sampled date YYYY-MM-DD",type=Tools.CheckDateFormat)
 parser.add_argument('--maxsampledate',help="Maximum sampled date YYYY-MM-DD",type=Tools.CheckDateFormat)
 parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['ALL','PASS','FLAG'])
+parser.add_argument('--beluga-run',help="beluga run name")
+
 args = parser.parse_args()
 
 _debug_ = args.debug
@@ -59,6 +59,9 @@ _debug_ = args.debug
 input_file_name = args.input
 gisaid_metadata_filename = args.gisaid_metadata
 
+
+global beluga_run
+beluga_run = args.beluga_run
 
 global user_name
 user_name = args.user
@@ -135,13 +138,35 @@ class VariantDataManager:
 
 
 class DataSubmissionManager:
-    def __init__(self):
-        pass
+    def __init__(self,input_file,gisaid_metadata):
+        self.input_file = input_file
+        self.gisaid_metadata = gisaid_metadata
+        
+        self.SetDataSubmissionDf()
+
+    def SetDataSubmissionDf(self):
+        self.input_file_df = pd.read_csv(self.input_file,sep="\t",index_col=False)
+        self.input_file_df = self.input_file_df.loc[self.input_file_df['run_name'] == beluga_run,: ]
+        #print(self.input_file_df)
+
+
+        self.gisaid_metadata_df = pd.read_csv(self.gisaid_metadata,sep="\t",index_col=False)
+        self.gisaid_metadata_df = self.gisaid_metadata_df.loc[self.gisaid_metadata_df['strain'].str.contains('^Canada/Qc-\S+/\S+',regex=True),:]
+        self.gisaid_metadata_qc_list = list(self.gisaid_metadata_df['strain'].str.replace(r'^Canada/Qc-(\S+)/\S+',r'\1',regex=True))
+        print(self.gisaid_metadata_qc_list)
+
+        #self.input_file_df = self.input_file_df.loc[self.input_file_df['Sample Name'].isin(self.gisaid_metadata_qc_list),['Sample Name ','PASS/FLAG/REJ','run_name','ncov_tools.pass','platform']]
+        self.input_file_df = self.input_file_df.loc[~self.input_file_df['Sample Name'].isin(self.gisaid_metadata_qc_list),['Sample Name','PASS/FLAG/REJ','run_name','ncov_tools.pass','platform']]
+
+        print(self.input_file_df)
+
 
 class GenomeCenterConnector:
     beluga_user_dict = {'foueri01':['fournie1','BelugaEric'],'morsan01':['moreiras','BelugaSam']}
     beluga_server =  "{0}@beluga.computecanada.ca:/home/{0}".format(beluga_user_dict[user_name][0])
     mnt_beluga_server = "/mnt/{}/".format(beluga_user_dict[user_name][1])
+
+    full_processing_path = os.path.join(mnt_beluga_server,'COVID_full_processing')
 
     @staticmethod
     def MountBelugaServer():
@@ -150,9 +175,24 @@ class GenomeCenterConnector:
         os.system("sudo sshfs -o allow_other -o follow_symlinks {0} {1}".format(GenomeCenterConnector.beluga_server,GenomeCenterConnector.mnt_beluga_server))
         logging.info("Beluga mounted")
 
+    @staticmethod
+    def GetConsensusPath(techno,sample,run_name):
+        sample = sample.split('_')[0]
+        if techno == 'nanopore':
+            consensus_path = os.path.join(GenomeCenterConnector.full_processing_path,techno,run_name,'analysis','*_nanopolish_800x',sample + "*",sample + ".consensus." + techno + ".*.fasta")
+        elif techno in ['mgi','illumina']:
+            consensus_path = os.path.join(GenomeCenterConnector.full_processing_path,techno + "_reprocess", run_name,'consensus',sample,sample + ".consensus." + str(techno.upper() if techno == 'mgi' else techno) + ".*.fasta")
+        try:
+            return(glob.glob(consensus_path)[0])
+        except:
+            return(None)
+            
+
 def Main():
     logging.info('Begin')
-    #GenomeCenterConnector.MountBelugaServer()
+    GenomeCenterConnector.MountBelugaServer()
+    print(GenomeCenterConnector.GetConsensusPath('mgi','L00214634',beluga_run))
+    #data_submission_manager = DataSubmissionManager(input_file,gisaid_metadata)
 
 if __name__ == '__main__':
     Main()
