@@ -176,7 +176,10 @@ class CovBankDB:
 
         sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE {26}.GENOME_QUEBEC_REQUETE REGEXP '{29}'".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
 
-        print("SQL ",sql)
+        #print("SQL ",sql)
+        df = pd.read_sql(sql,con=self.GetConnection())
+        return(df)
+        
 
 
 class NextstrainDataManager:
@@ -285,6 +288,15 @@ class GisaidDataSubmissionManager:
         metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.sample_list) 
         #TODO enrergistrer les sample non trouve dans db
 
+        self.CheckMissingMetadata(metadata_df['covv_subm_sample_id'])
+
+    def CheckMissingMetadata(self,sample_in_metadata):
+        #print(set(sample_in_metadata))
+        #print(set(self.sample_list))
+        missing = set(self.sample_list) - set(sample_in_metadata) 
+        test_set = set(['UN','DEUX'])
+        df = pd.DataFrame({'MissingSample':list(test_set)})
+        df.to_csv(os.path.join(self.submission_dir,"MissingMetadata.tsv"),sep="\t",index=False)
 
 class GenomeCenterConnector:
     beluga_user_dict = {'foueri01':['fournie1','BelugaEric'],'morsan01':['moreiras','BelugaSam']}
