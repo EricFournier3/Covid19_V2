@@ -51,6 +51,7 @@ parser.add_argument('--minsampledate',help="Minimum sampled date YYYY-MM-DD",typ
 parser.add_argument('--maxsampledate',help="Maximum sampled date YYYY-MM-DD",type=Tools.CheckDateFormat)
 parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['ALL','PASS','FLAG'])
 parser.add_argument('--beluga-run',help="beluga run name")
+parser.add_argument('--techno',help="sequencing technologie",choices=['illumina','nanopore','mgi'])
 
 args = parser.parse_args()
 
@@ -59,6 +60,8 @@ _debug_ = args.debug
 input_file_name = args.input
 gisaid_metadata_filename = args.gisaid_metadata
 
+global seq_techno
+seq_techno = args.techno
 
 global beluga_run
 beluga_run = args.beluga_run
@@ -89,7 +92,6 @@ global gisaid_metadata
 if _debug_:
     input_file = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport_test.tsv'
     gisaid_metadata =  '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/metadata_2020-12-20_12-24_test.tsv'
-    gisaid_publication_basedir = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Gisaid/'
 else:
     base_dir = "/data/PROJETS/COVID-19_Beluga/"
 
@@ -138,27 +140,66 @@ class VariantDataManager:
 
 
 class DataSubmissionManager:
-    def __init__(self,input_file,gisaid_metadata):
+    def __init__(self,input_file,gisaid_metadata,run_name,techno):
         self.input_file = input_file
         self.gisaid_metadata = gisaid_metadata
-        
+       
+        self.techno = techno
+        self.run_name = run_name
+        self.today = datetime.datetime.now().strftime("%Y%m%d")
+
+        self.sample_to_submit_dict = {}
+
         self.SetDataSubmissionDf()
 
+        self.CreateSubmissionDirectory()
+
+    def CreateSubmissionDirectory(self):
+        if _debug_:
+            self.gisaid_publication_basedir = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Gisaid/'
+        else:
+            self.gisaid_publication_basedir = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Gisaid/'
+
+        self.submission_dir = os.path.join(self.gisaid_publication_basedir,self.techno,self.run_name,self.today)
+
+        
+        try:
+            os.makedirs(self.submission_dir,exist_ok=True)
+        except:
+            logging.error("Impossible de creer " + self.submission_dir)
+        
     def SetDataSubmissionDf(self):
         self.input_file_df = pd.read_csv(self.input_file,sep="\t",index_col=False)
         self.input_file_df = self.input_file_df.loc[self.input_file_df['run_name'] == beluga_run,: ]
         #print(self.input_file_df)
 
+        self.input_file_df['ncov_tools.pass'] = self.input_file_df['ncov_tools.pass'].astype(str)
 
         self.gisaid_metadata_df = pd.read_csv(self.gisaid_metadata,sep="\t",index_col=False)
         self.gisaid_metadata_df = self.gisaid_metadata_df.loc[self.gisaid_metadata_df['strain'].str.contains('^Canada/Qc-\S+/\S+',regex=True),:]
         self.gisaid_metadata_qc_list = list(self.gisaid_metadata_df['strain'].str.replace(r'^Canada/Qc-(\S+)/\S+',r'\1',regex=True))
-        print(self.gisaid_metadata_qc_list)
 
-        #self.input_file_df = self.input_file_df.loc[self.input_file_df['Sample Name'].isin(self.gisaid_metadata_qc_list),['Sample Name ','PASS/FLAG/REJ','run_name','ncov_tools.pass','platform']]
-        self.input_file_df = self.input_file_df.loc[~self.input_file_df['Sample Name'].isin(self.gisaid_metadata_qc_list),['Sample Name','PASS/FLAG/REJ','run_name','ncov_tools.pass','platform']]
+        self.input_file_df = self.input_file_df.loc[(~self.input_file_df['Sample Name'].isin(self.gisaid_metadata_qc_list)) & (self.input_file_df['PASS/FLAG/REJ'].str.upper() == 'PASS') & (self.input_file_df['ncov_tools.pass'].str.upper() ==  'TRUE'),['Sample Name','PASS/FLAG/REJ','run_name','ncov_tools.pass','platform']]
 
-        print(self.input_file_df)
+        #print(self.input_file_df)
+
+    def GetConsensus(self):
+        
+        for index,row in self.input_file_df.iterrows():
+            print("ROW ",row)
+            sample_name = row['Sample Name']
+            run_name = row['run_name']
+            
+            #TODO if not none
+            consensus = GenomeCenterConnector.GetConsensusPath('illumina','L00232955','20200609_illumina_LSPQPlate05_HM2CTDRXX')
+            rec = SeqIO.read(consensus,'fasta')
+            parsed_header = re.search(r'(Canada/Qc-)(\S+)/(\d{4}) seq_method:(\S+)\|assemb_method:\S+\|snv_call_method:\S+ ',rec.description)
+            #print("rec id ",rec.id)
+            method = parsed_header.group(4)
+            self.sample_to_submit_dict[rec.id] = {}
+            self.sample_to_submit_dict[rec.id]['method'] = method
+            self.sample_to_submit_dict[rec.id]['gisaid_id'] = 'hCoV-19/' + rec.id
+
 
 
 class GenomeCenterConnector:
@@ -167,6 +208,7 @@ class GenomeCenterConnector:
     mnt_beluga_server = "/mnt/{}/".format(beluga_user_dict[user_name][1])
 
     full_processing_path = os.path.join(mnt_beluga_server,'COVID_full_processing')
+    
 
     @staticmethod
     def MountBelugaServer():
@@ -191,8 +233,10 @@ class GenomeCenterConnector:
 def Main():
     logging.info('Begin')
     GenomeCenterConnector.MountBelugaServer()
-    print(GenomeCenterConnector.GetConsensusPath('mgi','L00214634',beluga_run))
-    #data_submission_manager = DataSubmissionManager(input_file,gisaid_metadata)
+    data_submission_manager = DataSubmissionManager(input_file,gisaid_metadata,beluga_run,seq_techno)
+    #print(GenomeCenterConnector.GetConsensusPath(seq_techno,'L00214634',beluga_run))
+
+    data_submission_manager.GetConsensus()
 
 if __name__ == '__main__':
     Main()
