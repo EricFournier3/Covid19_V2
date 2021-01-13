@@ -280,7 +280,6 @@ class GisaidDataSubmissionManager:
             short_sample_name = re.search(r'Canada/Qc-(\S+)/\d+',sample).group(1)
             self.sample_list.append(short_sample_name)
 
-        print(self.sample_list)
 
     def CreateMetadata(self):
         metadata_out = os.path.join(self.submission_dir,"{0}_ncov19_metadata.xls".format(self.today))
@@ -290,12 +289,35 @@ class GisaidDataSubmissionManager:
 
         self.CheckMissingMetadata(metadata_df['covv_subm_sample_id'])
 
+        metadata_df['covv_virus_name'] = metadata_df['covv_virus_name'].apply(self.GetVirusName)
+        metadata_df.insert(loc=11,column='covv_patient_age',value=metadata_df['DTNAISS'].apply(lambda x: self.from_dob_to_age(x)))
+        metadata_df.insert(loc=18,column='covv_seq_technology',value=metadata_df['covv_virus_name'].apply(self.GetSequencingMethod))
+        del metadata_df['DTNAISS']
+
+        added_header = pd.DataFrame({'submitter':['Submitter'],'fn':['FASTA filename'],'covv_virus_name':['Virus name'],'covv_type':['Type'],'covv_passage':['Passage details/history'],'covv_collection_date':['Collection date'],'covv_location':['Location'],'covv_add_location':['Additionnal location information'],'covv_host':['Host'],'covv_add_host_info':['Additional host info'], 'covv_gender':['Gender'],'covv_patient_age':['Patient age'],'covv_patient_status':['Patient status'],'covv_specimen':['Specimen source'],'covv_outbreak':['Outbreak'],'covv_last_vaccinated':['Last vaccinated'],'covv_treatment':['Treatment'],'covv_seq_technology':['Sequencing technology'],'covv_assembly_method':['Assembly method'],'covv_coverage':['Coverage'],'covv_orig_lab':['Originating lab'],'covv_orig_lab_addr':['Address'],'covv_provider_sample_id':['Sample ID given by the sample provider'],'covv_subm_lab':['Submitting lab'],'covv_subm_lab_addr':['Address'],'covv_subm_sample_id':['Sample ID given by the submitting laboratory'],'covv_authors':['Authors']})
+
+        metadata_df = pd.concat([added_header,metadata_df])
+        print(metadata_df)
+        metadata_df.to_excel(metadata_out,index=False,sheet_name='Submission')
+
+    def GetSequencingMethod(self,sample_name):
+        print("SAMPLE NAME ",sample_name)
+        sample_name = re.search(r'hCoV-19/(Canada/Qc-(\S+)/\d+)',sample_name).group(1)
+        return(self.sample_to_submit_dict[sample_name]['method'])
+
+    def from_dob_to_age(self,born):
+        today = datetime.date.today()
+        return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+    def GetVirusName(self,req_number):
+       for rec_id,d in self.sample_to_submit_dict.items():
+           sample_name = re.search(r'^Canada/Qc-(\S+)/\d+',rec_id).group(1) 
+           if sample_name == req_number:
+               return(d['gisaid_id']) 
+
     def CheckMissingMetadata(self,sample_in_metadata):
-        #print(set(sample_in_metadata))
-        #print(set(self.sample_list))
         missing = set(self.sample_list) - set(sample_in_metadata) 
-        test_set = set(['UN','DEUX'])
-        df = pd.DataFrame({'MissingSample':list(test_set)})
+        df = pd.DataFrame({'MissingSample':list(missing)})
         df.to_csv(os.path.join(self.submission_dir,"MissingMetadata.tsv"),sep="\t",index=False)
 
 class GenomeCenterConnector:
