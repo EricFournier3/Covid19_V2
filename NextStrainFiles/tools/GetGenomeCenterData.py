@@ -251,7 +251,9 @@ class GisaidDataSubmissionManager:
         
     def SetDataSubmissionDf(self):
         self.input_file_df = pd.read_csv(self.input_file,sep="\t",index_col=False)
+        #print("BELUGA RUN ",beluga_run)
         self.input_file_df = self.input_file_df.loc[self.input_file_df['run_name'] == beluga_run,: ]
+        #print("***********************")
         #print(self.input_file_df)
 
         self.input_file_df['ncov_tools.pass'] = self.input_file_df['ncov_tools.pass'].astype(str)
@@ -270,11 +272,12 @@ class GisaidDataSubmissionManager:
             run_name = row['run_name']
             
             consensus = GenomeCenterConnector.GetConsensusPath(self.techno,sample_name,run_name)
+            #print("CONSENSUS ",consensus)
             if consensus is None:
                 msg = "No consensus found for " + sample_name
                 logging.warning(msg)
                 self.logger.GetMissingConsensusHandler().write(msg + "\n")
-                return()
+                continue
 
             rec = SeqIO.read(consensus,'fasta')
             try:
@@ -310,6 +313,8 @@ class GisaidDataSubmissionManager:
         for sample in self.sample_to_submit_dict:
             short_sample_name = re.search(r'Canada/Qc-(\S+)/\d+',sample).group(1)
             self.sample_list.append(short_sample_name)
+
+        #print("SAMPLE LIST ",self.sample_list)
 
     def CreateMetadata(self):
         metadata_out = os.path.join(self.submission_dir,"{0}_ncov19_metadata.xls".format(self.today))
