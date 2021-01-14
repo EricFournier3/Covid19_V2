@@ -5,11 +5,12 @@ Eric Fournier 2021-01-12
 
 
 Command example:
-python GetGenomeCenterData.py --debug --lspq-report /data/PROJETS/COVID-19_Beluga/LSPQ_REPORT/2021-01-08_LSPQReport_test2.tsv --mode submission --user foueri01  --gisaid-qc-metadata /data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/QC_20210113/gisaid_hcov-19_2021_01_13_22.tsv --beluga-run 20200814_LSPQ_GQ0001-0008_CTL  --techno illumina
+python GetGenomeCenterData.py  --lspq-report /data/PROJETS/COVID-19_Beluga/LSPQ_REPORT/2021-01-08_LSPQReport_test2.tsv --mode submission --user foueri01  --gisaid-qc-metadata /data/Applications/GitScript/Covid19_V2/NextStrainFiles/data/gisaid/all/QC_20210113/gisaid_hcov-19_2021_01_13_22.tsv --beluga-run 20200814_LSPQ_GQ0001-0008_CTL  --techno illumina
 
 TODO
 - check args
 - enregistrer commande dans repertoire de soumission
+- ajouter option freeze1 resubmission
 """
 
 import shutil
@@ -239,7 +240,7 @@ class GisaidDataSubmissionManager:
         if _debug_:
             self.gisaid_publication_basedir = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Gisaid/'
         else:
-            self.gisaid_publication_basedir = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Gisaid/'
+            self.gisaid_publication_basedir = '/data/PROJETS/COVID-19_Beluga/Gisaid/'
 
         self.submission_dir = os.path.join(self.gisaid_publication_basedir,self.techno,self.run_name,self.today)
         
@@ -263,8 +264,7 @@ class GisaidDataSubmissionManager:
         self.input_file_df = self.input_file_df.loc[(~self.input_file_df['Sample Name'].isin(self.gisaid_metadata_qc_list)) & (self.input_file_df['PASS/FLAG/REJ'].str.upper() == 'PASS') & (self.input_file_df['ncov_tools.pass'].str.upper() ==  'TRUE'),['Sample Name','PASS/FLAG/REJ','run_name','ncov_tools.pass','platform']]
 
     def GetConsensus(self):
-        consensus_out = os.path.join(self.submission_dir,"all_sequences.fasta")
-        rec_list =  [] 
+        self.rec_list =  [] 
         for index,row in self.input_file_df.iterrows():
             sample_name = row['Sample Name']
             run_name = row['run_name']
@@ -288,13 +288,22 @@ class GisaidDataSubmissionManager:
                 self.sample_to_submit_dict[rec.id]['gisaid_id'] = 'hCoV-19/' + rec.id
                 rec.description = ""
                 rec.id = self.sample_to_submit_dict[rec.id]['gisaid_id']
-                rec_list.append(rec)
+                self.rec_list.append(rec)
             except:
                 msg = "Unable to get " + rec.description
                 logging.warning(msg)
                 self.logger.GetMissingConsensusHandler().write(msg + "\n")
          
-        SeqIO.write(rec_list,consensus_out,'fasta')
+    def SaveConsensus(self):
+        consensus_out = os.path.join(self.submission_dir,"all_sequences.fasta")
+        final_rec_list = []
+        for index, row in self.metadata_df.iterrows():
+            gisaid_id = row['covv_virus_name']
+            for rec in self.rec_list:
+                if rec.id == gisaid_id:
+                    final_rec_list.append(rec)
+
+        SeqIO.write(final_rec_list,consensus_out,'fasta')
 
     def BuildSampleList(self):
         self.sample_list = []
@@ -304,19 +313,19 @@ class GisaidDataSubmissionManager:
 
     def CreateMetadata(self):
         metadata_out = os.path.join(self.submission_dir,"{0}_ncov19_metadata.xls".format(self.today))
-        metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.sample_list) 
+        self.metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.sample_list) 
 
-        self.CheckMissingMetadata(metadata_df['covv_subm_sample_id'])
+        self.CheckMissingMetadata(self.metadata_df['covv_subm_sample_id'])
 
-        metadata_df['covv_virus_name'] = metadata_df['covv_virus_name'].apply(self.GetVirusName)
-        metadata_df.insert(loc=11,column='covv_patient_age',value=metadata_df['DTNAISS'].apply(lambda x: self.from_dob_to_age(x)))
-        metadata_df.insert(loc=18,column='covv_seq_technology',value=metadata_df['covv_virus_name'].apply(self.GetSequencingMethod))
-        del metadata_df['DTNAISS']
+        self.metadata_df['covv_virus_name'] = self.metadata_df['covv_virus_name'].apply(self.GetVirusName)
+        self.metadata_df.insert(loc=11,column='covv_patient_age',value=self.metadata_df['DTNAISS'].apply(lambda x: self.from_dob_to_age(x)))
+        self.metadata_df.insert(loc=18,column='covv_seq_technology',value=self.metadata_df['covv_virus_name'].apply(self.GetSequencingMethod))
+        del self.metadata_df['DTNAISS']
 
         added_header = pd.DataFrame({'submitter':['Submitter'],'fn':['FASTA filename'],'covv_virus_name':['Virus name'],'covv_type':['Type'],'covv_passage':['Passage details/history'],'covv_collection_date':['Collection date'],'covv_location':['Location'],'covv_add_location':['Additionnal location information'],'covv_host':['Host'],'covv_add_host_info':['Additional host info'], 'covv_gender':['Gender'],'covv_patient_age':['Patient age'],'covv_patient_status':['Patient status'],'covv_specimen':['Specimen source'],'covv_outbreak':['Outbreak'],'covv_last_vaccinated':['Last vaccinated'],'covv_treatment':['Treatment'],'covv_seq_technology':['Sequencing technology'],'covv_assembly_method':['Assembly method'],'covv_coverage':['Coverage'],'covv_orig_lab':['Originating lab'],'covv_orig_lab_addr':['Address'],'covv_provider_sample_id':['Sample ID given by the sample provider'],'covv_subm_lab':['Submitting lab'],'covv_subm_lab_addr':['Address'],'covv_subm_sample_id':['Sample ID given by the submitting laboratory'],'covv_authors':['Authors']})
 
-        metadata_df = pd.concat([added_header,metadata_df])
-        metadata_df.to_excel(metadata_out,index=False,sheet_name='Submission')
+        self.metadata_df = pd.concat([added_header,self.metadata_df])
+        self.metadata_df.to_excel(metadata_out,index=False,sheet_name='Submission')
 
     def GetSequencingMethod(self,sample_name):
         sample_name = re.search(r'hCoV-19/(Canada/Qc-(\S+)/\d+)',sample_name).group(1)
@@ -373,6 +382,7 @@ def Main():
     gisaid_data_submission_manager.GetConsensus()
     gisaid_data_submission_manager.BuildSampleList()
     gisaid_data_submission_manager.CreateMetadata()
+    gisaid_data_submission_manager.SaveConsensus()
 
     gisaid_data_submission_manager.CloseLogger()
     cov_bank_db_obj.CloseConnection()
