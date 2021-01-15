@@ -58,6 +58,8 @@ parser.add_argument('--maxsampledate',help="Maximum sampled date YYYY-MM-DD",typ
 parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['ALL','PASS','FLAG'])
 parser.add_argument('--beluga-run',help="beluga run name")
 parser.add_argument('--techno',help="sequencing technologie",choices=['illumina','nanopore','mgi'])
+parser.add_argument('freeze1',help="for mgi and illumina freeze1 resubmission")
+
 
 args = parser.parse_args()
 
@@ -346,6 +348,7 @@ class GisaidDataSubmissionManager:
         self.metadata_df['covv_virus_name'] = self.metadata_df['covv_virus_name'].apply(self.GetVirusName)
         self.metadata_df.insert(loc=11,column='covv_patient_age',value=self.metadata_df['DTNAISS'].apply(lambda x: self.from_dob_to_age(x)))
         self.metadata_df.insert(loc=18,column='covv_seq_technology',value=self.metadata_df['covv_virus_name'].apply(self.GetSequencingMethod))
+        self.metadata_df['covv_collection_date'] = self.metadata_df['covv_collection_date'].astype(str) 
         del self.metadata_df['DTNAISS']
 
         added_header = pd.DataFrame({'submitter':['Submitter'],'fn':['FASTA filename'],'covv_virus_name':['Virus name'],'covv_type':['Type'],'covv_passage':['Passage details/history'],'covv_collection_date':['Collection date'],'covv_location':['Location'],'covv_add_location':['Additionnal location information'],'covv_host':['Host'],'covv_add_host_info':['Additional host info'], 'covv_gender':['Gender'],'covv_patient_age':['Patient age'],'covv_patient_status':['Patient status'],'covv_specimen':['Specimen source'],'covv_outbreak':['Outbreak'],'covv_last_vaccinated':['Last vaccinated'],'covv_treatment':['Treatment'],'covv_seq_technology':['Sequencing technology'],'covv_assembly_method':['Assembly method'],'covv_coverage':['Coverage'],'covv_orig_lab':['Originating lab'],'covv_orig_lab_addr':['Address'],'covv_provider_sample_id':['Sample ID given by the sample provider'],'covv_subm_lab':['Submitting lab'],'covv_subm_lab_addr':['Address'],'covv_subm_sample_id':['Sample ID given by the submitting laboratory'],'covv_authors':['Authors']})
