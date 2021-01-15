@@ -259,7 +259,6 @@ class GisaidDataSubmissionManager:
         self.input_file_df = pd.read_csv(self.input_file,sep="\t",index_col=False)
         self.input_file_df = self.input_file_df.loc[self.input_file_df['run_name'] == beluga_run,: ]
         self.input_file_df['ncov_tools.pass'] = self.input_file_df['ncov_tools.pass'].astype(str)
-        print(self.input_file_df)
 
         self.gisaid_metadata_df = pd.read_csv(self.gisaid_metadata,sep="\t",index_col=False)
         self.gisaid_metadata_df = self.gisaid_metadata_df.loc[self.gisaid_metadata_df['Virus name'].str.contains('^hCoV-19/Canada/Qc-\S+/\S+',flags=re.IGNORECASE,regex=True),:]
@@ -312,8 +311,13 @@ class GisaidDataSubmissionManager:
 
     def GetCovBankId(self,biobank_id):
         covbank_id = biobank_id.upper()
+
         if (re.search(r'^HCLM-',covbank_id)) and (len(covbank_id) == 15) :
             covbank_id = re.sub(r'(^HCLM-)\S{3}(\S+)',r'\1\2',biobank_id)
+
+        if (re.search(r'^JUS-',covbank_id)) and (len(covbank_id) == 14):
+            covbank_id = biobank_id[:-2]
+
         return(covbank_id)
 
     def BuildBioBankToCovBankDict(self):
@@ -335,7 +339,6 @@ class GisaidDataSubmissionManager:
 
     def CreateMetadata(self):
         metadata_out = os.path.join(self.submission_dir,"{0}_ncov19_metadata.xls".format(self.today))
-        #self.metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.sample_list) 
         self.metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.biobankId_2_covbankId_dict.values()) 
         self.metadata_df['covv_subm_sample_id'] = self.metadata_df['covv_subm_sample_id'].apply(self.GetBiobankIdFromCovbankID)
         self.CheckMissingMetadata(self.metadata_df['covv_subm_sample_id'])
