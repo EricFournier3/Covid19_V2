@@ -11,6 +11,7 @@ TODO
 - check args
 - enregistrer commande dans repertoire de soumission
 - ajouter option freeze1 resubmission
+- PLus besoin de faire la correspondance pour numero HCLM ET AUTRE CAR BIOBANK_ID INTEGRE DANS COVBANK
 """
 
 import shutil
@@ -47,23 +48,42 @@ class Tools:
                     logging.error('Gisaid metadata argument missing')
                     exit(1)
 
+
 parser = argparse.ArgumentParser(description="Download Genome Center data for Nextstrain, Pangolin, variant analysis and GISAID/NML submission")
 parser.add_argument('--debug',help="run in debug mode",action='store_true')
 parser.add_argument('--mode',help='execution mode',choices=['nextstrain','pangolin','variant','submission'],required=True)
-parser.add_argument('--lspq-report','-l',help="genome center LSPQ report input file path",required=True)
+parser.add_argument('--lspq-report','-l',help="genome center LSPQ report input file path")
 parser.add_argument('--gisaid-qc-metadata','-g',help="gisaid quebec metadata file path")
 parser.add_argument('--user','-u',help='user name',required=True,choices=['foueri01','morsan01'])
 parser.add_argument('--minsampledate',help="Minimum sampled date YYYY-MM-DD",type=Tools.CheckDateFormat)
 parser.add_argument('--maxsampledate',help="Maximum sampled date YYYY-MM-DD",type=Tools.CheckDateFormat)
-parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['ALL','PASS','FLAG'])
+parser.add_argument('--keep',help="Minimum Qc status to keep",choices=['PASS','FLAG'])
 parser.add_argument('--beluga-run',help="beluga run name")
 parser.add_argument('--techno',help="sequencing technologie",choices=['illumina','nanopore','mgi'])
-parser.add_argument('freeze1',help="for mgi and illumina freeze1 resubmission")
+parser.add_argument('--freeze1',help="for mgi and illumina freeze1 resubmission",action='store_true')
+parser.add_argument('--cons-file',help="path to updateListOfRuns_v3_YYYY-MM-DD_consensusList.list")
+parser.add_argument('--vcf-file',help="path to updateListOfRuns_v3_YYYY-MM-DD_vcfList.list")
+parser.add_argument('--max-perc-n',type=int,help='Maximun percentage of N tolerated in reject consensus for nextstrain')
 
 
 args = parser.parse_args()
 
 _debug_ = args.debug
+
+global fasta_qual_status_to_keep
+if args.keep == 'FLAG':
+    fasta_qual_status_to_keep = ['PASS','FLAG']
+else:
+    fasta_qual_status_to_keep = ['PASS']
+
+global max_perc_n
+max_perc_n = args.max_perc_n
+
+global consensus_list_file
+consensus_list_file = args.cons_file
+
+global freeze1
+freeze1 = args.freeze1
 
 global lspq_report
 lspq_report = args.lspq_report
@@ -94,17 +114,22 @@ max_sample_date = args.maxsampledate
 
 if _debug_:
     #lspq_report = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport_test2.tsv' # avec 20200814_LSPQ_GQ0001-0008_CTL
-    lspq_report = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/test_HCLM.tsv' # avec 20201113_LSPQ_GQ0046-0049_CTL
+    lspq_report = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport.tsv"
+    #lspq_report = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/test_HCLM.tsv' # avec 20201113_LSPQ_GQ0046-0049_CTL
     gisaid_qc_metadata =  '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/gisaid_hcov-19_2021_01_13_22.tsv'
-    
+    consensus_list_file = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/updateListOfRuns_v3_2021-01-18_consensusList.list"   
+    vcf_list_file = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/updateListOfRuns_v3_2021-01-25_vcfList.list"
 
-Tools.CheckUserArgs(gisaid_qc_metadata,mode)
+ 
+#TODO A REACTIVER
+#Tools.CheckUserArgs(gisaid_qc_metadata,mode)
 
 class CovBankDB:
     def __init__(self):
         self.yaml_conn_param = open('/data/Databases/CovBanQ_Epi/CovBankParam.yaml')
         self.ReadConnParam()
         self.connection = self.SetConnection()
+
 
     def GetCursor(self):
         return self.GetConnection().cursor()
@@ -128,6 +153,53 @@ class CovBankDB:
         self.password = param['password']
         self.database = param['database']
 
+    def GetVcfMetadataAsPdDataFrame(self):
+        columns_renamed = {'GENOME_QUEBEC_REQUETE':'# Requête','NOM':'Nom','PRENOM':'Prénom','DTNAISS':'Date de naissance','DATE_PRELEV':'Date de prélèvement'}
+
+        #PRELEVEMENTS_COLUMNS = ['GENOME_QUEBEC_REQUETE','DATE_PRELEV']
+        #PATIENTS_COLUMNS = ['DTNAISS','NOM','PRENOM','NAM']
+
+        sql = "SELECT pr.GENOME_QUEBEC_REQUETE, pa.NOM, pa.PRENOM, pa.DTNAISS, pr.DATE_PRELEV, pa.NAM FROM Prelevements pr inner join Patients pa on pa.ID_PATIENT = pr.ID_PATIENT WHERE pr.DATE_PRELEV BETWEEN date('{0}') AND date('{1}')".format(min_sample_date,max_sample_date)
+
+        df = pd.read_sql(sql,con=self.GetConnection())
+        df = df.rename(columns=columns_renamed)
+        df['# Requête'] = df['# Requête'].str.strip(' ')
+        return(df)
+
+    def GetNextstrainMetadataAsPdDataFrame(self):
+        start = time.time()
+
+        #print(min_sample_date, " ",min_sample_date)
+        columns_renamed = {'RTA':'rta','GENOME_QUEBEC_REQUETE':'sample','DATE_PRELEV':'sample_date','TRAVEL_HISTORY':'country_exposure','CT':'ct','RSS':'rss','SEXE':'sex','COUNTRY':'country','DIVISION':'division','DTNAISS':'date_naiss','OUTBREAK':'OUTBREAK'}
+
+        prelevements_alias = 'pr'
+        patients_alias = 'p'
+        '''
+        PRELEVEMENTS_COLUMNS = ['GENOME_QUEBEC_REQUETE','DATE_PRELEV','TRAVEL_HISTORY','CT','OUTBREAK']
+        PRELEVEMENTS_COLUMNS = [prelevements_alias + "." + col for col in PRELEVEMENTS_COLUMNS]
+        PRELEVEMENTS_COLUMNS = ','.join(PRELEVEMENTS_COLUMNS)
+
+        PATIENTS_COLUMNS = ['RSS','DTNAISS','SEXE']
+
+        PATIENTS_COLUMNS = [patients_alias + "." + col for col in PATIENTS_COLUMNS]
+        PATIENTS_COLUMNS = ','.join(PATIENTS_COLUMNS)
+        COUNTRY = "'Canada'"
+        DIVISION = "'Quebec'"
+        RTA = "'G8P'"
+        '''
+        sql = "SELECT pr.GENOME_QUEBEC_REQUETE, pr.DATE_PRELEV, pr.TRAVEL_HISTORY, pr.CT, pr.OUTBREAK, pa.RSS, pa.DTNAISS,pa.SEXE,{2} as COUNTRY,{3} as DIVISION,{4} as RTA FROM Prelevements pr inner join Patients pa on pa.ID_PATIENT = pr.ID_PATIENT WHERE pr.DATE_PRELEV BETWEEN date('{0}') AND date('{1}')".format(min_sample_date,max_sample_date,"'Canada'","'Quebec'","'G8P'")
+        #print(sql)
+        df = pd.read_sql(sql,con=self.GetConnection())
+        df = df.rename(columns=columns_renamed)
+        #print(df)
+        df['sample'] = df['sample'].str.strip(' ')
+
+        end = time.time()
+
+        print("In GetMetadataAsPdDataFrame for ",end - start, " seconds")
+
+        return(df)
+
     def GetGisaidMetadataAsPdDataFrame(self,sample_list):
         sample_list = '|'.join(sample_list)
         
@@ -143,7 +215,8 @@ class CovBankDB:
 
         SUBMITTER = "\'SandrineMoreiraLSPQ\' as submitter"
         FN = "\'all_sequences.fasta\' as fn"
-        COVV_VIRUS_NAME = "{0}.GENOME_QUEBEC_REQUETE as covv_virus_name".format(Prelevements_alias) #decoration ajouter dans CovGisaidSubmissionV2.py
+        #COVV_VIRUS_NAME = "{0}.GENOME_QUEBEC_REQUETE as covv_virus_name".format(Prelevements_alias) #decoration ajouter dans CovGisaidSubmissionV2.py
+        COVV_VIRUS_NAME = "{0}.COVBANK_ID as covv_virus_name".format(Prelevements_alias) #decoration ajouter dans CovGisaidSubmissionV2.py
         COVV_TYPE = "\'betacoronavirus\' as covv_type"
         COVV_PASSAGE = "\'Original\' as covv_passage"
         COVV_COLLECTION_DATE = "{0}.DATE_PRELEV as covv_collection_date".format(Prelevements_alias)
@@ -170,28 +243,290 @@ class CovBankDB:
         COVV_PROVIDER_SAMPLE_ID = "\' \' as covv_provider_sample_id"
         COVV_SUBM_LAB = "'" + lspq_name  + "' as covv_subm_lab"
         COVV_SUBM_LAB_ADDR = "'" + lspq_addr + "' as covv_subm_lab_addr"
-        COVV_SUBM_SAMPLE_ID = "{0}.GENOME_QUEBEC_REQUETE as covv_subm_sample_id".format(Prelevements_alias)
+        #COVV_SUBM_SAMPLE_ID = "{0}.GENOME_QUEBEC_REQUETE as covv_subm_sample_id".format(Prelevements_alias)
+        COVV_SUBM_SAMPLE_ID = "{0}.COVBANK_ID as covv_subm_sample_id".format(Prelevements_alias)
         COVV_AUTHORS = "'" + authors + "' as covv_authors"
 
         #pour case sensitive on a besoin de BINARY
         #sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE BINARY {26}.GENOME_QUEBEC_REQUETE REGEXP '{29}'".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
 
+
+        #TODO UTILISER  IN au lieu de REGEXP
         sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE  {26}.GENOME_QUEBEC_REQUETE REGEXP '{29}'".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
         #print("SQL ",sql)
         df = pd.read_sql(sql,con=self.GetConnection())
         return(df)
-        
-class NextstrainDataManager:
-    def __init__(self):
-        pass
 
+
+class VariantDataManager:
+    def __init__(self,cov_bank_db_obj):
+        self.vcf_list_df = pd.read_csv(vcf_list_file,sep="\t",index_col=False)
+        self.cov_bank_db_obj = cov_bank_db_obj
+        
+        self.spec_mut_dict = {}
+        self.mut_set = set([])
+
+        if _debug_:
+            self.base_dir_out = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Variant/"
+        else:
+            #TODO a modifier
+            self.base_dir_out = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Variant/"
+       
+        self.SelectVcfToDownload()
+ 
+    def GetNumericStatus(self,status):
+        if status == 'PASS':
+            return(3)
+        elif status == 'FLAG':
+            return(2)
+        else:
+            return(1)
+
+    def SelectVcfToDownload(self):
+
+        self.vcf_to_download_df = self.vcf_list_df.loc[self.vcf_list_df['STATUS'].isin(fasta_qual_status_to_keep),:]
+        self.vcf_to_download_df = self.vcf_to_download_df.copy()
+
+        self.vcf_to_download_df['STATUS_VAL'] = self.vcf_to_download_df['STATUS'].apply(self.GetNumericStatus)
+        idx  = self.vcf_to_download_df.groupby(['SAMPLE','STATUS'])['PERC_N'].transform(min) == self.vcf_to_download_df['PERC_N']
+        self.vcf_to_download_df = self.vcf_to_download_df[idx]
+        idx  = self.vcf_to_download_df.groupby(['SAMPLE'])['STATUS_VAL'].transform(max) == self.vcf_to_download_df['STATUS_VAL']
+        self.vcf_to_download_df = self.vcf_to_download_df[idx]
+        idx  = self.vcf_to_download_df.groupby(['SAMPLE'])['TECHNO'].transform(min) == self.vcf_to_download_df['TECHNO']
+        self.vcf_to_download_df = self.vcf_to_download_df[idx]
+
+
+    def PrepareMetadataBasedOnSampledDate(self):
+        self.metadata = self.cov_bank_db_obj.GetVcfMetadataAsPdDataFrame()
+
+        #print(self.metadata)
+
+    def MergeVcfToDownloadWithMetadata(self):
+        self.vcf_to_download_df =  pd.merge(self.vcf_to_download_df,self.metadata,left_on='SAMPLE',right_on='# Requête',how='inner')
+
+    def GetVcfFromBeluga(self):
+        pass # GetVcfPath
+        for index,row in self.vcf_to_download_df.iterrows():
+            #print(row)
+            sample = str(row['SAMPLE'])
+            path = str(row['PATH'])
+            nom = str(row['Nom'])
+            prenom = str(row['Prénom'])
+            dt_naiss = str(row['Date de naissance'])
+            nam = str(row['NAM'])
+            dt_prelev = str(row['Date de prélèvement'])
+
+            vcf = GenomeCenterConnector.GetVcfPath(path)
+            #print(vcf)
+            logging.info("Get " + vcf)
+            shutil.copy(vcf,os.path.join(self.base_dir_out,os.path.basename(vcf)))
+
+            self.UpdateSpecMutDict(os.path.join(self.base_dir_out,os.path.basename(vcf)))
+            self.spec_mut_dict[sample]['# Requête'] = sample
+            self.spec_mut_dict[sample]['Nom'] = nom
+            self.spec_mut_dict[sample]['Prénom'] = prenom
+            self.spec_mut_dict[sample]['Date de naissance'] = dt_naiss
+            self.spec_mut_dict[sample]['Date de prélèvement'] = dt_prelev
+            self.spec_mut_dict[sample]['NAM'] = nam
+            
+
+    def CompileMutation(self):
+        for spec,muts in self.spec_mut_dict.items():
+            for mut in muts:
+                self.mut_set.add(mut)
+
+    def CreateSummaryFile(self):
+        
+        mut_df_columns = ['# Requête','Nom','Prénom','Date de naissance','Date de prélèvement','NAM',"AA_MUTATIONS"]
+        mut_df_columns.extend(list(mut_set))
+
+        mut_df = pd.DataFrame(columns=mut_df_columns)
+
+        for spec,spec_info in spec_mut_dict.items():
+            my_mut_dict = {}
+            spec_mut_list = spec_info['mutlist']
+            for uniq_mut in list(mut_set):
+                if uniq_mut in spec_mut_list:
+                    my_mut_dict[uniq_mut] = "1"
+                else:
+                    my_mut_dict[uniq_mut] = "0"
+            my_mut_dict.update({'# Requête':spec,'Nom':spec_info['Nom'],'Prénom':spec_info['Prénom'],'Date de naissance':spec_info['Date de naissance'],'Date de prélèvement':spec_info['Date de prélèvement'],'NAM':spec_info['NAM'],"AA_MUTATIONS":str(spec_mut_list)})
+        
+            mut_df.append(my_mut_dict,ignore_index=True)
+
+        print(mut_df)
+
+    def UpdateSpecMutDict(self,vcf_file):
+        spec = os.path.basename(vcf_file).split('.')[0].split('_')[0]
+        self.spec_mut_dict[spec] = {}
+        self.spec_mut_dict[spec]['mutlist'] = []
+        header_read = False
+        is_header = {}
+        is_nanopore = False
+        line_nb = 0
+
+        with open(vcf_file) as vcff:
+            for line in vcff:
+                line_nb += 1
+                is_header = False
+
+                if (line == 2) and (not re.search(r'^##source=ivar',line)):
+                    is_nanopore = True 
+
+                if re.search(r'^#CHROM\t',line):
+                    header_read = True
+                    is_header = True
+
+                if header_read and not is_header:
+                    aa_change_set = set([])
+                    split_line = line.split('\t')
+                    nuc_change_qual = split_line[6]
+
+                    if nuc_change_qual != "PASS":
+                        continue
+
+                    aa_change_annotations = split_line[7]
+
+                    aa_change_annotations = re.search(r'\S+ANN=(\S+)',aa_change_annotations).group(1)
+                    aa_change_first_annotation = aa_change_annotations.split(',')[0]
+                    aa_change_first_annotation = aa_change_first_annotation.split('|')
+
+                    if aa_change_first_annotation[1] == "missense_variant":
+                        gene_name = aa_change_first_annotation[3]
+                        aa_mut = aa_change_first_annotation[10][2:]
+                        self.spec_mut_dict[spec]['mutlist'].append(gene_name + ":" + aa_mut)
+
+
+
+class NextstrainDataManager:
+    def __init__(self,cov_bank_db_obj):
+        self.consensus_list_df = pd.read_csv(consensus_list_file,sep="\t",index_col=False)
+        self.cov_bank_db_obj = cov_bank_db_obj
+
+        if _debug_:
+            self.base_dir_out = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Nextstrain/"
+            self.base_dir_out_metadata = os.path.join(self.base_dir_out,"metadata")
+            self.base_dir_out_consensus = os.path.join(self.base_dir_out,"consensus")
+        else:
+            #TODO a modifier
+            self.base_dir_out = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Nextstrain"
+            self.base_dir_out_metadata = os.path.join(self.base_dir_out,"metadata")
+            self.base_dir_out_consensus = os.path.join(self.base_dir_out,"consensus")
+
+        self.SelectConsensusToDownload()
+
+    def GetNumericStatus(self,status):
+        if status == 'PASS':
+            return(3)
+        elif status == 'FLAG':
+            return(2)
+        else:
+            return(1)
+
+    def SelectConsensusToDownload(self):
+
+        self.consensus_to_download_df = self.consensus_list_df.loc[self.consensus_list_df['STATUS'].isin(fasta_qual_status_to_keep),:]
+        self.consensus_to_download_df = self.consensus_to_download_df.copy()
+
+        if max_perc_n:
+            self.pd_df_rej_samples_tolerated = self.consensus_list_df.loc[(self.consensus_list_df['STATUS'] == 'REJ' ) & (self.consensus_list_df['PERC_N'] <= max_perc_n)]
+            self.consensus_to_download_df = pd.concat([self.consensus_to_download_df,self.pd_df_rej_samples_tolerated])
+           
+        self.consensus_to_download_df['STATUS_VAL'] = self.consensus_to_download_df['STATUS'].apply(self.GetNumericStatus) 
+ 
+        #print(self.consensus_to_download_df[['SAMPLE','STATUS','TECHNO','PERC_N','STATUS_VAL']].sort_values(by=['SAMPLE']))
+
+        idx  = self.consensus_to_download_df.groupby(['SAMPLE','STATUS'])['PERC_N'].transform(min) == self.consensus_to_download_df['PERC_N']
+        #print(idx)
+        self.consensus_to_download_df = self.consensus_to_download_df[idx]
+        #print(self.consensus_to_download_df[['SAMPLE','STATUS','TECHNO','PERC_N','STATUS_VAL']].sort_values(by=['SAMPLE']))
+
+        idx  = self.consensus_to_download_df.groupby(['SAMPLE'])['STATUS_VAL'].transform(max) == self.consensus_to_download_df['STATUS_VAL']
+        self.consensus_to_download_df = self.consensus_to_download_df[idx]       
+        #print(idx)
+        #print(self.consensus_to_download_df[['SAMPLE','STATUS','TECHNO','PERC_N','STATUS_VAL']].sort_values(by=['SAMPLE']))
+
+        idx  = self.consensus_to_download_df.groupby(['SAMPLE'])['TECHNO'].transform(min) == self.consensus_to_download_df['TECHNO']
+        self.consensus_to_download_df = self.consensus_to_download_df[idx]
+        #print(self.consensus_to_download_df[['SAMPLE','STATUS','TECHNO','PERC_N','STATUS_VAL']].sort_values(by=['SAMPLE']))
+
+        #print(self.consensus_to_download_df)
+
+    def PrepareMetadataBasedOnSampledDate(self):
+        self.metadata = self.cov_bank_db_obj.GetNextstrainMetadataAsPdDataFrame()
+
+
+    def MergeConsensusToDownloadWithMetadata(self):
+        consensus_columns = list(self.consensus_to_download_df.columns).copy()
+        consensus_columns.append('sample_date')
+
+        metadata_columns = list(self.metadata.columns).copy()
+
+        self.consensus_to_download_df = pd.merge(self.consensus_to_download_df,self.metadata,left_on='SAMPLE',right_on='sample',how='inner')
+        self.final_metadata = self.consensus_to_download_df[metadata_columns]
+        self.consensus_to_download_df = self.consensus_to_download_df[consensus_columns]
+        #print(self.consensus_to_download_df)
+
+        #TODO CREER LE NOUVEAU METADATA ICI
+        self.final_metadata['fasta_id'] = "temp"
+        print(self.final_metadata)
+
+    def GetConsensusFromBeluga(self):
+        id_pattern = r'(^Canada/Qc-)(\S+)(/\d{4})'
+        self.rec_list = []
+
+        for index,row in self.consensus_to_download_df.iterrows():
+            #print("ROW ",row)
+            sample = str(row['SAMPLE'])
+            path = str(row['PATH'])
+            techno = str(row['TECHNO'])
+            run_name = str(row['RUN_NAME'])
+            qc_status = str(row['STATUS'])
+            sample_date = row['sample_date']
+            #print("TYPE ",type(sample_date))
+            month = sample_date.strftime("%B")
+            #print("MONTH",month)
+            #print(sample, " ", path, " ",techno," ",run_name)
+            #month = datetime.datetime.strptime(sample_date,'%Y-%m-%d').strftime("%B")
+            #print("MONTH ",month)
+            consensus = GenomeCenterConnector.GetConsensusPath(techno,sample,run_name)
+            if consensus is None:
+                msg = "No consensus found for " + sample
+                logging.warning(msg)
+                continue
+            
+            logging.info("Get " + consensus)            
+            rec =  SeqIO.read(consensus,'fasta')
+            id_short = re.search(id_pattern, rec.description).group(2)
+            rec.id = re.sub(id_pattern,r"\1" + str(id_short) + r"\3",rec.id)
+            rec.description = re.sub(id_pattern,r"\1" + str(id_short) + r"\3",rec.description)
+            rec.description = rec.description + " " +  consensus + " " + qc_status + " " + month
+            self.rec_list.append(rec)
+
+            self.final_metadata.loc[self.final_metadata['sample'] == sample,['fasta_id']] = rec.id
+
+        if fasta_qual_status_to_keep  == ['PASS','FLAG']:
+            qc_status_suffix = "PASS_FLAG"
+        else:
+            qc_status_suffix = "PASS"
+
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+           
+        min_sample_date_s = min_sample_date.strftime("%Y-%m-%d") 
+        max_sample_date_s = max_sample_date.strftime("%Y-%m-%d") 
+        file_out_suffix = "{0}_{1}_minmaxSampleDate_{2}_{3}".format(today,qc_status_suffix,min_sample_date_s,max_sample_date_s)
+        out_consensus =  os.path.join(self.base_dir_out_consensus,"sequences_{0}.fasta".format(file_out_suffix))
+        print("OUT CONSENSUS ",out_consensus)
+        SeqIO.write(self.rec_list,out_consensus,'fasta')
+
+        self.final_metadata.loc[(self.final_metadata['OUTBREAK'].isnull()) | (self.final_metadata['OUTBREAK'] == 'NA'),['OUTBREAK']] = 'NoOutbreakRelated'
+        print("final meta ",self.final_metadata)
+        self.final_metadata.to_csv(os.path.join(self.base_dir_out_metadata,"metadata_{0}.tsv".format(file_out_suffix)),sep="\t",index=False)
+ 
 class PangolinDataManager:
     def __init__(self):
         pass
 
-class VariantDataManager: 
-    def __init__(self):
-        pass
 
 class GisaidSubmissionTraceLogger:
     def __init__(self,output_dir):
@@ -220,6 +555,11 @@ class GisaidSubmissionTraceLogger:
 
     def CloseMissingConsensusHandler(self):
          self.missing_consensus_handler.close()
+
+
+class GisaidFreeze1DataSubmissionManager:
+    def __init__(self,lspq_report,techno,cov_bank_db_obj):
+        pass
 
 
 class GisaidDataSubmissionManager:
@@ -405,22 +745,55 @@ class GenomeCenterConnector:
             return(glob.glob(consensus_path)[0])
         except:
             return(None)
+
+    @staticmethod
+    def GetVcfPath(raw_beluga_path):
+        print("PATH ",raw_beluga_path)
+        mnt_beluga_path = re.sub(r'/genfs/projects/',GenomeCenterConnector.mnt_beluga_server,raw_beluga_path)
+        return(mnt_beluga_path)
+
 def Main():
     logging.info('Begin')
 
     cov_bank_db_obj = CovBankDB()
 
-    GenomeCenterConnector.MountBelugaServer()
-    gisaid_data_submission_manager = GisaidDataSubmissionManager(lspq_report,gisaid_qc_metadata,beluga_run,seq_techno,cov_bank_db_obj)
 
-    gisaid_data_submission_manager.GetConsensus()
-    gisaid_data_submission_manager.BuildSampleList()
-    gisaid_data_submission_manager.BuildBioBankToCovBankDict()
-    gisaid_data_submission_manager.CreateMetadata()
-    gisaid_data_submission_manager.SaveConsensus()
+    if mode == 'nextstrain':
+        nextstrain_data_manager = NextstrainDataManager(cov_bank_db_obj)
+        nextstrain_data_manager.PrepareMetadataBasedOnSampledDate()
+        nextstrain_data_manager.MergeConsensusToDownloadWithMetadata()
 
-    gisaid_data_submission_manager.CloseLogger()
-    cov_bank_db_obj.CloseConnection()
+        GenomeCenterConnector.MountBelugaServer()
+        nextstrain_data_manager.GetConsensusFromBeluga()
+        cov_bank_db_obj.CloseConnection()
+
+    elif mode == "variant":
+        variant_data_manager = VariantDataManager(cov_bank_db_obj)
+        variant_data_manager.PrepareMetadataBasedOnSampledDate()
+        variant_data_manager.MergeVcfToDownloadWithMetadata()
+
+        GenomeCenterConnector.MountBelugaServer()
+        variant_data_manager.GetVcfFromBeluga()
+        variant_data_manager.CompileMutation()
+        cov_bank_db_obj.CloseConnection()
+
+
+    elif mode == 'submission':
+        if not freeze1:
+            GenomeCenterConnector.MountBelugaServer()
+            gisaid_data_submission_manager = GisaidDataSubmissionManager(lspq_report,gisaid_qc_metadata,beluga_run,seq_techno,cov_bank_db_obj)
+
+            gisaid_data_submission_manager.GetConsensus()
+            gisaid_data_submission_manager.BuildSampleList()
+            gisaid_data_submission_manager.BuildBioBankToCovBankDict()
+            gisaid_data_submission_manager.CreateMetadata()
+            gisaid_data_submission_manager.SaveConsensus()
+
+            gisaid_data_submission_manager.CloseLogger()
+            cov_bank_db_obj.CloseConnection()
+
+        else:
+            logging.info("Freeze1 {0} resubmission".format(seq_techno))
 
 if __name__ == '__main__':
     Main()
