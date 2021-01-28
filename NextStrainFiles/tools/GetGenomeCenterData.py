@@ -81,6 +81,9 @@ max_perc_n = args.max_perc_n
 global consensus_list_file
 consensus_list_file = args.cons_file
 
+global vcf_list_file
+vcf_list_file = args.vcf_file
+
 global freeze1
 freeze1 = args.freeze1
 
@@ -112,11 +115,13 @@ max_sample_date = args.maxsampledate
 
 
 if _debug_:
-    #lspq_report = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport_test2.tsv' # avec 20200814_LSPQ_GQ0001-0008_CTL
-    lspq_report = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport.tsv"
+    lspq_report = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport_test2.tsv' # avec 20200814_LSPQ_GQ0001-0008_CTL
+    #lspq_report = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport_test3.tsv' # avec 20200814_LSPQ_GQ0001-0008_CTL
+    #lspq_report = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/2021-01-08_LSPQReport.tsv"
     #lspq_report = '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/test_HCLM.tsv' # avec 20201113_LSPQ_GQ0046-0049_CTL
-    gisaid_qc_metadata =  '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/gisaid_hcov-19_2021_01_13_22.tsv'
-    consensus_list_file = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/updateListOfRuns_v3_2021-01-18_consensusList.list"   
+    #gisaid_qc_metadata =  '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/gisaid_hcov-19_2021_01_13_22.tsv'
+    gisaid_qc_metadata =  '/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/LSPQ_GenomeCenter_Gisaid_20210128.tsv'
+    consensus_list_file = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/updateListOfRuns_v3_9999-99-99_consensusList.list"   
     vcf_list_file = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/IN/updateListOfRuns_v3_2021-01-25_vcfList.list"
 
  
@@ -176,8 +181,10 @@ class CovBankDB:
         return(df)
 
     def GetGisaidMetadataAsPdDataFrame(self,sample_list):
-        sample_list = '|'.join(sample_list)
-        
+        sample_list = list(sample_list)[:] 
+        sample_list =  "','".join(sample_list)
+        sample_list = "'" + sample_list + "'"   
+
         Prelevements_alias = "pr"
         Patients_alias = "p"
 
@@ -190,8 +197,9 @@ class CovBankDB:
 
         SUBMITTER = "\'SandrineMoreiraLSPQ\' as submitter"
         FN = "\'all_sequences.fasta\' as fn"
-        #COVV_VIRUS_NAME = "{0}.GENOME_QUEBEC_REQUETE as covv_virus_name".format(Prelevements_alias) #decoration ajouter dans CovGisaidSubmissionV2.py
-        COVV_VIRUS_NAME = "{0}.COVBANK_ID as covv_virus_name".format(Prelevements_alias) #decoration ajouter dans CovGisaidSubmissionV2.py
+        #COVV_VIRUS_NAME = "{0}.GENOME_QUEBEC_REQUETE as covv_virus_name".format(Prelevements_alias) 
+        #COVV_VIRUS_NAME = "{0}.COVBANK_ID as covv_virus_name".format(Prelevements_alias) 
+        COVV_VIRUS_NAME = "{0}.BIOBANK_ID as covv_virus_name".format(Prelevements_alias) #decoration ajouter dans GisaidDataSubmissionManager.GetVirusName()
         COVV_TYPE = "\'betacoronavirus\' as covv_type"
         COVV_PASSAGE = "\'Original\' as covv_passage"
         COVV_COLLECTION_DATE = "{0}.DATE_PRELEV as covv_collection_date".format(Prelevements_alias)
@@ -219,17 +227,21 @@ class CovBankDB:
         COVV_SUBM_LAB = "'" + lspq_name  + "' as covv_subm_lab"
         COVV_SUBM_LAB_ADDR = "'" + lspq_addr + "' as covv_subm_lab_addr"
         #COVV_SUBM_SAMPLE_ID = "{0}.GENOME_QUEBEC_REQUETE as covv_subm_sample_id".format(Prelevements_alias)
-        COVV_SUBM_SAMPLE_ID = "{0}.COVBANK_ID as covv_subm_sample_id".format(Prelevements_alias)
+        #COVV_SUBM_SAMPLE_ID = "{0}.COVBANK_ID as covv_subm_sample_id".format(Prelevements_alias)
+        COVV_SUBM_SAMPLE_ID = "{0}.BIOBANK_ID as covv_subm_sample_id".format(Prelevements_alias)
         COVV_AUTHORS = "'" + authors + "' as covv_authors"
 
         #pour case sensitive on a besoin de BINARY
         #sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE BINARY {26}.GENOME_QUEBEC_REQUETE REGEXP '{29}'".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
 
 
-        #TODO UTILISER  IN au lieu de REGEXP
-        sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE  {26}.GENOME_QUEBEC_REQUETE REGEXP '{29}'".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
+        #TODO UTILISER  IN au lieu de REGEXP  LAST GOOD
+        #sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE  {26}.GENOME_QUEBEC_REQUETE REGEXP '{29}'".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
+
+        sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE  {26}.BIOBANK_ID IN ({29})".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
         #print("SQL ",sql)
         df = pd.read_sql(sql,con=self.GetConnection())
+        #print(df['covv_provider_sample_id'])
         return(df)
 
 class VariantDataManager:
@@ -243,7 +255,7 @@ class VariantDataManager:
         if _debug_:
             self.base_dir_out = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Variant/"
         else:
-            self.base_dir_out = "/data/PROJETS/ScriptDebug/GetGenomeCenterData/OUT/Variant/"
+            self.base_dir_out = "/data/PROJETS/COVID-19_Beluga/VCF/"
 
         self.parsed_outdir = os.path.join(self.base_dir_out,"PARSED/")
        
@@ -424,6 +436,9 @@ class NextstrainDataManager:
 
         idx  = self.consensus_to_download_df.groupby(['SAMPLE'])['TECHNO'].transform(min) == self.consensus_to_download_df['TECHNO']
         self.consensus_to_download_df = self.consensus_to_download_df[idx]
+        
+        self.consensus_to_download_df  = self.consensus_to_download_df.drop_duplicates(subset='SAMPLE',keep='first')
+        #print(self.consensus_to_download_df)
 
     def PrepareMetadataBasedOnSampledDate(self):
         self.metadata = self.cov_bank_db_obj.GetNextstrainMetadataAsPdDataFrame()
@@ -565,11 +580,15 @@ class GisaidDataSubmissionManager:
         self.input_file_df['ncov_tools.pass'] = self.input_file_df['ncov_tools.pass'].astype(str)
 
         self.gisaid_metadata_df = pd.read_csv(self.gisaid_metadata,sep="\t",index_col=False)
-        self.gisaid_metadata_df = self.gisaid_metadata_df.loc[self.gisaid_metadata_df['Virus name'].str.contains('^hCoV-19/Canada/Qc-\S+/\S+',flags=re.IGNORECASE,regex=True),:]
-        self.gisaid_metadata_df['Virus name'] = self.gisaid_metadata_df['Virus name'].str.replace(r'^hCoV-19/Canada/Qc-(\S+)/\S+',r'\1',flags=re.IGNORECASE,regex=True)
-        self.gisaid_metadata_qc_list = list(self.gisaid_metadata_df['Virus name'].str.replace(r'LSPQ-',r'',flags=re.IGNORECASE,regex=True))
+        self.gisaid_metadata_df = self.gisaid_metadata_df.loc[self.gisaid_metadata_df['strain'].str.contains('^hCoV-19/Canada/Qc-\S+/\S+',flags=re.IGNORECASE,regex=True),:]
+        self.gisaid_metadata_df['strain'] = self.gisaid_metadata_df['strain'].str.replace(r'^hCoV-19/Canada/Qc-(\S+)/\S+',r'\1',flags=re.IGNORECASE,regex=True)
+        self.gisaid_metadata_qc_list = list(self.gisaid_metadata_df['strain'].str.replace(r'LSPQ-',r'',flags=re.IGNORECASE,regex=True))
 
         self.input_file_df = self.input_file_df.loc[(~self.input_file_df['Sample Name'].isin(self.gisaid_metadata_qc_list)) & (self.input_file_df['PASS/FLAG/REJ'].str.upper() == 'PASS') & (self.input_file_df['ncov_tools.pass'].str.upper() ==  'TRUE'),['Sample Name','PASS/FLAG/REJ','run_name','ncov_tools.pass','platform']]
+
+        self.input_file_df = self.input_file_df.drop_duplicates(subset='Sample Name',keep='first')
+
+        #print(self.input_file_df)
 
     def GetConsensus(self):
         self.rec_list =  [] 
@@ -606,10 +625,14 @@ class GisaidDataSubmissionManager:
         consensus_out = os.path.join(self.submission_dir,"all_sequences.fasta")
         final_rec_list = []
         for index, row in self.metadata_df.iterrows():
+            i = 0
             gisaid_id = row['covv_virus_name']
             for rec in self.rec_list:
                 if rec.id == gisaid_id:
+                    i += 1
                     final_rec_list.append(rec)
+                    if i > 1:
+                        print("$$$$$$$$$$$$$$$$$$$$$$$$$$ DUPLICATE FOR ",gisaid_id, " REC ",rec)
 
         SeqIO.write(final_rec_list,consensus_out,'fasta')
 
@@ -644,9 +667,9 @@ class GisaidDataSubmissionManager:
     def CreateMetadata(self):
         metadata_out = os.path.join(self.submission_dir,"{0}_ncov19_metadata.xls".format(self.today))
         self.metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.biobankId_2_covbankId_dict.values()) 
-        self.metadata_df['covv_subm_sample_id'] = self.metadata_df['covv_subm_sample_id'].apply(self.GetBiobankIdFromCovbankID)
+        #self.metadata_df['covv_subm_sample_id'] = self.metadata_df['covv_subm_sample_id'].apply(self.GetBiobankIdFromCovbankID)
         self.CheckMissingMetadata(self.metadata_df['covv_subm_sample_id'])
-        self.metadata_df['covv_virus_name'] = self.metadata_df['covv_virus_name'].apply(self.GetBiobankIdFromCovbankID)
+        #self.metadata_df['covv_virus_name'] = self.metadata_df['covv_virus_name'].apply(self.GetBiobankIdFromCovbankID)
         self.metadata_df['covv_virus_name'] = self.metadata_df['covv_virus_name'].apply(self.GetVirusName)
         self.metadata_df.insert(loc=11,column='covv_patient_age',value=self.metadata_df['DTNAISS'].apply(lambda x: self.from_dob_to_age(x)))
         self.metadata_df.insert(loc=18,column='covv_seq_technology',value=self.metadata_df['covv_virus_name'].apply(self.GetSequencingMethod))
@@ -743,7 +766,6 @@ def Main():
         if not freeze1:
             GenomeCenterConnector.MountBelugaServer()
             gisaid_data_submission_manager = GisaidDataSubmissionManager(lspq_report,gisaid_qc_metadata,beluga_run,seq_techno,cov_bank_db_obj)
-
             gisaid_data_submission_manager.GetConsensus()
             gisaid_data_submission_manager.BuildSampleList()
             gisaid_data_submission_manager.BuildBioBankToCovBankDict()
