@@ -184,7 +184,6 @@ class CovBankDB:
         sample_list = list(sample_list)[:] 
         sample_list =  "','".join(sample_list)
         sample_list = "'" + sample_list + "'"   
-
         Prelevements_alias = "pr"
         Patients_alias = "p"
 
@@ -235,13 +234,13 @@ class CovBankDB:
         #sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE BINARY {26}.GENOME_QUEBEC_REQUETE REGEXP '{29}'".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
 
 
-        #TODO UTILISER  IN au lieu de REGEXP  LAST GOOD
         #sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE  {26}.GENOME_QUEBEC_REQUETE REGEXP '{29}'".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
 
         sql = "SELECT {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20},{21},{22},{23},{24},{25} FROM Prelevements {26} inner join Patients {27} on {27}.{28} = {26}.{28} WHERE  {26}.BIOBANK_ID IN ({29})".format(SUBMITTER,FN,COVV_VIRUS_NAME,COVV_TYPE,COVV_PASSAGE,COVV_COLLECTION_DATE,COVV_LOCATION,COVV_ADD_LOCATION,COVV_HOST,COVV_ADD_HOST_INFO,COVV_GENDER,DTNAISSINFO,COVV_PATIENT_STATUS,COVV_SPECIMEN,COVV_OUTBREAK,COVV_LAST_VACCINATED,COVV_TREATMENT,COVV_ASSEMBLY_METHOD,COVV_COVERAGE,COVV_ORIG_LAB,COVV_ORIG_LAB_ADDR,COVV_PROVIDER_SAMPLE_ID,COVV_SUBM_LAB,COVV_SUBM_LAB_ADDR,COVV_SUBM_SAMPLE_ID,COVV_AUTHORS,Prelevements_alias,Patients_alias,join_column,sample_list)
         #print("SQL ",sql)
         df = pd.read_sql(sql,con=self.GetConnection())
-        #print(df['covv_provider_sample_id'])
+        test_df = df[['covv_virus_name','covv_subm_sample_id','covv_collection_date']]
+        test_df.to_csv("/home/foueri01@inspq.qc.ca/temp/20210126/test.tsv",sep="\t",index=False)
         return(df)
 
 class VariantDataManager:
@@ -610,11 +609,16 @@ class GisaidDataSubmissionManager:
                 self.logger.GetLogHandler().write(msg + "\n")
                 parsed_header = re.search(r'(Canada/Qc-)(\S+)/(\d{4}) seq_method:(\S+)\|assemb_method:\S+\|snv_call_method:\S+',rec.description)
                 method = parsed_header.group(4)
-                self.sample_to_submit_dict[rec.id] = {}
-                self.sample_to_submit_dict[rec.id]['method'] = method
-                self.sample_to_submit_dict[rec.id]['gisaid_id'] = 'hCoV-19/' + rec.id
+                my_sample_name = parsed_header.group(2).upper()
+                mykey = parsed_header.group(1) + my_sample_name + "/" + parsed_header.group(3) 
+                self.sample_to_submit_dict[mykey] = {}
+                
+                #if re.search(r'JUS-V5190228',mykey,re.IGNORECASE):
+                    #print("FOUND             >>>> ",mykey)
+                self.sample_to_submit_dict[mykey]['method'] = method
+                self.sample_to_submit_dict[mykey]['gisaid_id'] = 'hCoV-19/' + mykey
                 rec.description = ""
-                rec.id = self.sample_to_submit_dict[rec.id]['gisaid_id']
+                rec.id = self.sample_to_submit_dict[mykey]['gisaid_id']
                 self.rec_list.append(rec)
             except:
                 msg = "Unable to get " + rec.description
@@ -625,14 +629,10 @@ class GisaidDataSubmissionManager:
         consensus_out = os.path.join(self.submission_dir,"all_sequences.fasta")
         final_rec_list = []
         for index, row in self.metadata_df.iterrows():
-            i = 0
             gisaid_id = row['covv_virus_name']
             for rec in self.rec_list:
                 if rec.id == gisaid_id:
-                    i += 1
                     final_rec_list.append(rec)
-                    if i > 1:
-                        print("$$$$$$$$$$$$$$$$$$$$$$$$$$ DUPLICATE FOR ",gisaid_id, " REC ",rec)
 
         SeqIO.write(final_rec_list,consensus_out,'fasta')
 
@@ -666,12 +666,16 @@ class GisaidDataSubmissionManager:
 
     def CreateMetadata(self):
         metadata_out = os.path.join(self.submission_dir,"{0}_ncov19_metadata.xls".format(self.today))
-        self.metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.biobankId_2_covbankId_dict.values()) 
+        #self.metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.biobankId_2_covbankId_dict.values()) 
+        self.metadata_df = self.cov_bank_db_obj.GetGisaidMetadataAsPdDataFrame(self.sample_list) 
         #self.metadata_df['covv_subm_sample_id'] = self.metadata_df['covv_subm_sample_id'].apply(self.GetBiobankIdFromCovbankID)
+        self.metadata_df['covv_subm_sample_id']  = self.metadata_df['covv_subm_sample_id'].str.strip(' ').str.upper() 
         self.CheckMissingMetadata(self.metadata_df['covv_subm_sample_id'])
         #self.metadata_df['covv_virus_name'] = self.metadata_df['covv_virus_name'].apply(self.GetBiobankIdFromCovbankID)
+        self.metadata_df['covv_virus_name']  = self.metadata_df['covv_virus_name'].str.strip(' ').str.upper()
         self.metadata_df['covv_virus_name'] = self.metadata_df['covv_virus_name'].apply(self.GetVirusName)
         self.metadata_df.insert(loc=11,column='covv_patient_age',value=self.metadata_df['DTNAISS'].apply(lambda x: self.from_dob_to_age(x)))
+        self.metadata_df.to_csv("/home/foueri01@inspq.qc.ca/temp/20210126/test2.tsv",sep="\t",index=False)
         self.metadata_df.insert(loc=18,column='covv_seq_technology',value=self.metadata_df['covv_virus_name'].apply(self.GetSequencingMethod))
         self.metadata_df['covv_collection_date'] = self.metadata_df['covv_collection_date'].astype(str) 
         del self.metadata_df['DTNAISS']
@@ -689,7 +693,6 @@ class GisaidDataSubmissionManager:
         except:
             logging.error("Problem get sequencing method for " + sample_name_ori)
             
-
     def from_dob_to_age(self,born):
         today = datetime.date.today()
         return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
@@ -761,14 +764,13 @@ def Main():
         variant_data_manager.CreateSummaryFile()
         cov_bank_db_obj.CloseConnection()
 
-
     elif mode == 'submission':
         if not freeze1:
             GenomeCenterConnector.MountBelugaServer()
             gisaid_data_submission_manager = GisaidDataSubmissionManager(lspq_report,gisaid_qc_metadata,beluga_run,seq_techno,cov_bank_db_obj)
             gisaid_data_submission_manager.GetConsensus()
             gisaid_data_submission_manager.BuildSampleList()
-            gisaid_data_submission_manager.BuildBioBankToCovBankDict()
+            #gisaid_data_submission_manager.BuildBioBankToCovBankDict()
             gisaid_data_submission_manager.CreateMetadata()
             gisaid_data_submission_manager.SaveConsensus()
 
